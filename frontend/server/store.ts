@@ -1,4 +1,4 @@
-import { createClient, type Client, type Transaction, type InValue } from "@libsql/client";
+import { createClient as createWebClient, type Client, type Transaction, type InValue } from "@libsql/client/web";
 import { Problem } from "./problem";
 import { newState, type User } from "./state";
 import { findByCode, hashCodeAsync, newToken, safeUser, sessionId, validateNewUser, SESSION_SECONDS, type UserRow } from "./auth";
@@ -20,15 +20,24 @@ export type Conn = Transaction | Client;
 export type StoreOptions = { url: string; authToken?: string; demo?: boolean; clock?: Clock };
 
 export class Store {
-  readonly client: Client;
   readonly demo: boolean;
   readonly clock: Clock;
   private ready: Promise<void> | null = null;
+  private clientPromise: Promise<Client>;
 
   constructor(opts: StoreOptions) {
-    this.client = createClient({ url: opts.url, authToken: opts.authToken });
+    // Base distante (Turso) : client HTTP pur, sans module natif, le seul qui fonctionne en
+    // serverless. Base fichier ou mémoire (tests, développement) : client natif chargé à la demande.
+    const remote = /^(libsql|https?|wss?):/.test(opts.url);
+    this.clientPromise = remote
+      ? Promise.resolve(createWebClient({ url: opts.url, authToken: opts.authToken }))
+      : import("@libsql/client").then((m) => m.createClient({ url: opts.url, authToken: opts.authToken }));
     this.demo = opts.demo ?? false;
     this.clock = opts.clock ?? wallClock;
+  }
+
+  db(): Promise<Client> {
+    return this.clientPromise;
   }
 
   // Crée le schéma et l'événement initial une seule fois par instance.
@@ -38,8 +47,9 @@ export class Store {
   }
 
   private async bootstrap(): Promise<void> {
-    for (const sql of SCHEMA) await this.client.execute(sql);
-    const tx = await this.client.transaction("write");
+    const client = await this.db();
+    for (const sql of SCHEMA) await client.execute(sql);
+    const tx = await client.transaction("write");
     try {
       const row = (await tx.execute("SELECT id, data FROM events LIMIT 1")).rows[0];
       if (!row) {
@@ -55,8 +65,9 @@ export class Store {
     }
   }
 
-  async read(conn: Conn = this.client): Promise<any> {
+  async read(conn?: Conn): Promise<any> {
     await this.init();
+    conn ??= await this.db();
     const row = (await conn.execute("SELECT data FROM events LIMIT 1")).rows[0];
     return JSON.parse(String(row!.data));
   }
@@ -67,15 +78,16 @@ export class Store {
     if (r.rowsAffected !== 1) throw new Problem("Les données ont changé. Rechargez avant de confirmer votre action.", 409);
   }
 
-  async allUsers(conn: Conn = this.client): Promise<User[]> {
+  async allUsers(conn?: Conn): Promise<User[]> {
     await this.init();
+    conn ??= await this.db();
     return (await conn.execute("SELECT * FROM users ORDER BY created_at")).rows.map((r) => safeUser(r as unknown as UserRow));
   }
 
   // Transaction d'écriture : libSQL sérialise les écrivains, comme BEGIN IMMEDIATE côté Python.
   async transact<T>(operation: (tx: Transaction) => Promise<T>): Promise<T> {
     await this.init();
-    const tx = await this.client.transaction("write");
+    const tx = await (await this.db()).transaction("write");
     try {
       const result = await operation(tx);
       await tx.commit();
@@ -114,7 +126,7 @@ export class Store {
 
   async deleteSession(token: string): Promise<void> {
     await this.init();
-    await this.client.execute({ sql: "DELETE FROM sessions WHERE id = ?", args: [sessionId(token)] });
+    await (await this.db()).execute({ sql: "DELETE FROM sessions WHERE id = ?", args: [sessionId(token)] });
   }
 
   // `auth.authenticate` : session valide, compte actif et approuvé.
@@ -122,7 +134,7 @@ export class Store {
     if (!token) throw new Problem("Connectez-vous avec votre code personnel.", 401);
     await this.init();
     const row = (
-      await this.client.execute({
+      await (await this.db()).execute({
         sql: "SELECT users.* FROM users JOIN sessions ON sessions.user_id = users.id WHERE sessions.id = ? AND sessions.expires > ? AND users.active = 1",
         args: [sessionId(token), this.clock()],
       })
@@ -135,7 +147,7 @@ export class Store {
   // Compte actif dont le code correspond, ou null. Le hachage se fait hors transaction.
   async userByCode(code: string): Promise<UserRow | null> {
     await this.init();
-    const rows = (await this.client.execute("SELECT * FROM users WHERE active = 1")).rows as unknown as UserRow[];
+    const rows = (await (await this.db()).execute("SELECT * FROM users WHERE active = 1")).rows as unknown as UserRow[];
     return findByCode(code, rows);
   }
 
@@ -143,21 +155,21 @@ export class Store {
   async loginAllowed(address: string): Promise<boolean> {
     await this.init();
     const now = this.clock();
-    await this.client.execute({ sql: "DELETE FROM attempts WHERE at < ?", args: [now - 300] });
+    await (await this.db()).execute({ sql: "DELETE FROM attempts WHERE at < ?", args: [now - 300] });
     // Purge des sessions expirées au passage : la table ne grossit pas indéfiniment.
-    await this.client.execute({ sql: "DELETE FROM sessions WHERE expires < ?", args: [now] });
-    const n = Number((await this.client.execute({ sql: "SELECT COUNT(*) AS n FROM attempts WHERE address = ?", args: [address] })).rows[0]!.n);
+    await (await this.db()).execute({ sql: "DELETE FROM sessions WHERE expires < ?", args: [now] });
+    const n = Number((await (await this.db()).execute({ sql: "SELECT COUNT(*) AS n FROM attempts WHERE address = ?", args: [address] })).rows[0]!.n);
     return n < 15;
   }
   async loginFailed(address: string): Promise<void> {
-    await this.client.execute({ sql: "INSERT INTO attempts (address, at) VALUES (?, ?)", args: [address, this.clock()] });
+    await (await this.db()).execute({ sql: "INSERT INTO attempts (address, at) VALUES (?, ?)", args: [address, this.clock()] });
   }
   async loginSucceeded(address: string): Promise<void> {
-    await this.client.execute({ sql: "DELETE FROM attempts WHERE address = ?", args: [address] });
+    await (await this.db()).execute({ sql: "DELETE FROM attempts WHERE address = ?", args: [address] });
   }
 
   async execute(sql: string, args: InValue[] = []): Promise<any[]> {
     await this.init();
-    return (await this.client.execute({ sql, args })).rows as any[];
+    return (await (await this.db()).execute({ sql, args })).rows as any[];
   }
 }

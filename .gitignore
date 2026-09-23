@@ -41,3 +41,4 @@ restorations/
 .vercel/
 .env*.local
 frontend/fibda-dev.sqlite*
+frontend/api/index.js

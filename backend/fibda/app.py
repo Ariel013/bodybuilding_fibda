@@ -372,9 +372,18 @@ def create_app(directory, demo=False, testing=False, clock=None):
     frontend=resource_path('frontend','dist')
     if frontend.exists():
         app.mount('/assets',StaticFiles(directory=frontend/'assets'),name='assets')
+        # Types MIME explicites pour les fichiers PWA que mimetypes ne connaît pas forcément.
+        pwa_types={'.webmanifest':'application/manifest+json','.js':'text/javascript','.png':'image/png'}
         @app.get('/{path:path}')
         def spa(path:str):
             if path.startswith('api/'):raise Problem('Route inconnue.',404)
+            # Fichiers présents à la racine de dist (sw.js, manifest, icônes) : servis tels quels, sans sortir de dist.
+            if path:
+                try:
+                    target=(frontend/path).resolve()
+                    served=target.is_file() and target.is_relative_to(frontend.resolve())
+                except OSError:served=False  # nom trop long ou illisible : on retombe sur l'application
+                if served:return FileResponse(target,media_type=pwa_types.get(target.suffix))
             return FileResponse(frontend/'index.html')
     else:
         @app.get('/',response_class=HTMLResponse)

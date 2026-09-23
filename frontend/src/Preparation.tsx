@@ -1483,8 +1483,9 @@ export function Documents({ s, refresh }: Props) {
             ))}
         </div>
         <div className="actions">
+          {/* Version serveur actuelle : seul l'export CSV existe ; l'impression passe par le HTML. */}
           {!personalOnly &&
-            ["csv", "xlsx", "pdf"].map((format) => (
+            ["csv"].map((format) => (
               <a
                 className="button ghost"
                 key={format}

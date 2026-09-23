@@ -11,6 +11,8 @@ import { projectState, publicState, exams, collective, syncCollectiveRewards } f
 import { tick } from "./workflow";
 import { loadCatalogue, eligibility } from "../domain/catalogue";
 import { seedDemo } from "./demo";
+import { previewImport, savePreview, commitPreview, MAX_FILE as MAX_IMPORT } from "./transfers";
+import { KINDS, renderPrint, exportDocument, type Filters } from "./printing";
 
 // Routes HTTP : même contrat que backend/fibda/app.py (docs/CONTRACT.md), sans WebSocket ni photos.
 export const VERSION = "0.2.0";
@@ -238,7 +240,7 @@ export function createApp(opts: AppOptions) {
       const before = await store.read(tx);
       // L'état antérieur est conservé dans l'audit, jamais écrasé sans trace.
       await store.record(tx, before, u.id, "restore.previous_state", { previous: before });
-      for (const t of ["events", "users", "sessions", "commands", "audit"]) await tx.execute(`DELETE FROM ${t}`);
+      for (const t of ["events", "users", "sessions", "commands", "audit", "import_previews"]) await tx.execute(`DELETE FROM ${t}`);
       raw.restore_id = uid();
       raw.version += 1;
       await tx.execute({ sql: "INSERT INTO events (id, version, data) VALUES (?, ?, ?)", args: [raw.id, raw.version, dump(raw)] });
@@ -263,6 +265,81 @@ export function createApp(opts: AppOptions) {
     });
     setSession(c, token);
     return c.json({ codes, state: await view(await store.read(), chief) });
+  });
+
+  // Documents imprimables et exports : habilitations copiées de `printable` (backend/fibda/app.py:333-350).
+  // Les documents privés (blank, ballot, recap, results) : direction sans restriction ; un juge ou
+  // stagiaire ne voit que ses propres bulletins (judge_id forcé à lui-même, tours où il siège), jamais
+  // les résultats. Les examens : direction ou commission ; sinon rapport personnel uniquement.
+  // Tout le reste (inscriptions, programme, mesures, récompenses, diplômes, officiels) : préparation, régie, speaker.
+  async function printable(c: Context, kind: string): Promise<[any, Filters]> {
+    const u = await actor(c);
+    const s = await store.read();
+    const roles = new Set(u.roles);
+    let judgeId: string | null = c.req.query("judge_id") || null;
+    const filters: Filters = { category_id: c.req.query("category_id") || null, round_id: c.req.query("round_id") || null, judge_id: judgeId };
+    const isPrivate = ["blank", "ballot", "recap", "results"].includes(kind);
+    if (isPrivate) {
+      if (!intersects(roles, ADMIN)) {
+        require(u, ["judge", "trainee"]); // app.py:338
+        if (judgeId && judgeId !== u.id) throw new Problem("Seuls vos bulletins sont accessibles.", 403); // app.py:339
+        judgeId = u.id; // app.py:340 : jamais le bulletin d'un autre juge
+        if (kind === "results") throw new Problem("Document réservé à la direction.", 403); // app.py:341
+        s.rounds = s.rounds.filter((r: any) => [...(r.panel ?? []), ...(r.trainees ?? [])].includes(u.id)); // app.py:342
+      }
+    } else if (kind === "exams") {
+      if (!intersects(roles, union(ADMIN, ["commission"]))) {
+        require(u, ["judge", "trainee"]); // app.py:345
+        if (judgeId && judgeId !== u.id) throw new Problem("Rapport personnel uniquement.", 403); // app.py:346
+        judgeId = u.id; // app.py:347
+      }
+    } else require(u, union(PREPARATION, ["regie", "speaker"])); // app.py:348
+    // Les droits sont vérifiés avant de reconnaître le document : un juge n'apprend pas quels noms existent.
+    if (!KINDS.has(kind)) throw new Problem("Document inconnu");
+    // app.py:349 : noms des comptes pour libeller les juges, rapports d'examen filtrés, horodatage.
+    s.users = await store.allUsers();
+    s.exam_reports = exams(s, u).reports;
+    s.printed_at = store.clock();
+    filters.judge_id = judgeId;
+    return [s, filters];
+  }
+
+  app.get("/api/v1/print/:kind", async (c) => {
+    const kind = c.req.param("kind");
+    const [s, filters] = await printable(c, kind);
+    return c.html(renderPrint(s, kind, filters));
+  });
+
+  app.get("/api/v1/export/:kind", async (c) => {
+    const kind = c.req.param("kind");
+    const format = c.req.query("format") ?? "pdf"; // même défaut que le Python (app.py:357)
+    const [s, filters] = await printable(c, kind);
+    // Hors périmètre de cette version : pas de reportlab ni d'openpyxl en serverless.
+    if (format === "xlsx" || format === "pdf") return c.json({ detail: "Format non disponible sur cette version : utiliser csv ou l'impression HTML." }, 501);
+    const { data, mime, name } = exportDocument(s, kind, format, filters);
+    c.header("Content-Disposition", 'attachment; filename="' + name + '"');
+    return c.body(data, 200, { "Content-Type": mime });
+  });
+
+  // Imports d'inscriptions : aperçu contrôlé (CSV ; XLSX répond 415, voir transfers.ts) conservé en
+  // base une heure, puis application par les commandes de préparation. Réservé à la préparation.
+  app.post("/api/v1/imports/preview", async (c) => {
+    const u = await actor(c);
+    require(u, PREPARATION);
+    const form = await c.req.parseBody().catch(() => ({}) as Record<string, unknown>);
+    const file = (form as Record<string, unknown>).file;
+    if (!(file instanceof File)) throw new Problem("Fichier requis (champ « file »).");
+    if (file.size > MAX_IMPORT) throw new Problem("Fichier trop volumineux.", 413);
+    const preview = previewImport(new Uint8Array(await file.arrayBuffer()), file.name ?? "");
+    const previewId = await savePreview(store, u.id, preview);
+    return c.json({ preview_id: previewId, ...preview });
+  });
+
+  app.post("/api/v1/imports/commit", async (c) => {
+    const u = await actor(c);
+    require(u, PREPARATION);
+    const p = await c.req.json().catch(() => ({}));
+    return c.json({ count: await commitPreview(store, u, p?.preview_id) });
   });
 
   app.get("/api/v1/ws", (c) => c.json({ detail: "Pas de WebSocket en serverless : interrogation périodique." }, 404));

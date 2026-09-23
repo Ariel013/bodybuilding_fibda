@@ -14,8 +14,12 @@ turso db show fibda --url        # → libsql://fibda-….turso.io
 turso db tokens create fibda     # → jeton, à garder secret
 ```
 
-Deux bases distinctes si l'on veut une démonstration : `fibda-demo` avec
-`FIBDA_DEMO=1`. Jamais la même base pour les deux.
+Deux bases distinctes : `fibda` (officielle) et `fibda-demo` (`FIBDA_DEMO=1`), chacune
+avec son projet Vercel. **Déployé le 23/09** : démonstration sur
+https://fibda-bodybuilding-demo.vercel.app, peuplée de 24 athlètes fictifs et 9 comptes
+(codes dans le fichier de secrets du PO). Sert à l'entraînement des juges et à la revue UX ;
+jamais pour la compétition. Pour changer de projet depuis la CLI : le lien est dans
+`frontend/.vercel/` (ignoré par git) ; `vercel link --yes --project <nom>` le remplace.
 
 ## 2. Projet Vercel
 
@@ -73,8 +77,9 @@ historique de shell : préfixer la commande d'une espace ou utiliser `read -s`.
   (Cloudflare) est un jour placé devant Vercel, cette hypothèse tombe : à revoir.
 - Hachage des codes en 100 000 itérations PBKDF2 (240 000 côté Python) : choix assumé pour
   le coût serverless, compensé par le limiteur de tentatives en base.
-- Pas de photos, d'imports CSV/XLSX, d'impressions ni d'exports PDF tant que
-  ces modules ne sont pas portés (voir `OPEN-QUESTIONS.md`).
+- Impressions HTML (bulletins vierges, récapitulatifs, résultats, diplômes, listes) et
+  export CSV portés le 23/09 au soir. Pas d'export XLSX/PDF (501), pas d'import XLSX (415,
+  convertir en CSV : `OPEN-QUESTIONS.md` P10), pas de photos (P9).
 - Les transitions temporisées (délai stagiaires) s'exécutent à chaque lecture
   d'état ou commande, pas par une boucle serveur.
 

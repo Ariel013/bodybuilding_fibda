@@ -131,3 +131,7 @@ P9. **Photos non portées en serverless** (23/09 soir). Le Python écrit les pho
    Vercel n'a pas de disque. Options : stockage dans Turso en base64 après redimensionnement
    côté navigateur (simple, ~50 Ko par photo), ou Vercel Blob. Hors périmètre de samedi
    (`MVP-SCOPE.md` : photos peuvent attendre). Les routes `/api/v1/photos*` renvoient 404.
+P10. **Import XLSX indisponible** (23/09 soir). Audit mesuré : `exceljs` 4.4.0 → 2 vulnérabilités
+   modérées ; `xlsx` 0.18.5 → 1 vulnérabilité haute sans correctif. Conformément à RULES.md,
+   aucune dépendance ajoutée : `POST /imports/preview` répond 415 « Format XLSX indisponible :
+   convertir en CSV ». L'import CSV complet est porté (4 Mo maxi, limite Vercel).

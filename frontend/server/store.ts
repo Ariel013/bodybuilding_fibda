@@ -13,6 +13,8 @@ const SCHEMA = [
   "CREATE TABLE IF NOT EXISTS audit (id TEXT PRIMARY KEY, event_id TEXT NOT NULL, user_id TEXT NOT NULL, action TEXT NOT NULL, at REAL NOT NULL, data TEXT NOT NULL)",
   // Tentatives de connexion par adresse : en serverless, la mémoire ne survit pas entre deux appels.
   "CREATE TABLE IF NOT EXISTS attempts (address TEXT NOT NULL, at REAL NOT NULL)",
+  // Aperçus d'import : en base plutôt qu'en mémoire, deux appels serverless pouvant tomber sur deux instances.
+  "CREATE TABLE IF NOT EXISTS import_previews (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, created_at REAL NOT NULL, data TEXT NOT NULL)",
 ];
 
 export type Conn = Transaction | Client;
@@ -158,6 +160,8 @@ export class Store {
     await (await this.db()).execute({ sql: "DELETE FROM attempts WHERE at < ?", args: [now - 300] });
     // Purge des sessions expirées au passage : la table ne grossit pas indéfiniment.
     await (await this.db()).execute({ sql: "DELETE FROM sessions WHERE expires < ?", args: [now] });
+    // Purge des aperçus d'import expirés (données personnelles) au passage également.
+    await (await this.db()).execute({ sql: "DELETE FROM import_previews WHERE created_at < ?", args: [now - 3600] });
     const n = Number((await (await this.db()).execute({ sql: "SELECT COUNT(*) AS n FROM attempts WHERE address = ?", args: [address] })).rows[0]!.n);
     return n < 15;
   }

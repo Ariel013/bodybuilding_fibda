@@ -21,18 +21,22 @@ Carte des documents :
 
 ## 📍 État actuel & prochaine action
 
-*(Mis à jour le 2026-09-23, soir.)*
+*(Mis à jour le 2026-09-23, 23 h.)*
 
-- **Version en prod** : aucune. Rien n'est déployé, aucun test sur téléphone réel.
-- **Code** : branche `main`, 4 commits depuis l'import. Version TypeScript committée
-  (`a4258e9`) : `npm run check` = 77 tests verts. Plan B Python mode proxy Railway : écrit,
-  91 tests verts, **non committé**, relecture sécurité en cours.
-- **Bloqué par le PO** : comptes Turso et Vercel (déploiement cible), compte Railway (plan B),
-  réponses Q0ter (overall par discipline ou confondu), Q0quinquies (codes admin 8 caractères),
-  Internet de la salle et 4G de secours.
-- **Prochaine action** : dès les comptes Turso + Vercel créés, déployer la version TypeScript
-  (`docs/DEPLOIEMENT-VERCEL.md`), créer le chef avec le jeton, ouvrir l'URL sur un téléphone.
-  Critère de fin : connexion juge + bulletin avec accusé depuis un téléphone sur réseau mobile.
+- **Version en prod** : https://fibda-bodybuilding.vercel.app (Vercel, base Turso Irlande),
+  déployée le 23/09 au soir depuis la CLI, **vérifiée au curl** : santé, jeton de configuration
+  exigé, chef créé, connexion, état, écran public, en-têtes de sécurité, contrôle d'origine.
+  Démonstration séparée : https://fibda-bodybuilding-demo.vercel.app (base `fibda-demo`,
+  24 athlètes fictifs, 9 comptes). **Aucun test sur téléphone réel encore.** Secrets hors dépôt : `~/fibda-secrets-2026-09-23.txt`.
+- **Code** : `main` poussé sur `origin` jusqu'à `d23c2dd` ; commits suivants locaux en attente
+  de push (WebSocket, docs, impressions/imports en cours). `npm run check` = 77 tests verts
+  avant les portages du soir.
+- **Décisions du PO (23/09 soir)** : overall final toutes disciplines (H1 : sexes confondus, à
+  confirmer), codes admin 8 caractères, 4G prévu, Railway en suspens.
+- **Hors périmètre actuel** : photos (P9), exports XLSX/PDF, WebSocket.
+- **Prochaine action** : le PO ouvre l'URL sur son téléphone, installe la PWA, se connecte
+  avec le code du chef, crée un juge, envoie un bulletin de test (`A-FAIRE.md`). Critère de
+  fin : accusé de réception d'un bulletin depuis un téléphone sur réseau mobile.
 
 ## 📓 Journal des sessions
 
@@ -49,9 +53,21 @@ Carte des documents :
   Python sur Railway en plan B. Commit `e42beff` (ADR 0001, devenu plan B) puis `a4258e9`.
 - Réécriture : moteur porté avec différentiel 200/200, préparation 12/12, workflow 16/16,
   parcours complet de compétition vert, 3 bloquants sécurité réglés côté TS.
-- Ouvert : photos, imports, impressions, exports non portés ; Q0ter, Q0quinquies ; comptes.
+- Soir : overall final toutes disciplines, codes admin 8, bouton dans l'écran Compétition.
+  Turso + Vercel créés par la CLI ; deux échecs de déploiement (ESM non regroupé, puis
+  signature Node du gestionnaire) corrigés ; production vérifiée au curl. Repli sans
+  WebSocket corrigé côté frontend. Portages impressions/exports et imports lancés.
+- Ouvert : photos (P9), XLSX/PDF, test téléphone réel, H1 (overall par sexe ?).
 
 ## 🎓 Leçons apprises
+
+### Une fonction Vercel en ESM ne regroupe pas ses imports relatifs (2026-09-23)
+`FUNCTION_INVOCATION_FAILED` muet sur chaque route API, statiques servis normalement.
+Vercel a déployé `api/index.ts` en ESM sans regrouper `../server/app` : `ERR_MODULE_NOT_FOUND`
+dans les logs, qu'il a fallu aller chercher avec `vercel logs`. Puis la fonction restait
+muette : gestionnaire web `(Request)` appelé avec la signature Node `(req, res)`.
+Règle : l'API serverless est regroupée par esbuild en un fichier au build, et le
+gestionnaire accepte les deux signatures. Le premier curl de recette est `/api/v1/health`.
 
 ### Un hébergement « gratuit » se vérifie avant d'écrire la procédure (2026-09-23)
 Procédure Oracle rédigée, ADR écrit, puis inscription refusée sans paiement.

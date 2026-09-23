@@ -46,8 +46,15 @@ cd frontend && vercel link --yes --project fibda-bodybuilding
 printf '%s' "$URL"   | vercel env add TURSO_DATABASE_URL production --yes
 printf '%s' "$TOKEN" | vercel env add TURSO_AUTH_TOKEN production --sensitive --yes
 printf '%s' "$SETUP" | vercel env add FIBDA_SETUP_TOKEN production --sensitive --yes
-vercel deploy --prod --yes
+vercel pull --yes --environment=production   # réglages du projet dans .vercel/
+vercel build --prod --yes                     # construction locale (Vite + esbuild)
+vercel deploy --prebuilt --prod --yes         # n'envoie que .vercel/output
 ```
+
+**Toujours déployer en `--prebuilt`.** Un `vercel deploy` sans `--prebuilt` a, le 23/09,
+envoyé le dépôt entier au lieu de `frontend/` (détection « services » / FastAPI à la racine
+du dépôt git), et fait échouer deux déploiements. Pour la démonstration, mêmes commandes
+après `vercel link --yes --project fibda-bodybuilding-demo`.
 
 ## 3. Premier chef, restauration, démonstration
 

@@ -21,16 +21,20 @@ Carte des documents :
 
 ## 📍 État actuel & prochaine action
 
-*(Mis à jour le 2026-09-23, 23 h.)*
+*(Mis à jour le 2026-09-24, 0 h.)*
 
 - **Version en prod** : https://fibda-bodybuilding.vercel.app (Vercel, base Turso Irlande),
   déployée le 23/09 au soir depuis la CLI, **vérifiée au curl** : santé, jeton de configuration
   exigé, chef créé, connexion, état, écran public, en-têtes de sécurité, contrôle d'origine.
   Démonstration séparée : https://fibda-bodybuilding-demo.vercel.app (base `fibda-demo`,
   24 athlètes fictifs, 9 comptes). **Aucun test sur téléphone réel encore.** Secrets hors dépôt : `~/fibda-secrets-2026-09-23.txt`.
-- **Code** : `main` poussé sur `origin` jusqu'à `d23c2dd` ; commits suivants locaux en attente
-  de push (WebSocket, docs, impressions/imports en cours). `npm run check` = 77 tests verts
-  avant les portages du soir.
+- **Code** : `main` poussé sur `origin` (voir `git log`). `npm run check` = 99 tests verts
+  (20 interface dont 6 sur le manuel, 15 moteur, 64 serveur). Déploiement : toujours
+  `vercel build` puis `vercel deploy --prebuilt` (`docs/DEPLOIEMENT-VERCEL.md` §2).
+- **Livré le 23/09 au soir** : impressions HTML (bulletin vierge = plan papier), export CSV,
+  import CSV, mode d'emploi par profil dans l'onglet « Aide » (source
+  `frontend/src/aide/MODE-D-EMPLOI.md`, règle de mise à jour dans `CLAUDE.md`), restauration
+  depuis l'écran réparée, aide de connexion réécrite pour la version en ligne.
 - **Décisions du PO (23/09 soir)** : overall final toutes disciplines (H1 : sexes confondus, à
   confirmer), codes admin 8 caractères, 4G prévu, Railway en suspens.
 - **Hors périmètre actuel** : photos (P9), exports XLSX/PDF, WebSocket.
@@ -57,7 +61,9 @@ Carte des documents :
   Turso + Vercel créés par la CLI ; deux échecs de déploiement (ESM non regroupé, puis
   signature Node du gestionnaire) corrigés ; production vérifiée au curl. Repli sans
   WebSocket corrigé côté frontend. Portages impressions/exports et imports lancés.
-- Ouvert : photos (P9), XLSX/PDF, test téléphone réel, H1 (overall par sexe ?).
+- Nuit : impressions/exports/imports portés et relus (conforme), mode d'emploi par profil
+  intégré, restauration écran réparée, démo et production redéployées en `--prebuilt`.
+- Ouvert : photos (P9), XLSX/PDF (P10), test téléphone réel par le PO, H1 (overall par sexe ?).
 
 ## 🎓 Leçons apprises
 

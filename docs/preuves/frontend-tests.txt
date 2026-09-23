@@ -1,0 +1,26 @@
+
+> fibda-competition@0.1.0 test
+> node --import tsx --test src/ranking.test.ts
+
+✔ remplacement sans décalage, libère ancien occupant (1.050792ms)
+✔ nouveau dossard remplace rang sans déplacement (0.051ms)
+✔ classement incomplet ou doublon refusé (0.062834ms)
+✔ quota et participants exacts éliminatoires (0.053667ms)
+✔ brouillons isolés après restauration et par juge (0.067ms)
+✔ horloge serveur borne expiration à zéro (0.03875ms)
+✔ projection restreinte au tour, y compris un tour sans participants (0.062666ms)
+✔ photo choisie pour le groupe original et consentement obligatoire (0.067167ms)
+✔ annonce seulement lors nouvelle scène publique, sans rejeu connexion (0.069333ms)
+✔ actions administratives masquées selon le rôle et exceptions chef (0.117375ms)
+✔ aperçu privé ne diffuse que les photos individuellement approuvées (0.049375ms)
+✔ examen overall limité aux stagiaires approuvés attendus sans doublon (0.075541ms)
+✔ le choix manuel reste stable puis cède au nouveau tour actif (0.041792ms)
+✔ connexion juge ou stagiaire ouvre directement son bulletin, administration conserve accueil (0.050042ms)
+ℹ tests 14
+ℹ suites 0
+ℹ pass 14
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 92.895625

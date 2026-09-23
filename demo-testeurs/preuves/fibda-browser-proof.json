@@ -1,0 +1,51 @@
+{
+  "date": "2026-09-23T08:42:09.967Z",
+  "url": "file:///private/tmp/FIBDA-autonome-test.html#judge",
+  "checks": [
+    {
+      "name": "Login quatre chiffres et 24 personnes fictives",
+      "passed": true
+    },
+    {
+      "name": "Photo recadrée et approuvée via canvas",
+      "passed": true
+    },
+    {
+      "name": "Aperçu import CSV réel",
+      "passed": true
+    },
+    {
+      "name": "Import enregistré",
+      "passed": true
+    },
+    {
+      "name": "Export Excel binaire réel",
+      "passed": true
+    },
+    {
+      "name": "Bulletins vierges et séparation de catégories",
+      "passed": true
+    },
+    {
+      "name": "Sauvegarde ZIP téléchargée",
+      "passed": true
+    },
+    {
+      "name": "Restauration données et nouvelle identité",
+      "passed": true
+    },
+    {
+      "name": "Photo conservée après restauration",
+      "passed": true
+    },
+    {
+      "name": "Panne stockage : aucune fausse confirmation ni mutation",
+      "passed": true
+    },
+    {
+      "name": "Aucune requête réseau externe",
+      "passed": true
+    }
+  ],
+  "passed": true
+}

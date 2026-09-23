@@ -1,0 +1,8 @@
+{
+  "database": "/private/tmp/fibda-reception/competition.sqlite3",
+  "state_sha256": "4ffbe04b78a0aa7bd2afd6df6079dee3308315898496f1a8bd168191642e98c5",
+  "restore_id": "1bc5e3eb-0ffa-43d1-b3c1-8029f17c48d2",
+  "version": 10,
+  "people": 24,
+  "identical_event_after_restart": true
+}

@@ -1,0 +1,16 @@
+{
+  "checked_at": "2026-09-23T02:01:29.315515+00:00",
+  "url": "http://127.0.0.1:8770/",
+  "tool": "gstack browse / Chromium",
+  "login": {
+    "min_length": 4,
+    "four_characters_valid": true,
+    "three_characters_valid": false,
+    "existing_long_code_login": true
+  },
+  "jury_invitation": {
+    "min_length": 4,
+    "four_characters_valid": true
+  },
+  "data_policy": "Aucun nouveau compte de test créé dans la démonstration existante. Créations et connexions courtes vérifiées dans des bases isolées par tests API et paquet."
+}

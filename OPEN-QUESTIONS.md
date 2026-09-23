@@ -1,0 +1,81 @@
+# OPEN-QUESTIONS.md — Questions bloquantes au PO
+
+À tenir à jour. Tant qu'une question de la section "Bloquant conception" n'est pas répondue,
+la zone du projet concernée ne doit pas être commencée.
+
+## Bloquant conception
+
+0bis. **[LA PLUS URGENTE MAINTENANT]** Tu as demandé "un nouveau repo, une app à part, pas
+   celle du StrongMan". La base de code que tu viens de partager (`FIBDA-sources-developpeur.zip`)
+   est déjà, après inspection réelle du code, une app bodybuilding distincte du StrongMan
+   (zéro référence StrongMan dedans, catalogue et logique 100% bodybuilding). **Est-ce que
+   "nouveau repo" voulait juste dire "distinct du StrongMan" (→ on part de cette base, c'est
+   déjà rempli) ou vraiment "ignorer ce code aussi et repartir de zéro" ?** Vu le délai (3
+   jours), repartir de zéro alors qu'une base fonctionnelle existe serait un risque énorme —
+   `PLAN-J3.md` suppose qu'on réutilise cette base sauf contre-ordre de ta part.
+
+0. **[URGENT — bloque le périmètre exact]** Voir `MVP-SCOPE.md` §"Question à trancher
+   immédiatement avec le PO" : nombre de catégories/athlètes/juges samedi, une ou plusieurs
+   disciplines, besoin d'un overall ou juste des classements par catégorie, Wi-Fi/routeur déjà
+   identifié sur le lieu. **À obtenir du PO aujourd'hui, pas plus tard que demain matin.**
+
+1. ~~Nature du dossier reçu~~ **[RÉSOLU]** — L'application déjà codée et testée décrite dans ce
+   dossier a en réalité été construite pour le **StrongMan**, un sport différent. Le PO a
+   envoyé le mauvais dossier / une confusion s'est produite. **FIBDA Bodybuilding est donc un
+   nouveau projet à concevoir de zéro**, pas une reprise de code existant.
+   → Conséquence importante : le "Contrat partagé FIBDA v1", le référentiel "neuf disciplines,
+   106 règles", les rapports de tests ("77 tests OK", agents domaine/frontend/exploitation) du
+   dossier initial décrivent très probablement l'app StrongMan avec du vocabulaire bodybuilding
+   plaqué dessus (Men's Physique, Bikini apparaissent bien, donc une adaptation partielle a eu
+   lieu — mais rien ne garantit qu'elle soit complète ou correcte). **Ne pas faire confiance à
+   ce document comme source de vérité du référentiel sportif bodybuilding.**
+1bis. **[RÉSOLU]** — C'est toi-même qui as travaillé sur l'app StrongMan. Repo :
+   `https://github.com/Ariel013/strongmanrepo.git`. À auditer par Claude Code en premier (voir
+   `CLAUDE.md` §0.2) — je n'y ai pas accès depuis ce chat (repo privé/non indexé).
+1ter. Le dossier "FIBDA Bodybuilding" reçu a-t-il été écrit par une personne qui a réellement
+   vérifié les 106 règles/9 disciplines de bodybuilding, ou est-ce un remaniement automatique
+   du dossier StrongMan (agents IA qui ont substitué du vocabulaire) ? **Toujours ouvert.** À
+   faire confirmer explicitement avant de considérer le référentiel comme fiable à 1%.
+2. **[RÉSOLU]** Repo StrongMan accessible via l'utilisateur, pas de dossier `cadrage/`/maquette
+   v4 encore localisé — à vérifier pendant l'audit du repo.
+3. Date de la compétition cible — **toujours ouvert**, mais le délai est confirmé comme serré.
+4. **[RÉSOLU]** Pays/fédération : Côte d'Ivoire.
+5. **Toujours ouvert et critique** : qui, côté fédération FIBDA, valide le référentiel sportif
+   (106 règles, calcul de jury, barèmes) avant mise en production ?
+6. **[RÉSOLU]** Développeur seul + Claude Code, pas d'équipe. → contraintes de rigueur ajoutées
+   dans `CLAUDE.md` §0bis (pas de tâche à moitié faite, ne rien casser, scope tenu).
+3. **Date de la compétition cible** et délai réel disponible.
+4. **Pays / fédération exacte** de FIBDA — nécessaire pour le cadre légal (mineurs dès 15 ans,
+   photos, données personnelles).
+5. **Qui valide le référentiel sportif** (106 règles, calcul de jury, barèmes) côté fédération
+   avant mise en production — sans ce point, le moteur de calcul ne peut pas être considéré fiable.
+6. **Qui construit et teste réellement** ce dossier de conception : le PO code lui-même en
+   s'appuyant sur ces fichiers de règles, ou un agent LLM codeur (type Claude Code) va exécuter
+   le travail ?
+
+## Important mais pas totalement bloquant
+
+7bis. **[NOUVEAU]** Le PO envoie le frontend lui-même — quand exactement, dans quel format
+   (repo à part, fichiers zip, stack précise), et respecte-t-il déjà les contraintes PWA
+   (manifest, service worker) ? Tant que ce n'est pas su, le backend doit être conçu API-first
+   et testable indépendamment du frontend (voir `AGENTS.md` §Agent Dev), pour ne pas être
+   bloqué par l'arrivée tardive de la pièce qu'on ne maîtrise pas.
+7ter. Qui, du PO ou de l'utilisateur, fige le contrat d'API en premier ? Si le PO code son
+   frontend sans connaître le contrat exact, risque fort de mismatch à intégrer en urgence
+   vendredi/samedi. Recommandation : lui envoyer le contrat d'API dès qu'il est stabilisé.
+
+7. Nombre d'événements/an et de lieux différents (une config réseau par salle ou une seule
+   récurrente ?)
+8. Qui configure le réseau le jour J (domaine, DNS, certificat) — un rôle "responsable
+   technique" existe dans le dossier mais n'est pas nommé.
+9. Budget pour nom de domaine / certificat / matériel réseau de secours.
+10. Le build Windows : sur quelle machine, par qui, à quelle échéance ?
+11. Confirmation explicite du seuil "300 athlètes / 40 appareils" comme cible réelle ou comme
+    hypothèse de dimensionnement.
+
+## À faire remonter dès réponse obtenue
+
+- Mettre à jour `00-PROJECT-BRIEF.md` §2 avec le vrai statut du code
+- Mettre à jour `ARCHITECTURE.md` §7 en fonction de la structure de repo réelle
+- Si la fédération n'a pas encore validé le référentiel sportif : créer un jalon explicite
+  "gel du référentiel" avant tout développement du moteur `domain.py`

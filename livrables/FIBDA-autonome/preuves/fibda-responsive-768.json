@@ -1,0 +1,65 @@
+{
+  "checks": [
+    {
+      "hash": "home",
+      "viewport": 768,
+      "width": 768,
+      "passed": true
+    },
+    {
+      "hash": "preparation",
+      "viewport": 768,
+      "width": 768,
+      "passed": true
+    },
+    {
+      "hash": "judge",
+      "viewport": 768,
+      "width": 768,
+      "passed": true
+    },
+    {
+      "hash": "competition",
+      "viewport": 768,
+      "width": 768,
+      "passed": true
+    },
+    {
+      "hash": "regie",
+      "viewport": 768,
+      "width": 768,
+      "passed": true
+    },
+    {
+      "hash": "rewards",
+      "viewport": 768,
+      "width": 768,
+      "passed": true
+    },
+    {
+      "hash": "collective",
+      "viewport": 768,
+      "width": 768,
+      "passed": true
+    },
+    {
+      "hash": "exams",
+      "viewport": 768,
+      "width": 768,
+      "passed": true
+    },
+    {
+      "hash": "documents",
+      "viewport": 768,
+      "width": 768,
+      "passed": true
+    },
+    {
+      "hash": "audit",
+      "viewport": 768,
+      "width": 768,
+      "passed": true
+    }
+  ],
+  "passed": true
+}

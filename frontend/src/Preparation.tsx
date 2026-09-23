@@ -1,0 +1,1690 @@
+import { canCommand } from "./permissions";
+import { useEffect, useState, type FormEvent } from "react";
+import { api, post, download } from "./api";
+import {
+  type State,
+  type Command,
+  type Entity,
+  uid,
+  personName,
+  labels,
+} from "./types";
+import {
+  Field,
+  Panel,
+  Check,
+  Multi,
+  DataTable,
+  AsyncButton,
+  Notice,
+  Status,
+  JsonDetails,
+} from "./ui";
+type Props = { s: State; command: Command; refresh: () => Promise<void> };
+const sections = [
+  "Événement",
+  "Personnes",
+  "Mesures",
+  "Catégories",
+  "Programme",
+  "Officiels",
+  "Jury",
+  "Documents",
+];
+export function Preparation(p: Props) {
+  const [tab, setTab] = useState("Événement");
+  return (
+    <>
+      <div className="page-title">
+        <div>
+          <p className="eyebrow">AVANT LE PLATEAU</p>
+          <h1>Préparation</h1>
+        </div>
+        <Status value={p.s.status} />
+      </div>
+      <nav className="subnav" aria-label="Rubriques préparation">
+        {sections.map((x) => (
+          <button
+            className={tab === x ? "active" : "ghost"}
+            key={x}
+            onClick={() => setTab(x)}
+          >
+            {x}
+          </button>
+        ))}
+      </nav>
+      {tab === "Événement" ? (
+        <EventForm {...p} />
+      ) : tab === "Personnes" ? (
+        <People {...p} />
+      ) : tab === "Mesures" ? (
+        <Measures {...p} />
+      ) : tab === "Catégories" ? (
+        <Categories {...p} />
+      ) : tab === "Programme" ? (
+        <Programme {...p} />
+      ) : tab === "Officiels" ? (
+        <Officials {...p} />
+      ) : tab === "Jury" ? (
+        <Jury {...p} />
+      ) : (
+        <Documents {...p} />
+      )}
+    </>
+  );
+}
+function EventForm({ s, command }: Props) {
+  const [f, setF] = useState({
+    name: s.name,
+    date: s.date,
+    location: s.location,
+    mode: s.mode,
+    regulations_checked: !!s.settings.regulations_checked,
+    network_checked: !!s.settings.network_checked,
+    backup_checked: !!s.settings.backup_checked,
+    backup_directory: s.settings.backup_directory || "",
+    collective_tiebreak: s.settings.collective_tiebreak || "",
+  });
+  useEffect(() => setF((current) => ({ ...current, mode: s.mode })), [s.mode]);
+  return (
+    <Panel title="Identité de la compétition">
+      {canCommand(s.me.roles, "event.update") ? (
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            command("event.update", {
+              name: f.name,
+              date: f.date,
+              location: f.location,
+              mode: f.mode,
+              ...(canCommand(s.me.roles, "event.start")
+                ? {
+                    settings: {
+                      ...s.settings,
+                      regulations_checked: f.regulations_checked,
+                      network_checked: f.network_checked,
+                      backup_checked: f.backup_checked,
+                      backup_directory: f.backup_directory,
+                      collective_tiebreak: f.collective_tiebreak,
+                    },
+                  }
+                : {}),
+            }).catch(() => {});
+          }}
+        >
+          <div className="form-grid">
+            <Field label="Nom">
+              <input
+                required
+                value={f.name}
+                onChange={(e) => setF({ ...f, name: e.target.value })}
+              />
+            </Field>
+            <Field label="Date">
+              <input
+                type="date"
+                required
+                value={f.date}
+                disabled={s.status !== "preparation"}
+                onChange={(e) => setF({ ...f, date: e.target.value })}
+              />
+            </Field>
+            <Field label="Lieu">
+              <input
+                value={f.location}
+                onChange={(e) => setF({ ...f, location: e.target.value })}
+              />
+            </Field>
+            <Field label="Mode">
+              <select
+                value={f.mode}
+                disabled={s.status !== "preparation"}
+                onChange={(e) => setF({ ...f, mode: e.target.value })}
+              >
+                <option value="national">
+                  National · classement officiel ivoirien
+                </option>
+                <option value="international">
+                  International · délégations approuvées
+                </option>
+              </select>
+            </Field>
+          </div>
+          {canCommand(s.me.roles, "event.start") && (
+            <>
+              {" "}
+              <Check
+                label="Le référentiel applicable et ses réserves ont été vérifiés par l’organisation"
+                value={f.regulations_checked}
+                onChange={(v) => setF({ ...f, regulations_checked: v })}
+              />
+              <Check
+                label="Réseau local et accès des appareils contrôlés"
+                value={f.network_checked}
+                onChange={(v) => setF({ ...f, network_checked: v })}
+              />
+              <Check
+                label="Sauvegarde de départ réalisée et contrôlée"
+                value={f.backup_checked}
+                onChange={(v) => setF({ ...f, backup_checked: v })}
+              />
+              <Field label="Dossier de sauvegarde sur l’ordinateur serveur">
+                <input
+                  value={f.backup_directory}
+                  onChange={(e) =>
+                    setF({ ...f, backup_directory: e.target.value })
+                  }
+                  placeholder="Chemin du dossier sur le support externe"
+                />
+                <small>
+                  Chemin du support raccordé à l’ordinateur serveur, pas à ce
+                  téléphone.
+                </small>
+              </Field>
+              <Field label="Critère collectif publié de départage">
+                <textarea
+                  required
+                  value={f.collective_tiebreak}
+                  onChange={(e) =>
+                    setF({ ...f, collective_tiebreak: e.target.value })
+                  }
+                />
+              </Field>
+            </>
+          )}{" "}
+          <div className="actions">
+            <button>Enregistrer l’événement</button>
+            <AsyncButton
+              allowed={canCommand(s.me.roles, "event.start")}
+              disabled={s.status !== "preparation"}
+              action={() => command("event.start")}
+            >
+              Démarrer la compétition
+            </AsyncButton>
+            <AsyncButton
+              allowed={canCommand(s.me.roles, "event.finish")}
+              className="ghost"
+              disabled={s.status !== "running"}
+              action={() => command("event.finish")}
+            >
+              Terminer la compétition
+            </AsyncButton>
+          </div>
+        </form>
+      ) : (
+        <Notice>Consultation uniquement pour votre rôle.</Notice>
+      )}
+      <Notice>
+        Référentiel : {s.rules_version || s.catalogue_version}. Le mode national
+        filtre les titres sur la nationalité CI, indépendamment du pays
+        représenté.
+      </Notice>
+    </Panel>
+  );
+}
+const personDefault = (): Entity => ({
+  id: uid(),
+  first_name: "",
+  last_name: "",
+  birth_date: "",
+  sex: "M",
+  nationalities: ["CI"],
+  country: "CI",
+  club: "",
+  section: "amateur",
+  status_approved: false,
+  delegation_approved: false,
+  organizer_approved: false,
+  licence_ok: false,
+  payment_ok: false,
+  minor_authorization: false,
+  height_cm: "",
+  weight_kg: "",
+  measurements_confirmed: false,
+  photo_consent: false,
+  photo_approved: false,
+  private_contact: "",
+  pronunciation: "",
+});
+function People({ s, command, refresh }: Props) {
+  const [person, setPerson] = useState<Entity>(personDefault);
+  const [category, setCategory] = useState("");
+  const [search, setSearch] = useState("");
+  const [eligibility, setEligibility] = useState<any>();
+  const [late, setLate] = useState(false);
+  const [entryConfirmed, setEntryConfirmed] = useState(false);
+  const [derogation, setDerogation] = useState("");
+  const [reason, setReason] = useState("");
+  const update = (k: string, v: any) => setPerson({ ...person, [k]: v });
+  const existing = s.people.some((p) => p.id === person.id);
+  return (
+    <>
+      <div className="split">
+        <Panel title={existing ? "Modifier une personne" : "Nouvelle personne"}>
+          <form
+            onSubmit={async (e) => {
+              e.preventDefault();
+              try {
+                if (late)
+                  await command("entry.late", {
+                    person,
+                    category_id: category,
+                    reason,
+                  });
+                else {
+                  await command("person.save", { person });
+                  if (category)
+                    await command("entry.save", {
+                      entry: {
+                        id: uid(),
+                        person_id: person.id,
+                        category_id: category,
+                        confirmed: entryConfirmed,
+                        bib: null,
+                      },
+                    });
+                }
+                setPerson(personDefault());
+                setCategory("");
+                setEligibility(undefined);
+              } catch {}
+            }}
+          >
+            <div className="form-grid">
+              {[
+                ["first_name", "Prénom"],
+                ["last_name", "Nom"],
+                ["birth_date", "Date de naissance"],
+                ["club", "Club"],
+                ["country", "Pays représenté"],
+                ["private_contact", "Contact privé"],
+                ["pronunciation", "Prononciation speaker"],
+              ].map(([k, label]) => (
+                <Field label={label} key={k}>
+                  <input
+                    required={[
+                      "first_name",
+                      "last_name",
+                      "birth_date",
+                    ].includes(k)}
+                    type={k === "birth_date" ? "date" : "text"}
+                    value={person[k] || ""}
+                    onChange={(e) => update(k, e.target.value)}
+                  />
+                </Field>
+              ))}
+              <Field label="Nationalités (codes séparés par virgule)">
+                <input
+                  value={person.nationalities?.join(", ")}
+                  onChange={(e) =>
+                    update(
+                      "nationalities",
+                      e.target.value
+                        .toUpperCase()
+                        .split(",")
+                        .map((x) => x.trim()),
+                    )
+                  }
+                />
+              </Field>
+              <Field label="Sexe">
+                <select
+                  value={person.sex}
+                  onChange={(e) => update("sex", e.target.value)}
+                >
+                  <option value="M">Homme</option>
+                  <option value="F">Femme</option>
+                </select>
+              </Field>
+              <Field label="Section">
+                <select
+                  value={person.section}
+                  onChange={(e) => update("section", e.target.value)}
+                >
+                  <option value="amateur">Amateur</option>
+                  <option value="pro">Professionnel</option>
+                </select>
+              </Field>
+            </div>
+            <div className="checks">
+              {[
+                ["status_approved", "Statut approuvé"],
+                ["licence_ok", "Licence contrôlée"],
+                ["payment_ok", "Paiement reçu"],
+                ["minor_authorization", "Autorisation du mineur"],
+                [
+                  "crossover_approved",
+                  "Crossover Junior/Masters vers Senior autorisé par le chef",
+                ],
+                ["delegation_approved", "Délégation approuvée"],
+                ["organizer_approved", "Organisation approuvée"],
+              ].map(([k, label]) => (
+                <Check
+                  key={k}
+                  label={label}
+                  value={person[k]}
+                  onChange={(v) => update(k, v)}
+                />
+              ))}
+            </div>
+            <Field label="Ajouter une inscription">
+              <select
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+              >
+                <option value="">Aucune nouvelle inscription</option>
+                {s.categories
+                  .filter((c) => !c.archived)
+                  .map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name} · {labels[c.section]}
+                    </option>
+                  ))}
+              </select>
+            </Field>
+            <Check
+              label="Confirmer cette nouvelle inscription (contrôles et mesures requis)"
+              value={entryConfirmed}
+              onChange={setEntryConfirmed}
+            />
+            {s.bibs_distributed && canCommand(s.me.roles, "entry.late") && (
+              <>
+                <Check
+                  label="Inscription tardive (motif obligatoire)"
+                  value={late}
+                  onChange={setLate}
+                />
+                {late && (
+                  <Field label="Motif">
+                    <input
+                      required
+                      value={reason}
+                      onChange={(e) => setReason(e.target.value)}
+                    />
+                  </Field>
+                )}
+              </>
+            )}
+            <div className="actions">
+              <button>Enregistrer</button>
+              <button
+                type="button"
+                className="ghost"
+                onClick={() => {
+                  setPerson(personDefault());
+                  setEligibility(undefined);
+                }}
+              >
+                Nouvelle fiche
+              </button>
+              {existing && (
+                <button
+                  type="button"
+                  className="ghost"
+                  onClick={() =>
+                    api("/eligibility/" + person.id)
+                      .then(setEligibility)
+                      .catch((e) => setEligibility({ erreur: e.message }))
+                  }
+                >
+                  Vérifier les catégories proposées
+                </button>
+              )}
+            </div>
+          </form>
+          {eligibility && (
+            <JsonDetails
+              label="Propositions et motifs du référentiel"
+              data={eligibility}
+            />
+          )}{" "}
+          {existing && (
+            <>
+              <h3>Inscriptions de cette personne</h3>
+              <p className="muted">
+                Confirmez après les contrôles et les mesures. Déconfirmez avant
+                une correction incompatible.
+              </p>
+              {s.me.roles.includes("chief") && (
+                <Field label="Motif de dérogation, réservé au chef (facultatif)">
+                  <input
+                    value={derogation}
+                    onChange={(e) => setDerogation(e.target.value)}
+                  />
+                </Field>
+              )}
+              {s.entries
+                .filter((e) => e.person_id === person.id)
+                .map((entry) => (
+                  <div className="entry-row" key={entry.id}>
+                    <strong>
+                      {
+                        s.categories.find((c) => c.id === entry.category_id)
+                          ?.name
+                      }
+                    </strong>
+                    <small>
+                      {entry.bib ? "N° " + entry.bib : "Sans dossard"} ·{" "}
+                      {entry.confirmed
+                        ? "Inscription confirmée"
+                        : "À contrôler"}
+                    </small>
+                    <AsyncButton
+                      allowed={canCommand(s.me.roles, "entry.save")}
+                      className="ghost"
+                      action={() =>
+                        command("entry.save", {
+                          entry: {
+                            ...entry,
+                            confirmed: !entry.confirmed,
+                            derogation: derogation
+                              ? { reason: derogation }
+                              : entry.derogation,
+                          },
+                        })
+                      }
+                    >
+                      {entry.confirmed
+                        ? "Déconfirmer"
+                        : "Confirmer l’inscription"}
+                    </AsyncButton>
+                  </div>
+                ))}
+            </>
+          )}{" "}
+          {existing && (
+            <PhotoUpload owner={person} ownerType="person" refresh={refresh} />
+          )}
+        </Panel>
+        <Panel title={`${s.people.length} personnes`}>
+          <Field label="Rechercher">
+            <input
+              type="search"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Nom, club…"
+            />
+          </Field>
+          <div className="person-list">
+            {s.people
+              .filter((p) =>
+                (personName(p) + " " + p.club)
+                  .toLowerCase()
+                  .includes(search.toLowerCase()),
+              )
+              .map((p) => (
+                <button
+                  key={p.id}
+                  className="person-row ghost"
+                  onClick={() => {
+                    setPerson({ ...personDefault(), ...p });
+                    setEligibility(undefined);
+                    setCategory("");
+                  }}
+                >
+                  <span className="avatar">
+                    {p.photo_portrait ? (
+                      <img src={"/api/v1/photos/" + p.photo_portrait} alt="" />
+                    ) : (
+                      p.first_name?.[0]
+                    )}
+                  </span>
+                  <span>
+                    <strong>{personName(p)}</strong>
+                    <small>
+                      {p.club || "Sans club"} · {p.country} ·{" "}
+                      {labels[p.section]}
+                    </small>
+                    <small>
+                      {s.entries
+                        .filter((e) => e.person_id === p.id)
+                        .map(
+                          (e) =>
+                            `${e.bib ? "N° " + e.bib : "Sans dossard"} ${s.categories.find((c) => c.id === e.category_id)?.name}`,
+                        )
+                        .join(" / ") || "Sans inscription"}
+                    </small>
+                  </span>
+                </button>
+              ))}
+          </div>
+        </Panel>
+      </div>
+      <ImportPanel refresh={refresh} />
+      <BatchPhotos s={s} refresh={refresh} />
+    </>
+  );
+}
+function Measures({ s, command }: Props) {
+  const [edited, setEdited] = useState<
+    Record<string, { height_cm: string; weight_kg: string }>
+  >({});
+  return (
+    <Panel title="Contrôle des tailles et des poids">
+      <Notice>
+        Les mesures sont contrôlées et confirmées ensemble. Les propositions du
+        référentiel ne remplacent pas l’admission par l’organisation.
+      </Notice>
+      <DataTable
+        columns={["Athlète", "Taille (cm)", "Poids (kg)", "Contrôle"]}
+        rows={s.people.map((p) => {
+          const f = edited[p.id] || {
+            height_cm: p.height_cm || "",
+            weight_kg: p.weight_kg || "",
+          };
+          return [
+            <strong>{personName(p)}</strong>,
+            <input
+              aria-label={"Taille de " + personName(p)}
+              inputMode="decimal"
+              value={f.height_cm}
+              onChange={(e) =>
+                setEdited({
+                  ...edited,
+                  [p.id]: { ...f, height_cm: e.target.value },
+                })
+              }
+            />,
+            <input
+              aria-label={"Poids de " + personName(p)}
+              inputMode="decimal"
+              value={f.weight_kg}
+              onChange={(e) =>
+                setEdited({
+                  ...edited,
+                  [p.id]: { ...f, weight_kg: e.target.value },
+                })
+              }
+            />,
+            <>
+              <Status
+                value={p.measurements_confirmed ? "Contrôlé" : "À contrôler"}
+              />
+              <AsyncButton
+                allowed={canCommand(s.me.roles, "measurement.save")}
+                action={() =>
+                  command("measurement.save", { person_id: p.id, ...f })
+                }
+              >
+                Confirmer
+              </AsyncButton>
+            </>,
+          ];
+        })}
+      />
+    </Panel>
+  );
+}
+function Categories({ s, command }: Props) {
+  const [catalogue, setCatalogue] = useState<any>({ rules: [] });
+  useEffect(() => {
+    api("/catalogue")
+      .then(setCatalogue)
+      .catch(() => {});
+  }, []);
+  const [cat, setCat] = useState<Entity>({
+    id: uid(),
+    name: "",
+    discipline: "bodybuilding",
+    sex: "M",
+    section: "amateur",
+    division: "senior",
+    rule_id: "",
+    quota: 6,
+    elimination_quota: 15,
+    order: s.categories.length,
+    entry_ids: [],
+    merged_from: [],
+    archived: false,
+  });
+  const [merge, setMerge] = useState<string[]>([]);
+  const [mergeName, setMergeName] = useState("");
+  return (
+    <div className="split">
+      <Panel title="Catégorie et référentiel">
+        {canCommand(s.me.roles, "category.save") ? (
+          <form
+            onSubmit={async (e) => {
+              e.preventDefault();
+              await command("category.save", { category: cat }).catch(() => {});
+            }}
+          >
+            <Field label="Règle du catalogue">
+              <select
+                required
+                value={cat.rule_id}
+                onChange={(e) => {
+                  const rule = catalogue.rules.find(
+                    (r: any) => r.id === e.target.value,
+                  );
+                  if (rule)
+                    setCat({
+                      ...cat,
+                      rule_id: rule.id,
+                      name: rule.name,
+                      discipline: rule.discipline,
+                      sex: rule.sex,
+                      division: rule.division,
+                      age_min: rule.age_min,
+                      age_max: rule.age_max,
+                    });
+                }}
+              >
+                <option value="">Choisir une règle vérifiable…</option>
+                {(catalogue.rules || []).map((r: any) => (
+                  <option key={r.id} value={r.id}>
+                    {r.name} · {r.division} · {r.id}
+                  </option>
+                ))}
+              </select>
+            </Field>
+            <div className="form-grid">
+              <Field label="Nom affiché">
+                <input
+                  required
+                  value={cat.name}
+                  onChange={(e) => setCat({ ...cat, name: e.target.value })}
+                />
+              </Field>
+              <Field label="Section">
+                <select
+                  value={cat.section}
+                  onChange={(e) => setCat({ ...cat, section: e.target.value })}
+                >
+                  <option value="amateur">Amateur</option>
+                  <option value="pro">Professionnel</option>
+                </select>
+              </Field>
+              <Field label="Première phase">
+                <select
+                  value={cat.phase_override || ""}
+                  onChange={(e) =>
+                    setCat({ ...cat, phase_override: e.target.value || null })
+                  }
+                >
+                  <option value="">Automatique selon l’effectif</option>
+                  <option value="elimination">Éliminatoires</option>
+                  <option value="semi">Demi-finale</option>
+                  <option value="final">Finale directe</option>
+                </select>
+              </Field>
+              <Field label="Places en finale">
+                <input
+                  type="number"
+                  min="1"
+                  value={cat.quota}
+                  onChange={(e) =>
+                    setCat({ ...cat, quota: Number(e.target.value) })
+                  }
+                />
+              </Field>
+              <Field label="Quota éliminatoire">
+                <input
+                  type="number"
+                  min="1"
+                  value={cat.elimination_quota}
+                  onChange={(e) =>
+                    setCat({
+                      ...cat,
+                      elimination_quota: Number(e.target.value),
+                    })
+                  }
+                />
+              </Field>
+            </div>
+            <div className="actions">
+              <button>Enregistrer la catégorie</button>
+              <button
+                className="ghost"
+                type="button"
+                onClick={() =>
+                  setCat({
+                    ...cat,
+                    id: uid(),
+                    name: "",
+                    entry_ids: [],
+                    merged_from: [],
+                  })
+                }
+              >
+                Nouvelle catégorie
+              </button>
+            </div>
+          </form>
+        ) : (
+          <Notice>Consultation uniquement pour votre rôle.</Notice>
+        )}
+        <small>
+          Catalogue {catalogue.version}. {catalogue.scope}
+        </small>
+      </Panel>
+      <Panel title="Catégories engagées">
+        <DataTable
+          columns={["Catégorie", "Inscrits", "Action"]}
+          rows={s.categories
+            .filter((c) => !c.archived)
+            .map((c) => [
+              <>
+                <strong>{c.name}</strong>
+                <small>
+                  {labels[c.section]} · {c.division}
+                </small>
+              </>,
+              s.entries.filter((e) => e.category_id === c.id).length,
+              <button className="ghost" onClick={() => setCat(c)}>
+                Modifier
+              </button>,
+            ])}
+        />
+        <Multi
+          title="Fusion avant attribution des dossards"
+          items={s.categories.filter((c) => !c.archived)}
+          value={merge}
+          onChange={setMerge}
+        />
+        <Field label="Nom de la catégorie fusionnée">
+          <input
+            value={mergeName}
+            onChange={(e) => setMergeName(e.target.value)}
+          />
+        </Field>
+        <AsyncButton
+          allowed={canCommand(s.me.roles, "category.fuse")}
+          disabled={s.bibs_distributed || merge.length < 2 || !mergeName}
+          action={() =>
+            command("category.fuse", { category_ids: merge, name: mergeName })
+          }
+        >
+          Fusionner les catégories sélectionnées
+        </AsyncButton>
+      </Panel>
+    </div>
+  );
+}
+function Programme({ s, command }: Props) {
+  const cats = [...s.categories]
+    .filter((c) => !c.archived)
+    .sort((a, b) => a.order - b.order);
+  async function move(index: number, delta: number) {
+    const ids = cats.map((c) => c.id);
+    [ids[index], ids[index + delta]] = [ids[index + delta], ids[index]];
+    await command("programme.reorder", { category_ids: ids });
+  }
+  return (
+    <>
+      <Panel
+        title="Ordre de passage"
+        actions={
+          <div className="actions">
+            <AsyncButton
+              allowed={canCommand(s.me.roles, "bibs.assign")}
+              disabled={s.bibs_distributed}
+              action={() => command("bibs.assign")}
+            >
+              Attribuer les dossards
+            </AsyncButton>
+            <AsyncButton
+              allowed={canCommand(s.me.roles, "programme.generate")}
+              action={() => command("programme.generate")}
+            >
+              Générer les manches
+            </AsyncButton>
+          </div>
+        }
+      >
+        <DataTable
+          columns={["Ordre", "Catégorie", "Inscrits", "Déplacer"]}
+          rows={cats.map((c, i) => [
+            i + 1,
+            <>
+              <strong>{c.name}</strong>
+              <small>{labels[c.section]}</small>
+            </>,
+            s.entries.filter((e) => e.category_id === c.id).length,
+            <div className="actions">
+              <AsyncButton
+                className="ghost"
+                disabled={i === 0}
+                allowed={canCommand(s.me.roles, "programme.reorder")}
+                action={() => move(i, -1)}
+              >
+                ↑
+              </AsyncButton>
+              <AsyncButton
+                className="ghost"
+                disabled={i === cats.length - 1}
+                allowed={canCommand(s.me.roles, "programme.reorder")}
+                action={() => move(i, 1)}
+              >
+                ↓
+              </AsyncButton>
+            </div>,
+          ])}
+        />
+      </Panel>
+      <Panel title="Manches prévues">
+        <DataTable
+          columns={["Catégorie", "Phase", "Athlètes", "État"]}
+          rows={s.rounds.map((r) => [
+            s.categories.find((c) => c.id === r.category_id)?.name,
+            labels[r.phase],
+            r.participant_ids.length,
+            <Status value={r.status} />,
+          ])}
+        />
+      </Panel>
+    </>
+  );
+}
+function Officials({ s, command, refresh }: Props) {
+  const blank = () => ({
+    id: uid(),
+    first_name: "",
+    last_name: "",
+    post: "",
+    organization: "",
+    country: "CI",
+    pedigree: "",
+    photo_id: null,
+    photo_consent: false,
+    photo_approved: false,
+  });
+  const [f, setF] = useState<Entity>(blank);
+  return (
+    <div className="split">
+      <Panel title="Profil officiel">
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            command("official.save", { official: f }).catch(() => {});
+          }}
+        >
+          <div className="form-grid">
+            {[
+              ["first_name", "Prénom"],
+              ["last_name", "Nom"],
+              ["post", "Fonction"],
+              ["organization", "Organisation"],
+              ["country", "Pays"],
+            ].map(([k, label]) => (
+              <Field key={k} label={label}>
+                <input
+                  required={k === "last_name"}
+                  value={f[k]}
+                  onChange={(e) => setF({ ...f, [k]: e.target.value })}
+                />
+              </Field>
+            ))}
+          </div>
+          <Field label="Parcours et présentation">
+            <textarea
+              value={f.pedigree}
+              onChange={(e) => setF({ ...f, pedigree: e.target.value })}
+            />
+          </Field>
+          <div className="actions">
+            <button>Enregistrer le profil</button>
+            <button
+              type="button"
+              className="ghost"
+              onClick={() => setF(blank())}
+            >
+              Nouveau profil
+            </button>
+          </div>
+        </form>
+        {s.officials.some((o) => o.id === f.id) && (
+          <PhotoUpload
+            owner={s.officials.find((o) => o.id === f.id)!}
+            ownerType="official"
+            refresh={refresh}
+          />
+        )}
+      </Panel>
+      <Panel title="Personnalités et officiels">
+        <div className="official-grid">
+          {s.officials.map((o) => (
+            <button
+              className="official-card ghost"
+              key={o.id}
+              onClick={() => setF(o)}
+            >
+              {o.photo_id ? (
+                <img src={"/api/v1/photos/" + o.photo_id} alt="" />
+              ) : (
+                <div className="photo-empty">FIBDA</div>
+              )}
+              <strong>{personName(o)}</strong>
+              <span>{o.post}</span>
+              <small>
+                {o.organization} ·{" "}
+                {o.photo_approved ? "Photo approuvée" : "Photo à contrôler"}
+              </small>
+            </button>
+          ))}
+        </div>
+      </Panel>
+    </div>
+  );
+}
+function Jury({ s, command }: Props) {
+  const [name, setName] = useState(""),
+    [code, setCode] = useState(""),
+    [roles, setRoles] = useState<string[]>(["judge"]);
+  const [panel, setPanel] = useState<string[]>(s.jury?.panel || []),
+    [trainees, setTrainees] = useState<string[]>(s.jury?.trainees || []),
+    [withdrawal, setWithdrawal] = useState<string>(
+      (s.jury?.withdrawal_order || []).join(","),
+    );
+  return (
+    <>
+      <div className="split">
+        <Panel title="Inviter un membre">
+          {canCommand(s.me.roles, "user.invite") ? (
+            <form
+              onSubmit={async (e) => {
+                e.preventDefault();
+                try {
+                  await command("user.invite", { name, code, roles });
+                  setCode("");
+                  setName("");
+                } catch {}
+              }}
+            >
+              <Field label="Nom">
+                <input
+                  required
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                />
+              </Field>
+              <Field label="Code personnel">
+                <input
+                  required
+                  type="password"
+                  autoComplete="new-password"
+                  minLength={4}
+                  value={code}
+                  onChange={(e) => setCode(e.target.value)}
+                />
+              </Field>
+              <Multi
+                title="Rôles"
+                items={Object.keys(labels)
+                  .filter((k) =>
+                    [
+                      "chief",
+                      "responsable",
+                      "director",
+                      "judge",
+                      "trainee",
+                      "secretariat",
+                      "regie",
+                      "speaker",
+                      "commission",
+                    ].includes(k),
+                  )
+                  .filter(
+                    (id) =>
+                      s.me.roles.includes("chief") ||
+                      !["chief", "responsable", "director"].includes(id),
+                  )
+                  .map((id) => ({ id, name: labels[id] }))}
+                value={roles}
+                onChange={setRoles}
+              />
+              <button>Créer l’accès</button>
+            </form>
+          ) : (
+            <Notice>Consultation uniquement pour votre rôle.</Notice>
+          )}
+        </Panel>
+        <Panel title="Accès et approbations">
+          <DataTable
+            columns={["Membre", "Rôles", "État"]}
+            rows={s.users.map((u) => [
+              u.name,
+              u.roles.map((r: string) => labels[r]).join(", "),
+              u.approved ? (
+                <Status value="Approuvé" />
+              ) : (
+                <AsyncButton
+                  allowed={canCommand(s.me.roles, "user.approve")}
+                  action={() => command("user.approve", { user_id: u.id })}
+                >
+                  Approuver
+                </AsyncButton>
+              ),
+            ])}
+          />
+        </Panel>
+      </div>
+      <Panel title="Composition du jury">
+        <Notice>
+          5, 7, 9 ou 11 juges officiels, chef inclus. Un directeur ne vote pas,
+          même s’il possède un autre rôle.
+        </Notice>
+        <Multi
+          title="Juges officiels"
+          items={s.users.filter(
+            (u) =>
+              u.approved &&
+              !u.roles.includes("director") &&
+              !u.roles.includes("trainee") &&
+              (u.roles.includes("judge") ||
+                u.roles.includes("chief") ||
+                u.roles.includes("responsable")),
+          )}
+          value={panel}
+          onChange={setPanel}
+        />
+        <Multi
+          title="Stagiaires, hors calcul des résultats"
+          items={s.users.filter(
+            (u) => u.approved && u.roles.includes("trainee"),
+          )}
+          value={trainees}
+          onChange={setTrainees}
+        />
+        <Field
+          label="Ordre de retrait des juges"
+          hint="Sélectionnez l’ordre ci-dessous. Le serveur contrôle la composition et les retraits."
+        >
+          <select
+            value=""
+            onChange={(e) =>
+              setWithdrawal((v) =>
+                v ? `${v},${e.target.value}` : e.target.value,
+              )
+            }
+          >
+            <option value="">Ajouter un juge à l’ordre de retrait…</option>
+            {panel
+              .filter((id) => !withdrawal.split(",").includes(id))
+              .map((id) => (
+                <option key={id} value={id}>
+                  {s.users.find((u) => u.id === id)?.name}
+                </option>
+              ))}
+          </select>
+        </Field>
+        <p>
+          {withdrawal
+            .split(",")
+            .filter(Boolean)
+            .map((id) => s.users.find((u) => u.id === id)?.name)
+            .join(" → ") || "Aucun ordre défini"}
+        </p>
+        <div className="actions">
+          <button className="ghost" onClick={() => setWithdrawal("")}>
+            Recommencer l’ordre
+          </button>
+          <AsyncButton
+            allowed={canCommand(s.me.roles, "jury.configure")}
+            action={() =>
+              command("jury.configure", {
+                panel,
+                trainees,
+                withdrawal_order: withdrawal.split(",").filter(Boolean),
+              })
+            }
+          >
+            Enregistrer le jury
+          </AsyncButton>
+        </div>
+      </Panel>
+    </>
+  );
+}
+export function PhotoUpload({
+  owner,
+  ownerType,
+  refresh,
+}: {
+  owner: Entity;
+  ownerType: string;
+  refresh: () => Promise<void>;
+}) {
+  const [kind, setKind] = useState("portrait"),
+    [file, setFile] = useState<File>(),
+    [error, setError] = useState(""),
+    [uploaded, setUploaded] = useState(""),
+    [consent, setConsent] = useState(false);
+  const [preview, setPreview] = useState("");
+  const [cropEnabled, setCropEnabled] = useState(false);
+  const [bounds, setBounds] = useState([0, 0, 100, 100]);
+  const [dimensions, setDimensions] = useState([0, 0]);
+  useEffect(() => {
+    setUploaded("");
+    setConsent(false);
+    setFile(undefined);
+  }, [owner.id]);
+  useEffect(() => {
+    setBounds([0, 0, 100, 100]);
+    setCropEnabled(false);
+    setDimensions([0, 0]);
+    setConsent(false);
+    if (!file) {
+      setPreview("");
+      return;
+    }
+    const url = URL.createObjectURL(file);
+    setPreview(url);
+    return () => URL.revokeObjectURL(url);
+  }, [file]);
+  const photo =
+    uploaded ||
+    (ownerType === "official"
+      ? owner.photo_id
+      : owner[kind === "portrait" ? "photo_portrait" : "photo_full"]);
+  return (
+    <section className="photo-upload">
+      <h3>Photographie et droit de diffusion</h3>
+      <div className="form-grid">
+        <Field label="Type">
+          <select
+            value={kind}
+            onChange={(e) => {
+              setKind(e.target.value);
+              setUploaded("");
+              setConsent(false);
+            }}
+          >
+            <option value="portrait">Portrait</option>
+            {ownerType === "person" && <option value="full">Plein pied</option>}
+          </select>
+        </Field>
+        <Field label="Fichier image">
+          <input
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            onChange={(e) => setFile(e.target.files?.[0])}
+          />
+        </Field>
+      </div>
+      {preview && (
+        <>
+          <div className="crop-preview">
+            <img
+              src={preview}
+              alt="Photo originale sélectionnée"
+              onLoad={(e) =>
+                setDimensions([
+                  e.currentTarget.naturalWidth,
+                  e.currentTarget.naturalHeight,
+                ])
+              }
+            />
+            {cropEnabled && (
+              <div
+                className="crop-frame"
+                style={{
+                  left: bounds[0] + "%",
+                  top: bounds[1] + "%",
+                  width: bounds[2] - bounds[0] + "%",
+                  height: bounds[3] - bounds[1] + "%",
+                }}
+              />
+            )}
+          </div>
+          <Check
+            label="Recadrer avant l’import"
+            value={cropEnabled}
+            onChange={setCropEnabled}
+          />
+          {cropEnabled && (
+            <div className="form-grid">
+              {[
+                "Bord gauche (%)",
+                "Bord haut (%)",
+                "Bord droit (%)",
+                "Bord bas (%)",
+              ].map((label, index) => (
+                <Field key={index} label={label}>
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    value={bounds[index]}
+                    onChange={(e) =>
+                      setBounds(
+                        bounds.map((b, n) =>
+                          n === index ? Number(e.target.value) : b,
+                        ),
+                      )
+                    }
+                  />
+                </Field>
+              ))}
+            </div>
+          )}
+          <small>
+            Image originale : {dimensions[0]} × {dimensions[1]} pixels. Le cadre
+            vert délimite la zone conservée.
+          </small>
+        </>
+      )}
+      <AsyncButton
+        disabled={
+          !file ||
+          (cropEnabled &&
+            (dimensions.some((x) => x <= 0) ||
+              bounds[0] >= bounds[2] ||
+              bounds[1] >= bounds[3] ||
+              bounds.some((x) => x < 0 || x > 100)))
+        }
+        action={async () => {
+          try {
+            const fd = new FormData();
+            fd.append("file", file!);
+            if (cropEnabled)
+              fd.append(
+                "crop",
+                JSON.stringify(
+                  bounds.map((value, index) =>
+                    Math.round((value / 100) * dimensions[index % 2]),
+                  ),
+                ),
+              );
+            fd.append("owner_type", ownerType);
+            fd.append("owner_id", owner.id);
+            fd.append("kind", kind);
+            const r = await api("/photos", { method: "POST", body: fd });
+            setUploaded(r.id || r.photo_id);
+            await refresh();
+            setError("");
+          } catch (e) {
+            setError((e as Error).message);
+          }
+        }}
+      >
+        Importer la photo
+      </AsyncButton>
+      {photo && (
+        <>
+          <img
+            className="photo-preview"
+            src={"/api/v1/photos/" + photo}
+            alt="Photo à contrôler"
+          />
+          <Check
+            label="Consentement de diffusion recueilli et photo vérifiée"
+            value={consent}
+            onChange={setConsent}
+          />
+          <AsyncButton
+            disabled={!consent}
+            action={async () => {
+              try {
+                await post("/photos/" + photo + "/approve", { consent: true });
+                await refresh();
+                setError("");
+              } catch (e) {
+                setError((e as Error).message);
+              }
+            }}
+          >
+            Autoriser la diffusion publique
+          </AsyncButton>
+        </>
+      )}
+      {error && <Notice kind="error">{error}</Notice>}
+    </section>
+  );
+}
+function ImportPanel({ refresh }: { refresh: () => Promise<void> }) {
+  const [file, setFile] = useState<File>(),
+    [preview, setPreview] = useState<any>(),
+    [error, setError] = useState("");
+  return (
+    <Panel title="Importer des inscriptions">
+      <Field label="Fichier CSV ou XLSX">
+        <input
+          type="file"
+          accept=".csv,.xlsx"
+          onChange={(e) => {
+            setFile(e.target.files?.[0]);
+            setPreview(undefined);
+          }}
+        />
+      </Field>
+      <div className="actions">
+        <AsyncButton
+          disabled={!file}
+          action={async () => {
+            try {
+              const fd = new FormData();
+              fd.append("file", file!);
+              setPreview(
+                await api("/imports/preview", { method: "POST", body: fd }),
+              );
+              setError("");
+            } catch (e) {
+              setError((e as Error).message);
+            }
+          }}
+        >
+          Contrôler avant import
+        </AsyncButton>
+        {preview && (
+          <AsyncButton
+            action={async () => {
+              try {
+                await post("/imports/commit", {
+                  preview_id: preview.preview_id || preview.id,
+                });
+                await refresh();
+                setPreview(undefined);
+              } catch (e) {
+                setError((e as Error).message);
+              }
+            }}
+          >
+            Confirmer cet import
+          </AsyncButton>
+        )}
+      </div>
+      {preview && (
+        <JsonDetails
+          label="Prévisualisation, erreurs et lignes détectées"
+          data={preview}
+        />
+      )}{" "}
+      {error && <Notice kind="error">{error}</Notice>}
+    </Panel>
+  );
+}
+export function Documents({ s, refresh }: Props) {
+  const [cat, setCat] = useState(""),
+    [round, setRound] = useState(""),
+    [judge, setJudge] = useState(""),
+    [error, setError] = useState(""),
+    [backup, setBackup] = useState<File>(),
+    [confirm, setConfirm] = useState(false);
+  const personalOnly = !s.me.roles.some((role: string) =>
+    ["chief", "responsable", "director", "secretariat", "commission"].includes(
+      role,
+    ),
+  );
+  const query = new URLSearchParams({
+    category_id: cat,
+    round_id: round,
+    judge_id: personalOnly ? s.me.id : judge,
+  });
+  const kinds: Record<string, string> = {
+    blank: "Bulletins vierges",
+    ballot: "Bulletin individuel",
+    recap: "Récapitulatif jury",
+    registrations: "Inscriptions",
+    programme: "Programme",
+    measures: "Mesures",
+    results: "Résultats",
+    rewards: "Récompenses",
+    diploma: "Diplôme",
+    exams: "Examen des stagiaires",
+    officials: "Officiels",
+  };
+  return (
+    <>
+      <Panel title="Impressions et exports">
+        <div className="form-grid">
+          <Field label="Catégorie">
+            <select value={cat} onChange={(e) => setCat(e.target.value)}>
+              <option value="">Toutes les catégories</option>
+              {s.categories.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field label="Manche">
+            <select value={round} onChange={(e) => setRound(e.target.value)}>
+              <option value="">Toutes les manches</option>
+              {s.rounds.map((r) => (
+                <option key={r.id} value={r.id}>
+                  {s.categories.find((c) => c.id === r.category_id)?.name} ·{" "}
+                  {labels[r.phase]}
+                </option>
+              ))}
+            </select>
+          </Field>
+          {!personalOnly && (
+            <Field label="Juge">
+              <select value={judge} onChange={(e) => setJudge(e.target.value)}>
+                <option value="">Tous les juges</option>
+                {s.users.map((u) => (
+                  <option key={u.id} value={u.id}>
+                    {u.name}
+                  </option>
+                ))}
+              </select>
+            </Field>
+          )}
+        </div>
+        <div className="document-grid">
+          {Object.entries(kinds)
+            .filter(
+              ([kind]) =>
+                !personalOnly || ["blank", "ballot", "exams"].includes(kind),
+            )
+            .map(([k, label]) => (
+              <a
+                className="document-link"
+                key={k}
+                href={`/api/v1/print/${k}?${query}`}
+                target="_blank"
+                rel="noreferrer"
+              >
+                <span>↗</span>
+                {label}
+                <small>Ouvrir la version imprimable</small>
+              </a>
+            ))}
+        </div>
+        <div className="actions">
+          {!personalOnly &&
+            ["csv", "xlsx", "pdf"].map((format) => (
+              <a
+                className="button ghost"
+                key={format}
+                href={`/api/v1/export/results?format=${format}&${query}`}
+              >
+                Résultats {format.toUpperCase()}
+              </a>
+            ))}
+        </div>
+      </Panel>
+      {(s.me.roles.includes("chief") || s.me.roles.includes("director")) && (
+        <Panel title="Sauvegarde et restauration">
+          <Notice>
+            Une restauration remplace l’événement actif, conserve une copie
+            serveur de l’état précédent et déconnecte tous les appareils. Les
+            anciens brouillons ne seront pas réutilisés.
+          </Notice>
+          <AsyncButton
+            action={async () => {
+              try {
+                await download("/backup", "fibda-sauvegarde.zip", "POST");
+              } catch (e) {
+                setError((e as Error).message);
+              }
+            }}
+          >
+            Télécharger une sauvegarde complète
+          </AsyncButton>
+          <Field label="Sauvegarde ZIP à restaurer">
+            <input
+              type="file"
+              accept=".zip"
+              onChange={(e) => {
+                setBackup(e.target.files?.[0]);
+                setConfirm(false);
+              }}
+            />
+          </Field>
+          <Check
+            label="Je confirme le remplacement de l’événement et la déconnexion des appareils"
+            value={confirm}
+            onChange={setConfirm}
+          />
+          <AsyncButton
+            disabled={!backup || !confirm}
+            action={async () => {
+              try {
+                const fd = new FormData();
+                fd.append("file", backup!);
+                await api("/restore", { method: "POST", body: fd });
+                await refresh();
+                location.reload();
+              } catch (e) {
+                setError((e as Error).message);
+              }
+            }}
+          >
+            Restaurer cette sauvegarde
+          </AsyncButton>
+          {error && <Notice kind="error">{error}</Notice>}
+        </Panel>
+      )}
+    </>
+  );
+}
+function BatchPhotos({
+  s,
+  refresh,
+}: {
+  s: State;
+  refresh: () => Promise<void>;
+}) {
+  const [file, setFile] = useState<File>();
+  const [rows, setRows] = useState<
+    Array<{
+      filename: string;
+      owner_type: string;
+      owner_id: string;
+      kind: string;
+    }>
+  >([{ filename: "", owner_type: "person", owner_id: "", kind: "portrait" }]);
+  const [error, setError] = useState(""),
+    [done, setDone] = useState("");
+  function edit(i: number, key: string, value: string) {
+    setRows(rows.map((r, n) => (n === i ? { ...r, [key]: value } : r)));
+  }
+  return (
+    <Panel title="Importer un lot de photographies">
+      <p>
+        Associez explicitement chaque nom de fichier dans l’archive à sa
+        personne. L’import n’autorise pas la diffusion : contrôlez ensuite
+        chaque photo et son consentement sur la fiche individuelle.
+      </p>
+      <Field label="Archive ZIP">
+        <input
+          type="file"
+          accept=".zip"
+          onChange={(e) => setFile(e.target.files?.[0])}
+        />
+      </Field>
+      {rows.map((r, i) => (
+        <div className="batch-row" key={i}>
+          <Field label="Nom exact dans le ZIP">
+            <input
+              placeholder="portraits/athlete.jpg"
+              value={r.filename}
+              onChange={(e) => edit(i, "filename", e.target.value)}
+            />
+          </Field>
+          <Field label="Profil">
+            <select
+              value={r.owner_type}
+              onChange={(e) => {
+                setRows(
+                  rows.map((x, n) =>
+                    n === i
+                      ? { ...x, owner_type: e.target.value, owner_id: "" }
+                      : x,
+                  ),
+                );
+              }}
+            >
+              <option value="person">Athlète</option>
+              <option value="official">Officiel</option>
+            </select>
+          </Field>
+          <Field label="Personne">
+            <select
+              value={r.owner_id}
+              onChange={(e) => edit(i, "owner_id", e.target.value)}
+            >
+              <option value="">Choisir…</option>
+              {(r.owner_type === "person" ? s.people : s.officials).map((p) => (
+                <option key={p.id} value={p.id}>
+                  {personName(p)}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field label="Photo">
+            <select
+              value={r.kind}
+              onChange={(e) => edit(i, "kind", e.target.value)}
+            >
+              <option value="portrait">Portrait</option>
+              <option value="full">Plein pied</option>
+            </select>
+          </Field>
+          <button
+            className="ghost"
+            disabled={rows.length === 1}
+            onClick={() => setRows(rows.filter((_, n) => n !== i))}
+          >
+            Retirer
+          </button>
+        </div>
+      ))}
+      <div className="actions">
+        <button
+          className="ghost"
+          onClick={() =>
+            setRows([
+              ...rows,
+              {
+                filename: "",
+                owner_type: "person",
+                owner_id: "",
+                kind: "portrait",
+              },
+            ])
+          }
+        >
+          Ajouter une association
+        </button>
+        <AsyncButton
+          disabled={!file || rows.some((r) => !r.owner_id || !r.filename)}
+          action={async () => {
+            try {
+              const fd = new FormData();
+              fd.append("file", file!);
+              fd.append("mappings", JSON.stringify(rows));
+              const result = await api("/photos/batch", {
+                method: "POST",
+                body: fd,
+              });
+              await refresh();
+              setDone(
+                `${result.ids.length} photos importées, à approuver individuellement.`,
+              );
+              setError("");
+            } catch (e) {
+              setError((e as Error).message);
+            }
+          }}
+        >
+          Importer les associations vérifiées
+        </AsyncButton>
+      </div>
+      {error && <Notice kind="error">{error}</Notice>}
+      {done && <Notice kind="success">{done}</Notice>}
+    </Panel>
+  );
+}

@@ -1,0 +1,99 @@
+<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>RAPPORT-VERIFICATION</title><style>*{box-sizing:border-box}body{margin:0;background:#e2ede6;color:#192c2b;font:17px/1.65 system-ui,sans-serif}main{max-width:960px;margin:32px auto;padding:32px;background:#ffffffd9;border-radius:22px}h1{font-size:clamp(28px,5vw,44px);line-height:1.15}h2{margin-top:36px;line-height:1.3}a{color:#185448;font-weight:650;text-underline-offset:4px}a.button{display:inline-block;min-height:48px;background:#1e5548;color:white;padding:12px 20px;margin:8px 10px 8px 0;border-radius:12px;text-decoration:none}code{background:#e2ede6;padding:3px 6px;overflow-wrap:anywhere}pre{white-space:pre-wrap}table{border-collapse:collapse;display:block;max-width:100%;overflow:auto}td,th{border:1px solid #b0cbbf;padding:10px;text-align:left}li{margin-bottom:8px}.muted{color:#415951}.badge{display:inline-block;background:#cfe9db;padding:4px 12px;border-radius:20px}img{max-width:100%}@media(max-width:600px){main{margin:0;padding:24px 16px;border-radius:0}body{font-size:16px}a.button{display:block;text-align:center}}@media print{body{background:white}main{margin:0;max-width:none;padding:0}.button{display:none!important}h2,h3{break-after:avoid}tr{break-inside:avoid}}</style></head><body><main><p><a href="index.html">Retour au kit de test</a></p><h1>FIBDA — vérification du HTML autonome</h1>
+<p>Version remise le 23 septembre 2026. Le fichier reprend l’application existante et ses parcours avec un moteur Python embarqué, des données fictives et un stockage propre au navigateur. La proposition design distincte sur le port 8771 n’est pas intégrée.</p>
+<h2>Fichier contrôlé</h2>
+<ul>
+<li>Nom : <code>FIBDA-application-autonome.html</code>.</li>
+<li>Taille : <strong>20 119 122 octets</strong>, soit environ 20,1 Mo.</li>
+<li>SHA-256 : <code>9ff5389ab1476835233ae96679a5863980fd8ecde47ad419007c7f333a89aea6</code>.</li>
+<li>Ouverture de recette : fichier local réel dans Chromium, sans serveur FIBDA ; copie de recette identique octet par octet au livrable.</li>
+<li>Le manifeste joint identifie aussi les sources originales et adaptées. Les données saisies pendant les tests restent dans le navigateur de recette, hors du fichier remis.</li>
+</ul>
+<h2>Résultats constatés</h2>
+<table>
+<thead>
+<tr>
+<th>Contrôle</th>
+<th>Résultat</th>
+<th>Preuve</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Moteur Python et pont autonome</td>
+<td>24 tests réussis, zéro erreur, échec ou test ignoré</td>
+<td><a href="preuves/fibda-wasm-tests.json">Résultats WASM</a></td>
+</tr>
+<tr>
+<td>Parcours de stockage et documents</td>
+<td>11 contrôles réussis</td>
+<td><a href="preuves/fibda-browser-proof.json">Résultats navigateur</a></td>
+</tr>
+<tr>
+<td>Classement dans l’interface</td>
+<td>9 contrôles réussis à 390 px</td>
+<td><a href="preuves/fibda-ui-proof.json">Résultats interface</a></td>
+</tr>
+<tr>
+<td>Persistance du bulletin reçu</td>
+<td>Verrouillage et commandes désactivées conservés après rechargement</td>
+<td><a href="preuves/fibda-reload-proof.json">Résultat de rechargement</a></td>
+</tr>
+<tr>
+<td>Largeur 320 px</td>
+<td>Dix rubriques sans débordement horizontal global</td>
+<td><a href="preuves/fibda-responsive-320.json">320 px</a></td>
+</tr>
+<tr>
+<td>Largeur 390 px</td>
+<td>Dix rubriques sans débordement horizontal global</td>
+<td><a href="preuves/fibda-responsive-390.json">390 px</a></td>
+</tr>
+<tr>
+<td>Largeur 768 px</td>
+<td>Dix rubriques sans débordement horizontal global</td>
+<td><a href="preuves/fibda-responsive-768.json">768 px</a></td>
+</tr>
+<tr>
+<td>Largeur 1280 px</td>
+<td>Dix rubriques sans débordement horizontal global</td>
+<td><a href="preuves/fibda-responsive-1280.json">1280 px</a></td>
+</tr>
+<tr>
+<td>TypeScript de la copie adaptée</td>
+<td>Aucune erreur</td>
+<td><a href="preuves/typescript.txt">Compte rendu</a></td>
+</tr>
+<tr>
+<td>Reconstruction des sources</td>
+<td>HTML identique localement et depuis une extraction sans Git ni compilation antérieure</td>
+<td><a href="preuves/fibda-source-rebuild-proof.json">Preuve de reconstruction</a></td>
+</tr>
+<tr>
+<td>Runtime minimal, contrôle séparé</td>
+<td>15 tests originaux, aller-retour XLSX et absence de ressources externes observées</td>
+<td><a href="preuves/runtime-proof-results.json">Preuve runtime distincte</a></td>
+</tr>
+</tbody>
+</table>
+<p>Les 24 tests couvrent notamment le cycle de compétition, le classement national, les qualifications communes, l’overall et les récompenses, l’attente et le délai des stagiaires, les accès par rôle, les corrections publiées à deux signatures, les imports/exports et la restauration. Ils utilisent le moteur Python/WASM du navigateur, sans réseau de compétition.</p>
+<p>Les 11 contrôles navigateur vérifient la connexion à quatre chiffres et les 24 personnes initiales fictives, le recadrage et l’approbation d’une photo synthétique, l’import CSV, l’export Excel binaire, les bulletins vierges séparés par catégorie, la sauvegarde ZIP et sa restauration avec photo conservée. Une panne de stockage simulée ne produit ni confirmation trompeuse ni modification conservée. Aucune requête HTTP externe n’a été observée pendant ce parcours.</p>
+<p>Le contrôle d’interface utilise l’alternative « toucher le dossard puis le rang », par clics automatisés : remplacement sans décalage, annulation de l’opération entière, rétablissement, complétude, résumé avant envoi, réception et verrouillage. Il ne prouve pas la qualité du glisser-déposer sur un téléphone physique.</p>
+<p>Les rubriques visitées pour la largeur sont : vue d’ensemble, préparation, jugement, compétition, régie, récompenses, collectifs, examens, documents et journal. Ce contrôle porte sur les états visités, pas sur chaque formulaire, fenêtre ou effectif possible.</p>
+<h2>Revue et corrections</h2>
+<p>Une revue indépendante a vérifié l’adaptateur, les limites documentées et la composition des archives. Les protections de concurrence locale comprennent une écriture conditionnelle atomique IndexedDB, la sérialisation du démarrage et de la réinitialisation, et la confirmation après la fin de la transaction. L’écran speaker conserve sa session dans le même onglet ; les écrans publics peuvent s’ouvrir séparément.</p>
+<p>Le débordement de l’en-tête à 320 px a été corrigé dans la copie autonome ; le nom du juge et les actions passent sur deux lignes. Les captures téléphone, petit téléphone et ordinateur ont été examinées visuellement. La version serveur et ses données n’ont pas été modifiées par cette adaptation.</p>
+<p>La reconstruction par le développeur fonctionne également sans dépôt Git. La configuration TypeScript est régénérée à chaque construction : une extraction propre produit exactement le même HTML. Le commit d’un éventuel dépôt parent n’est pas repris comme provenance de l’application extraite.</p>
+<p>Les scripts navigateur de reproduction accompagnent les preuves. Le contrôle des bulletins « participants à confirmer » est effectué après la génération du programme, lorsque ces tours existent réellement.</p>
+<h2>Captures du fichier contrôlé</h2>
+<h3>Téléphone, bulletin reçu</h3>
+<p><img alt="Bulletin reçu à 390 pixels" src="preuves/fibda-autonome-mobile.png" /></p>
+<h3>Petit téléphone</h3>
+<p><img alt="Interface à 320 pixels" src="preuves/fibda-autonome-320.png" /></p>
+<h3>Ordinateur</h3>
+<p><img alt="Interface ordinateur" src="preuves/fibda-autonome-desktop.png" /></p>
+<h2>Limites de cette remise</h2>
+<p><strong>Ce HTML permet des essais indépendants ; il ne synchronise pas plusieurs appareils.</strong> La synchronisation entre juges et poste central, l’autorité du serveur, le réseau de salle et la sauvegarde SQLite restent propres à la version serveur. La sauvegarde ZIP autonome n’est pas interchangeable avec celle du serveur.</p>
+<p>Le document contient les fonctionnalités déjà présentes et leurs adaptations locales. Il ne constitue pas une preuve que toutes les exigences du projet sont réceptionnées. Les limites de l’application serveur sont détaillées dans le dossier développeur, notamment <code>docs/STATUT-LIVRAISON.md</code>.</p>
+<p>Restent à tester : Safari sur iPhone/iPad, Chrome Android et autres navigateurs cibles sur appareils physiques ; gestes tactiles ; mémoire et durée de chargement ; téléchargements et réouverture du HTML ; impression réelle ; confort avec de grands groupes. Les contrôles actuels ne couvrent pas exhaustivement la concurrence entre onglets.</p>
+<p>Sur téléphone, utiliser de préférence un hébergement HTTPS stable : les aperçus de pièces jointes peuvent ne pas exécuter un fichier HTML. Le fichier est autoportant, mais le comportement des navigateurs et de leur stockage varie. Aucune compatibilité universelle n’est annoncée.</p>
+<p>Les codes sont publics. N’utiliser que des données et photos fictives dans ce kit. La réception sportive, matérielle et fédérale demeure à réaliser sur la version de compétition.</p></main></body></html>

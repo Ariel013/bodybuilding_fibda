@@ -1,0 +1,28 @@
+{
+  "clean_extraction_without_git": {
+    "source_commit": null,
+    "sha256": "9ff5389ab1476835233ae96679a5863980fd8ecde47ad419007c7f333a89aea6",
+    "html_bytes": 20119122,
+    "builder_exit_code": 0,
+    "html_byte_identical": true,
+    "typescript_config_generated": true
+  },
+  "clean_extraction_inside_unrelated_parent_git": {
+    "source_commit": null,
+    "sha256": "9ff5389ab1476835233ae96679a5863980fd8ecde47ad419007c7f333a89aea6",
+    "html_bytes": 20119122,
+    "builder_exit_code": 0,
+    "html_byte_identical": true,
+    "typescript_config_generated": true
+  },
+  "original_application": {
+    "source_commit": "e837598ac64e57167283bf6351e3d666399e6c44",
+    "sha256": "9ff5389ab1476835233ae96679a5863980fd8ecde47ad419007c7f333a89aea6",
+    "html_bytes": 20119122,
+    "html_unchanged_after_fix": true
+  },
+  "all_html_bytes_match_previous_delivery": true,
+  "source_hashes_identical": true,
+  "previous_typescript_reserve": "Résolue : le constructeur génère systématiquement sa configuration depuis frontend/tsconfig.json ; aucune dépendance à un .build antérieur.",
+  "scope": "Archive source extraite, entrées de construction actualisées et node_modules local lié ; construction avec .build initialement absent, sans lancer serveur ni données de compétition."
+}

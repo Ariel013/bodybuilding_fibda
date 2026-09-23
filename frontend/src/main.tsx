@@ -1,0 +1,32 @@
+import React from "react";
+import { createRoot } from "react-dom/client";
+import App from "./App";
+import "./styles.css";
+class ErrorBoundary extends React.Component<
+  { children: React.ReactNode },
+  { error: string }
+> {
+  state = { error: "" };
+  static getDerivedStateFromError(e: Error) {
+    return { error: e.message };
+  }
+  render() {
+    return this.state.error ? (
+      <main className="fatal">
+        <h1>L’interface doit être rechargée</h1>
+        <p>Les bulletins déjà reçus restent conservés sur le serveur.</p>
+        <pre>{this.state.error}</pre>
+        <button onClick={() => location.reload()}>Recharger</button>
+      </main>
+    ) : (
+      this.props.children
+    );
+  }
+}
+createRoot(document.getElementById("root")!).render(
+  <React.StrictMode>
+    <ErrorBoundary>
+      <App />
+    </ErrorBoundary>
+  </React.StrictMode>,
+);

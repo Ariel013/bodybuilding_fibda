@@ -1,0 +1,115 @@
+{
+  "checked_at": "2026-09-23T01:59:38.064243+00:00",
+  "scope": "Paquet reconstruit après correctif codes personnels courts et documents finaux",
+  "architecture": "macOS arm64",
+  "previous_full_smoke": {
+    "checked_at": "2026-09-23T00:56:55.563279+00:00",
+    "architecture": "macOS arm64",
+    "help": true,
+    "/api/v1/health": {
+      "status": 200,
+      "bytes": 146
+    },
+    "version": "0.1.0",
+    "sqlite_version": "3.53.1",
+    "/": {
+      "status": 200,
+      "bytes": 455
+    },
+    "/assets/fibda-logo.jpg": {
+      "status": 200,
+      "bytes": 126844
+    },
+    "demo": {
+      "people": 24,
+      "event_version": 1,
+      "restore_id": "c003d449-d7ea-4317-b703-f70fbedaf98a"
+    },
+    "catalogue": {
+      "status": 200,
+      "bytes": 52057
+    },
+    "backup": {
+      "status": 200,
+      "bytes": 10772
+    },
+    "migration": "0001_initial",
+    "restart": {
+      "health": 200,
+      "people": 24,
+      "same_restore_id": true,
+      "same_event_version": true,
+      "same_port": 8867
+    },
+    "final_rebuild_verified_at": "2026-09-23T01:02:08.513456+00:00",
+    "final_rebuild_restart": {
+      "health": 200,
+      "people": 24,
+      "same_restore_id": true,
+      "same_event_version": true,
+      "same_port": 8867
+    },
+    "executable_sha256": "3c4e79ec61b83f104852d8d4e80e1cba6f85f51a62958cf1b940b84f1404d78f",
+    "embedded_resources": {
+      "livrables/Dossier-developpeur-FIBDA.pdf": {
+        "matches_source": true,
+        "sha256": "6c4e141023b4c41af3f69c76f719657f02d5b47e3032c3629480cb930f254c41"
+      },
+      "livrables/Dossier-developpeur-FIBDA.docx": {
+        "matches_source": true,
+        "sha256": "a3d243d2087aa9444119d2e28a439f501e13bdc4f6f25915904577b86ea88468"
+      },
+      "fibda/catalogue.json": {
+        "matches_source": true,
+        "sha256": "ebb3ee783a74b17e1b3cd755015c384c3228c058217dc2b9e4ae11c6dc90b341"
+      },
+      "frontend/dist/index.html": {
+        "matches_source": true,
+        "sha256": "a6f615be61a969f28d1f931c13132086aa74fc7f602b2616087024acbf2fb5f1"
+      }
+    }
+  },
+  "short_code_smoke": {
+    "port": 8868,
+    "data_dir": "/tmp/fibda-shortcodes-official-20260923",
+    "mode": "official",
+    "code_length": 4,
+    "setup": 200,
+    "logout": 200,
+    "login": 200,
+    "authenticated_state": 200,
+    "chief_role": true,
+    "demo_8770_untouched": true
+  },
+  "health": {
+    "status": "ok",
+    "version": "0.1.0",
+    "setup_required": true,
+    "demo": false,
+    "restore_id": "b21bc126-5a46-43de-ae2a-baca152ad455",
+    "sqlite_version": "3.53.1"
+  },
+  "executable_sha256": "f8dffdb4729fc7fdb88394257e60146f645060acb931b8723eb927b34aba4362",
+  "embedded_resources": {
+    "livrables/Dossier-developpeur-FIBDA.pdf": {
+      "matches_source": true,
+      "sha256": "000dbbeaf6deaed06e6a70d6d80cc57a0e949d5f0f2a8e84b0465efed4e819a6"
+    },
+    "livrables/Dossier-developpeur-FIBDA.docx": {
+      "matches_source": true,
+      "sha256": "78f757f95f63cd9ba3c1eefa710d5fff6c6f615ef4fabc4bc5b36f99530263c2"
+    },
+    "frontend/dist/index.html": {
+      "matches_source": true,
+      "sha256": "5a755f8bfed424cc2ed5c2efbd61d8176bc64c49b2fd1b5586de9b784a812f24"
+    },
+    "frontend/dist/assets/index-D_MAzGQd.js": {
+      "matches_source": true,
+      "sha256": "f38b23efe6e84a1dde6c28720601ea19dded77903eccfb842d53c0954f893171"
+    },
+    "docs/REPORT-PACKAGE.md": {
+      "matches_source": true,
+      "sha256": "2de9abb22e26a4446dc8f4a328f83ca028baa2f44ca5d074d27bf806be29f11a"
+    }
+  }
+}

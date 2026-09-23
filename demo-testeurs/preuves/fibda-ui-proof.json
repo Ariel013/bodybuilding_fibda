@@ -1,0 +1,42 @@
+{
+  "date": "2026-09-23T08:42:54.123Z",
+  "checks": [
+    {
+      "name": "Bulletin ouvert sur largeur 390",
+      "passed": true
+    },
+    {
+      "name": "Remplacement libère ancien occupant et ancienne place",
+      "passed": true
+    },
+    {
+      "name": "Annuler restaure toute opération",
+      "passed": true
+    },
+    {
+      "name": "Rétablir reproduit remplacement",
+      "passed": true
+    },
+    {
+      "name": "Huit rangs complets permettent validation",
+      "passed": true
+    },
+    {
+      "name": "Résumé avant envoi",
+      "passed": true
+    },
+    {
+      "name": "Confirmation locale après enregistrement",
+      "passed": true
+    },
+    {
+      "name": "Bulletin verrouillé",
+      "passed": true
+    },
+    {
+      "name": "Aucun débordement horizontal téléphone",
+      "passed": true
+    }
+  ],
+  "passed": true
+}

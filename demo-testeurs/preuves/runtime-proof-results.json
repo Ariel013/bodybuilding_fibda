@@ -1,0 +1,73 @@
+{
+  "proof": {
+    "ok": true,
+    "version": "0.28.3",
+    "protocol": "file:",
+    "result": {
+      "arithmetic": 4,
+      "stdlib": {
+        "decimal": "0.3",
+        "fraction": "1/3",
+        "date": "2027-01-01",
+        "uuid": "d7e9b509-2786-4933-b429-e1892ef17a27",
+        "sha256": "af0a54929ec6f3a7051147a683d8fb2e7a78fa52dd6cae36b602e9628e83f4f7"
+      },
+      "domain": [
+        {
+          "entry_id": "a",
+          "rank": 1,
+          "total": 3,
+          "ranks": [
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          "removed_min": 1,
+          "removed_max": 1
+        },
+        {
+          "entry_id": "b",
+          "rank": 2,
+          "total": 6,
+          "ranks": [
+            2,
+            2,
+            2,
+            2,
+            2
+          ],
+          "removed_min": 2,
+          "removed_max": 2
+        }
+      ]
+    },
+    "extra": {
+      "python": "3.13.2 (main, Sep 22 2025, 12:14:53) [Clang 21.0.0git (https:/github.com/llvm/llvm-project 2f05451198e2f222ec66cec489",
+      "tests": {
+        "success": true,
+        "count": 15,
+        "failures": 0,
+        "errors": 0,
+        "output": "...............\n----------------------------------------------------------------------\nRan 15 tests in 0.028s\n\nOK\n"
+      },
+      "xlsx": {
+        "openpyxl": "3.1.5",
+        "bytes": 4865,
+        "rows": [
+          [
+            "Athlète",
+            "Total"
+          ],
+          [
+            "FIBDA",
+            12
+          ]
+        ]
+      }
+    }
+  },
+  "resources": [],
+  "policy": "default-src 'none'; script-src 'unsafe-inline' 'unsafe-eval'; style-src 'unsafe-inline'; connect-src blob:"
+}

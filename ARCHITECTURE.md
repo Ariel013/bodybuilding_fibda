@@ -7,7 +7,7 @@ vérifiées sur du vrai code.
 
 ```
 Ordinateur organisateur (serveur + base + photos, jamais dans le repo)
-   │  HTTPS (réseau Wi-Fi local, pas d'Internet requis pendant l'événement)
+   │  HTTPS (édition 2026 : VM Internet, cf. ADR 0001 ; sinon Wi-Fi local)
    ├── Téléphones des juges (navigateur, PWA-like, pas d'app native)
    ├── Postes table / chef / secrétariat / commission
    ├── Régie (pilotage des écrans)
@@ -57,6 +57,13 @@ Un seul processus serveur = une seule autorité sur **un seul événement actif*
 - Aucune dépendance CDN au runtime — polices et logos embarqués
 
 ## 4. Réseau et déploiement le jour J
+
+**Décision du 23/09/2026 (ADR 0001)** : pour l'édition du 26/09, le serveur est hébergé sur
+une VM Internet avec certificat Let's Encrypt, pas sur une machine dans la salle. Les juges
+se connectent en HTTPS via le Wi-Fi de la salle ou leur réseau mobile. Le mode « serveur dans
+la salle » décrit ci-dessous reste supporté par le code mais n'est pas testé pour cette
+édition. Voir `docs/decisions/0001-serveur-heberge-sur-internet-vm-gratuite.md` et
+`docs/DEPLOIEMENT-INTERNET.md`.
 
 - Par défaut le serveur écoute en boucle locale (127.0.0.1) — inutilisable pour les téléphones
 - Mode réseau : `--host 0.0.0.0 --public-url https://DOMAINE --cert ... --key ...`

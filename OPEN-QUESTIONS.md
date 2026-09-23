@@ -14,10 +14,39 @@ la zone du projet concernée ne doit pas être commencée.
    jours), repartir de zéro alors qu'une base fonctionnelle existe serait un risque énorme —
    `PLAN-J3.md` suppose qu'on réutilise cette base sauf contre-ordre de ta part.
 
-0. **[URGENT — bloque le périmètre exact]** Voir `MVP-SCOPE.md` §"Question à trancher
-   immédiatement avec le PO" : nombre de catégories/athlètes/juges samedi, une ou plusieurs
-   disciplines, besoin d'un overall ou juste des classements par catégorie, Wi-Fi/routeur déjà
-   identifié sur le lieu. **À obtenir du PO aujourd'hui, pas plus tard que demain matin.**
+0. **[RÉPONDU LE 23/09, partiellement]** Périmètre de samedi 26/09/2026, réponses du PO :
+   - **Un seul panel de juges.**
+   - **Toutes les disciplines** du catalogue sont possibles ; **d'autres disciplines existent**
+     et doivent pouvoir être ajoutées (→ le catalogue doit rester extensible ; toute discipline
+     ajoutée hors catalogue actuel reste à faire valider, voir Q1ter/Q5).
+   - **Overall le même jour** : les premiers de toutes les catégories s'affrontent pour le
+     titre de champion overall. → Voir Q0ter (règle exacte de l'overall).
+   - Tout doit rester **modulable pendant l'événement** : ajouter des athlètes au fur et à
+     mesure, ajouter des juges, créer catégories et sous-catégories.
+   - **Pas encore répondu** : nombre concret de catégories et d'athlètes ; Wi-Fi/routeur du
+     lieu (dépend de Q0quater).
+
+0ter. **[NOUVEAU — règle sportive, bloque le calcul de l'overall]** Le code actuel calcule
+   l'overall uniquement entre **finales validées de même discipline et même section**
+   (`docs/REFERENTIEL.md` §Overall, `domain.py` `overall_candidates`). Le PO dit "les premiers
+   de toutes les catégories". Question : l'overall de samedi oppose-t-il les vainqueurs
+   **d'une même discipline** (ex. tous les Men's Physique, un overall par discipline), ou
+   **toutes disciplines confondues** (un seul champion pour toute la compétition) ? Dans le
+   second cas, le moteur doit être adapté, et la règle de départage entre disciplines
+   différentes n'existe nulle part dans le référentiel : à définir explicitement par la
+   fédération. **Ne pas coder sans réponse.**
+
+0quater. **[RÉSOLU LE 23/09]** Hébergement : le PO choisit un serveur hébergé sur Internet,
+   sur une VM gratuite. Décision et compromis dans `docs/decisions/0001-serveur-heberge-sur-internet-vm-gratuite.md`,
+   procédure dans `docs/DEPLOIEMENT-INTERNET.md`, actions manuelles dans `A-FAIRE.md`.
+   Reste à obtenir : la connexion Internet du lieu est-elle fiable, et un partage 4G de
+   secours est-il prévu ?
+
+0quinquies. **[NOUVEAU — sécurité, décision PO]** Longueur minimale des codes personnels.
+   Décision du 23/09 (REPRISE.md) : 4 caractères minimum. La passe sécurité du 23/09 relève
+   qu'un code à 4 chiffres = 10 000 combinaisons et que le login sans identifiant teste tous
+   les comptes à chaque essai. Proposition : garder 4 pour les juges, exiger 8 pour chef,
+   responsable et directeur. À trancher.
 
 1. ~~Nature du dossier reçu~~ **[RÉSOLU]** — L'application déjà codée et testée décrite dans ce
    dossier a en réalité été construite pour le **StrongMan**, un sport différent. Le PO a
@@ -29,9 +58,10 @@ la zone du projet concernée ne doit pas être commencée.
    plaqué dessus (Men's Physique, Bikini apparaissent bien, donc une adaptation partielle a eu
    lieu — mais rien ne garantit qu'elle soit complète ou correcte). **Ne pas faire confiance à
    ce document comme source de vérité du référentiel sportif bodybuilding.**
-1bis. **[RÉSOLU]** — C'est toi-même qui as travaillé sur l'app StrongMan. Repo :
-   `https://github.com/Ariel013/strongmanrepo.git`. À auditer par Claude Code en premier (voir
-   `CLAUDE.md` §0.2) — je n'y ai pas accès depuis ce chat (repo privé/non indexé).
+1bis. **[CADUC LE 23/09]** — Le PO a tranché : le repo StrongMan n'a aucun rapport avec ce
+   projet, ne pas le cloner ni l'auditer. La base de code de ce dépôt est la base de départ
+   (voir `PLAN-J3.md`). `CLAUDE.md` §0.2, `00-PROJECT-BRIEF.md` §1bis et `ARCHITECTURE.md`
+   §6bis restent à corriger en conséquence.
 1ter. Le dossier "FIBDA Bodybuilding" reçu a-t-il été écrit par une personne qui a réellement
    vérifié les 106 règles/9 disciplines de bodybuilding, ou est-ce un remaniement automatique
    du dossier StrongMan (agents IA qui ont substitué du vocabulaire) ? **Toujours ouvert.** À

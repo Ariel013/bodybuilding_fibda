@@ -5,7 +5,16 @@ Cocher quand c'est fait, avec la date.
 
 ## Avant samedi 26/09/2026
 
-- [ ] (23/09) **Créer le compte Oracle Cloud Free Tier** : carte bancaire et
+- [ ] (23/09) **Créer le compte Railway** avec ton GitHub (sans carte), installer la
+      CLI (`npm i -g @railway/cli`), puis `railway login`. Plan B Python (ADR 0002).
+- [ ] (23/09) **Créer le compte Turso** (https://turso.tech, GitHub, sans carte),
+      créer une base `fibda`, me transmettre l'URL `libsql://…` et un jeton en
+      variable d'environnement, jamais dans un fichier du dépôt.
+- [ ] (23/09) **Compte Vercel** relié au dépôt GitHub ; `npm i -g vercel` puis
+      `vercel login` (taper `! vercel login` dans cette session).
+- [ ] (23/09) Dire ce que « tout et même plus » contient au-delà de l'app Python.
+
+- [x] (23/09, abandonné : paiement exigé) ~~Créer le compte Oracle Cloud Free Tier~~ : carte bancaire et
       numéro de téléphone exigés, aucune facturation sans passage volontaire en
       payant. Choisir une région proche (Marseille ou Paris). Si l'inscription est
       refusée ou la capacité ARM indisponible : repli Google Cloud e2-micro, puis
@@ -20,6 +29,10 @@ Cocher quand c'est fait, avec la date.
 - [ ] (23/09) Répondre Q0ter : overall par discipline ou toutes disciplines.
 - [ ] (23/09) Plan papier de secours : imprimer feuilles de jugement vierges par
       catégorie ; désigner qui les distribue si le réseau tombe.
+
+- [ ] (23/09) Tant que le plan B Python existe : toute modification de
+      `backend/fibda/catalogue.json` est recopiée dans `frontend/domain/catalogue.json`
+      (vérifier avec `cmp`).
 
 ## Après la compétition
 

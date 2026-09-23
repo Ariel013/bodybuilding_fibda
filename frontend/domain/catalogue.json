@@ -1,0 +1,3369 @@
+{
+  "version": "FIBDA-2026-09-22.2",
+  "verified_at": "2026-09-22",
+  "scope": "Adaptations FIBDA amateur et pro ; non IFBB Pro League. Corpus 2027 à vérifier.",
+  "sources": {
+    "D01": {
+      "edition": "2024",
+      "url": "https://ifbb.com/wp-content/uploads/2024/08/01-IFBB-General-Rules-2024-edition-1.pdf",
+      "pages": "14–26",
+      "sha256": "1f9a02049d4ece6ef51493908f041ddb5dceb83a80cab542c6db3c4aff0a8af5",
+      "bytes": 1602480,
+      "archive_path": "recherche-ifbb/sources/01-01-IFBB-General-Rules-2024-edition-1.pdf",
+      "document_title": "IFBB General Rules (2024)"
+    },
+    "D02": {
+      "edition": "2024",
+      "url": "https://ifbb.com/wp-content/uploads/2024/02/Mens-Classic-Physique-2024.pdf",
+      "pages": "4–5",
+      "sha256": "1e18d7590f8ee0733b70dd3cd78b9b86b670444143aa99e8560fbe3d59165746",
+      "bytes": 1049377,
+      "archive_path": "recherche-ifbb/sources/02-Mens-Classic-Physique-2024.pdf",
+      "document_title": "Men´s Classic Physique Rules (2024)"
+    },
+    "D03": {
+      "edition": "2024",
+      "url": "https://ifbb.com/wp-content/uploads/2024/02/Women-Bikini-Rules-2024.pdf",
+      "pages": "4–5",
+      "sha256": "454e929c40b7823a7d23f25d73c4ba7192597677ac4d55564138e46569c4c514",
+      "bytes": 1125543,
+      "archive_path": "recherche-ifbb/sources/03-Women-Bikini-Rules-2024.pdf",
+      "document_title": "Women Bikini Fitness Rules (2024)"
+    },
+    "D04": {
+      "edition": "2026",
+      "url": "https://ifbb.com/wp-content/uploads/2025/07/Mens-Bodybuilding-Rules-2026-1.pdf",
+      "pages": "4–5",
+      "sha256": "4f5cff8073df18badaae80767b4d7d4d13a2a5f242c612fd8b65f850438305ca",
+      "bytes": 483438,
+      "archive_path": "recherche-ifbb/sources/04-Mens-Bodybuilding-Rules-2026-1.pdf",
+      "document_title": "Men’s Bodybuilding Rules (2026)"
+    },
+    "D05": {
+      "edition": "2026",
+      "url": "https://ifbb.com/wp-content/uploads/2026/03/Mens-Classic-Bodybuilding-Rules-2026-2.pdf",
+      "pages": "4–5",
+      "sha256": "975f30b983bf7d59458b2b6b38753f9013f50e62c2f5c7602e4a1857a60fa3a5",
+      "bytes": 530833,
+      "archive_path": "recherche-ifbb/sources/05-Mens-Classic-Bodybuilding-Rules-2026-2.pdf",
+      "document_title": "Men’s Classic Bodybuilding And Games Classic Bodybuilding (2026)"
+    },
+    "D06": {
+      "edition": "2024",
+      "url": "https://ifbb.com/wp-content/uploads/2024/02/Women-Bodyfitness-Rules-2024.pdf",
+      "pages": "4–5",
+      "sha256": "9f96857faf2fbe35d555dc30d87f3c23bc1d48fd5475411d4c1495dbb94fe9b8",
+      "bytes": 1172955,
+      "archive_path": "recherche-ifbb/sources/06-Women-Bodyfitness-Rules-2024.pdf",
+      "document_title": "Women Bodyfitness Rules (2024)"
+    },
+    "D09": {
+      "edition": "2026",
+      "url": "https://ifbb.com/wp-content/uploads/2026/03/Womens-Physique-Rules-2026.pdf",
+      "pages": "4–5",
+      "sha256": "225bc556f711c244d494404572ca7c63b99b492a951a1df9e546aa412dfaa6b7",
+      "bytes": 474210,
+      "archive_path": "recherche-ifbb/sources/09-Womens-Physique-Rules-2026.pdf",
+      "document_title": "Women’s Physique Rules (2026)"
+    },
+    "D10": {
+      "edition": "2024",
+      "url": "https://ifbb.com/wp-content/uploads/2025/04/Mens-Physique-2024.pdf",
+      "pages": "4–5",
+      "sha256": "108be9e2be6ecfb103f154439e4f14967e97c37b8d527a992f5dbef926549a4c",
+      "bytes": 686613,
+      "archive_path": "recherche-ifbb/sources/10-Mens-Physique-2024.pdf",
+      "document_title": "Men’s Physique Rules (2024)"
+    },
+    "D19": {
+      "edition": "2024",
+      "url": "https://ifbb.com/wp-content/uploads/2024/02/Women-Wellnes-2024.pdf",
+      "pages": "4–5",
+      "sha256": "c58a4943ce3d2241e38b0bddb941462fc10c3420086f952693e287c44888ab19",
+      "bytes": 1072441,
+      "archive_path": "recherche-ifbb/sources/19-Women-Wellnes-2024.pdf",
+      "document_title": "Women’s Wellness Fitness Rules (2024)"
+    }
+  },
+  "disciplines": [
+    {
+      "id": "bodybuilding",
+      "name": "Bodybuilding",
+      "sex": "M",
+      "source_id": "D04",
+      "divisions": [
+        "senior",
+        "junior",
+        "masters"
+      ]
+    },
+    {
+      "id": "classic_bodybuilding",
+      "name": "Classic Bodybuilding",
+      "sex": "M",
+      "source_id": "D05",
+      "divisions": [
+        "senior",
+        "junior",
+        "masters"
+      ]
+    },
+    {
+      "id": "classic_physique",
+      "name": "Classic Physique",
+      "sex": "M",
+      "source_id": "D02",
+      "divisions": [
+        "senior",
+        "junior",
+        "masters"
+      ]
+    },
+    {
+      "id": "mens_physique",
+      "name": "Men’s Physique",
+      "sex": "M",
+      "source_id": "D10",
+      "divisions": [
+        "senior",
+        "junior",
+        "masters"
+      ]
+    },
+    {
+      "id": "muscular",
+      "name": "Muscular Men’s Physique",
+      "sex": "M",
+      "source_id": "D10",
+      "divisions": [
+        "senior"
+      ]
+    },
+    {
+      "id": "bikini",
+      "name": "Bikini",
+      "sex": "F",
+      "source_id": "D03",
+      "divisions": [
+        "senior",
+        "junior",
+        "masters"
+      ]
+    },
+    {
+      "id": "wellness",
+      "name": "Wellness",
+      "sex": "F",
+      "source_id": "D19",
+      "divisions": [
+        "senior",
+        "junior",
+        "masters"
+      ]
+    },
+    {
+      "id": "bodyfitness",
+      "name": "Bodyfitness",
+      "sex": "F",
+      "source_id": "D06",
+      "divisions": [
+        "senior",
+        "junior",
+        "masters"
+      ]
+    },
+    {
+      "id": "womens_physique",
+      "name": "Women’s Physique",
+      "sex": "F",
+      "source_id": "D09",
+      "divisions": [
+        "senior",
+        "masters"
+      ]
+    }
+  ],
+  "rules": [
+    {
+      "id": "bodybuilding-senior-all-65",
+      "discipline": "bodybuilding",
+      "name": "Bodybuilding senior ≤ 65",
+      "sex": "M",
+      "division": "senior",
+      "sections": [
+        "amateur",
+        "pro"
+      ],
+      "age_min": null,
+      "age_max": null,
+      "metric": "weight_kg",
+      "lower_exclusive": null,
+      "upper_inclusive": "65",
+      "source_id": "D04",
+      "source_pages": [
+        4,
+        5
+      ],
+      "decision": "A04/A17",
+      "age_uncertain_at": [
+        15
+      ],
+      "classic_limit": null,
+      "normalization_ids": [
+        "annual_age",
+        "fifteen_uncertainty",
+        "bodybuilding_senior_weight"
+      ]
+    },
+    {
+      "id": "bodybuilding-senior-all-70",
+      "discipline": "bodybuilding",
+      "name": "Bodybuilding senior > 65 à ≤ 70",
+      "sex": "M",
+      "division": "senior",
+      "sections": [
+        "amateur",
+        "pro"
+      ],
+      "age_min": null,
+      "age_max": null,
+      "metric": "weight_kg",
+      "lower_exclusive": "65",
+      "upper_inclusive": "70",
+      "source_id": "D04",
+      "source_pages": [
+        4,
+        5
+      ],
+      "decision": "A04/A17",
+      "age_uncertain_at": [
+        15
+      ],
+      "classic_limit": null,
+      "normalization_ids": [
+        "annual_age",
+        "fifteen_uncertainty",
+        "bodybuilding_senior_weight"
+      ]
+    },
+    {
+      "id": "bodybuilding-senior-all-75",
+      "discipline": "bodybuilding",
+      "name": "Bodybuilding senior > 70 à ≤ 75",
+      "sex": "M",
+      "division": "senior",
+      "sections": [
+        "amateur",
+        "pro"
+      ],
+      "age_min": null,
+      "age_max": null,
+      "metric": "weight_kg",
+      "lower_exclusive": "70",
+      "upper_inclusive": "75",
+      "source_id": "D04",
+      "source_pages": [
+        4,
+        5
+      ],
+      "decision": "A04/A17",
+      "age_uncertain_at": [
+        15
+      ],
+      "classic_limit": null,
+      "normalization_ids": [
+        "annual_age",
+        "fifteen_uncertainty",
+        "bodybuilding_senior_weight"
+      ]
+    },
+    {
+      "id": "bodybuilding-senior-all-80",
+      "discipline": "bodybuilding",
+      "name": "Bodybuilding senior > 75 à ≤ 80",
+      "sex": "M",
+      "division": "senior",
+      "sections": [
+        "amateur",
+        "pro"
+      ],
+      "age_min": null,
+      "age_max": null,
+      "metric": "weight_kg",
+      "lower_exclusive": "75",
+      "upper_inclusive": "80",
+      "source_id": "D04",
+      "source_pages": [
+        4,
+        5
+      ],
+      "decision": "A04/A17",
+      "age_uncertain_at": [
+        15
+      ],
+      "classic_limit": null,
+      "normalization_ids": [
+        "annual_age",
+        "fifteen_uncertainty",
+        "bodybuilding_senior_weight"
+      ]
+    },
+    {
+      "id": "bodybuilding-senior-all-85",
+      "discipline": "bodybuilding",
+      "name": "Bodybuilding senior > 80 à ≤ 85",
+      "sex": "M",
+      "division": "senior",
+      "sections": [
+        "amateur",
+        "pro"
+      ],
+      "age_min": null,
+      "age_max": null,
+      "metric": "weight_kg",
+      "lower_exclusive": "80",
+      "upper_inclusive": "85",
+      "source_id": "D04",
+      "source_pages": [
+        4,
+        5
+      ],
+      "decision": "A04/A17",
+      "age_uncertain_at": [
+        15
+      ],
+      "classic_limit": null,
+      "normalization_ids": [
+        "annual_age",
+        "fifteen_uncertainty",
+        "bodybuilding_senior_weight"
+      ]
+    },
+    {
+      "id": "bodybuilding-senior-all-90",
+      "discipline": "bodybuilding",
+      "name": "Bodybuilding senior > 85 à ≤ 90",
+      "sex": "M",
+      "division": "senior",
+      "sections": [
+        "amateur",
+        "pro"
+      ],
+      "age_min": null,
+      "age_max": null,
+      "metric": "weight_kg",
+      "lower_exclusive": "85",
+      "upper_inclusive": "90",
+      "source_id": "D04",
+      "source_pages": [
+        4,
+        5
+      ],
+      "decision": "A04/A17",
+      "age_uncertain_at": [
+        15
+      ],
+      "classic_limit": null,
+      "normalization_ids": [
+        "annual_age",
+        "fifteen_uncertainty",
+        "bodybuilding_senior_weight"
+      ]
+    },
+    {
+      "id": "bodybuilding-senior-all-95",
+      "discipline": "bodybuilding",
+      "name": "Bodybuilding senior > 90 à ≤ 95",
+      "sex": "M",
+      "division": "senior",
+      "sections": [
+        "amateur",
+        "pro"
+      ],
+      "age_min": null,
+      "age_max": null,
+      "metric": "weight_kg",
+      "lower_exclusive": "90",
+      "upper_inclusive": "95",
+      "source_id": "D04",
+      "source_pages": [
+        4,
+        5
+      ],
+      "decision": "A04/A17",
+      "age_uncertain_at": [
+        15
+      ],
+      "classic_limit": null,
+      "normalization_ids": [
+        "annual_age",
+        "fifteen_uncertainty",
+        "bodybuilding_senior_weight"
+      ]
+    },
+    {
+      "id": "bodybuilding-senior-all-100",
+      "discipline": "bodybuilding",
+      "name": "Bodybuilding senior > 95 à ≤ 100",
+      "sex": "M",
+      "division": "senior",
+      "sections": [
+        "amateur",
+        "pro"
+      ],
+      "age_min": null,
+      "age_max": null,
+      "metric": "weight_kg",
+      "lower_exclusive": "95",
+      "upper_inclusive": "100",
+      "source_id": "D04",
+      "source_pages": [
+        4,
+        5
+      ],
+      "decision": "A04/A17",
+      "age_uncertain_at": [
+        15
+      ],
+      "classic_limit": null,
+      "normalization_ids": [
+        "annual_age",
+        "fifteen_uncertainty",
+        "bodybuilding_senior_weight"
+      ]
+    },
+    {
+      "id": "bodybuilding-senior-all-open",
+      "discipline": "bodybuilding",
+      "name": "Bodybuilding senior > 100",
+      "sex": "M",
+      "division": "senior",
+      "sections": [
+        "amateur",
+        "pro"
+      ],
+      "age_min": null,
+      "age_max": null,
+      "metric": "weight_kg",
+      "lower_exclusive": "100",
+      "upper_inclusive": null,
+      "source_id": "D04",
+      "source_pages": [
+        4,
+        5
+      ],
+      "decision": "A04/A17",
+      "age_uncertain_at": [
+        15
+      ],
+      "classic_limit": null,
+      "normalization_ids": [
+        "annual_age",
+        "fifteen_uncertainty",
+        "bodybuilding_senior_weight"
+      ]
+    },
+    {
+      "id": "bodybuilding-junior-15-75",
+      "discipline": "bodybuilding",
+      "name": "Bodybuilding junior 15–20 ≤ 75",
+      "sex": "M",
+      "division": "junior",
+      "sections": [
+        "amateur",
+        "pro"
+      ],
+      "age_min": 15,
+      "age_max": 20,
+      "metric": "weight_kg",
+      "lower_exclusive": null,
+      "upper_inclusive": "75",
+      "source_id": "D04",
+      "source_pages": [
+        4,
+        5
+      ],
+      "decision": "A04/A17",
+      "age_uncertain_at": [
+        15
+      ],
+      "classic_limit": null,
+      "normalization_ids": [
+        "annual_age",
+        "fifteen_uncertainty"
+      ]
+    },
+    {
+      "id": "bodybuilding-junior-15-open",
+      "discipline": "bodybuilding",
+      "name": "Bodybuilding junior 15–20 > 75",
+      "sex": "M",
+      "division": "junior",
+      "sections": [
+        "amateur",
+        "pro"
+      ],
+      "age_min": 15,
+      "age_max": 20,
+      "metric": "weight_kg",
+      "lower_exclusive": "75",
+      "upper_inclusive": null,
+      "source_id": "D04",
+      "source_pages": [
+        4,
+        5
+      ],
+      "decision": "A04/A17",
+      "age_uncertain_at": [
+        15
+      ],
+      "classic_limit": null,
+      "normalization_ids": [
+        "annual_age",
+        "fifteen_uncertainty"
+      ]
+    },
+    {
+      "id": "bodybuilding-junior-21-75",
+      "discipline": "bodybuilding",
+      "name": "Bodybuilding junior 21–23 ≤ 75",
+      "sex": "M",
+      "division": "junior",
+      "sections": [
+        "amateur",
+        "pro"
+      ],
+      "age_min": 21,
+      "age_max": 23,
+      "metric": "weight_kg",
+      "lower_exclusive": null,
+      "upper_inclusive": "75",
+      "source_id": "D04",
+      "source_pages": [
+        4,
+        5
+      ],
+      "decision": "A04/A17",
+      "age_uncertain_at": [
+        15
+      ],
+      "classic_limit": null,
+      "normalization_ids": [
+        "annual_age",
+        "fifteen_uncertainty"
+      ]
+    },
+    {
+      "id": "bodybuilding-junior-21-open",
+      "discipline": "bodybuilding",
+      "name": "Bodybuilding junior 21–23 > 75",
+      "sex": "M",
+      "division": "junior",
+      "sections": [
+        "amateur",
+        "pro"
+      ],
+      "age_min": 21,
+      "age_max": 23,
+      "metric": "weight_kg",
+      "lower_exclusive": "75",
+      "upper_inclusive": null,
+      "source_id": "D04",
+      "source_pages": [
+        4,
+        5
+      ],
+      "decision": "A04/A17",
+      "age_uncertain_at": [
+        15
+      ],
+      "classic_limit": null,
+      "normalization_ids": [
+        "annual_age",
+        "fifteen_uncertainty"
+      ]
+    },
+    {
+      "id": "bodybuilding-masters-40-70",
+      "discipline": "bodybuilding",
+      "name": "Bodybuilding masters 40–44 ≤ 70",
+      "sex": "M",
+      "division": "masters",
+      "sections": [
+        "amateur",
+        "pro"
+      ],
+      "age_min": 40,
+      "age_max": 44,
+      "metric": "weight_kg",
+      "lower_exclusive": null,
+      "upper_inclusive": "70",
+      "source_id": "D04",
+      "source_pages": [
+        4,
+        5
+      ],
+      "decision": "A04/A17",
+      "age_uncertain_at": [
+        15
+      ],
+      "classic_limit": null,
+      "normalization_ids": [
+        "annual_age",
+        "fifteen_uncertainty",
+        "bodybuilding_masters"
+      ]
+    },
+    {
+      "id": "bodybuilding-masters-40-80",
+      "discipline": "bodybuilding",
+      "name": "Bodybuilding masters 40–44 > 70 à ≤ 80",
+      "sex": "M",
+      "division": "masters",
+      "sections": [
+        "amateur",
+        "pro"
+      ],
+      "age_min": 40,
+      "age_max": 44,
+      "metric": "weight_kg",
+      "lower_exclusive": "70",
+      "upper_inclusive": "80",
+      "source_id": "D04",
+      "source_pages": [
+        4,
+        5
+      ],
+      "decision": "A04/A17",
+      "age_uncertain_at": [
+        15
+      ],
+      "classic_limit": null,
+      "normalization_ids": [
+        "annual_age",
+        "fifteen_uncertainty",
+        "bodybuilding_masters"
+      ]
+    },
+    {
+      "id": "bodybuilding-masters-40-90",
+      "discipline": "bodybuilding",
+      "name": "Bodybuilding masters 40–44 > 80 à ≤ 90",
+      "sex": "M",
+      "division": "masters",
+      "sections": [
+        "amateur",
+        "pro"
+      ],
+      "age_min": 40,
+      "age_max": 44,
+      "metric": "weight_kg",
+      "lower_exclusive": "80",
+      "upper_inclusive": "90",
+      "source_id": "D04",
+      "source_pages": [
+        4,
+        5
+      ],
+      "decision": "A04/A17",
+      "age_uncertain_at": [
+        15
+      ],
+      "classic_limit": null,
+      "normalization_ids": [
+        "annual_age",
+        "fifteen_uncertainty",
+        "bodybuilding_masters"
+      ]
+    },
+    {
+      "id": "bodybuilding-masters-40-open",
+      "discipline": "bodybuilding",
+      "name": "Bodybuilding masters 40–44 > 90",
+      "sex": "M",
+      "division": "masters",
+      "sections": [
+        "amateur",
+        "pro"
+      ],
+      "age_min": 40,
+      "age_max": 44,
+      "metric": "weight_kg",
+      "lower_exclusive": "90",
+      "upper_inclusive": null,
+      "source_id": "D04",
+      "source_pages": [
+        4,
+        5
+      ],
+      "decision": "A04/A17",
+      "age_uncertain_at": [
+        15
+      ],
+      "classic_limit": null,
+      "normalization_ids": [
+        "annual_age",
+        "fifteen_uncertainty",
+        "bodybuilding_masters"
+      ]
+    },
+    {
+      "id": "bodybuilding-masters-45-70",
+      "discipline": "bodybuilding",
+      "name": "Bodybuilding masters 45–49 ≤ 70",
+      "sex": "M",
+      "division": "masters",
+      "sections": [
+        "amateur",
+        "pro"
+      ],
+      "age_min": 45,
+      "age_max": 49,
+      "metric": "weight_kg",
+      "lower_exclusive": null,
+      "upper_inclusive": "70",
+      "source_id": "D04",
+      "source_pages": [
+        4,
+        5
+      ],
+      "decision": "A04/A17",
+      "age_uncertain_at": [
+        15
+      ],
+      "classic_limit": null,
+      "normalization_ids": [
+        "annual_age",
+        "fifteen_uncertainty",
+        "bodybuilding_masters"
+      ]
+    },
+    {
+      "id": "bodybuilding-masters-45-80",
+      "discipline": "bodybuilding",
+      "name": "Bodybuilding masters 45–49 > 70 à ≤ 80",
+      "sex": "M",
+      "division": "masters",
+      "sections": [
+        "amateur",
+        "pro"
+      ],
+      "age_min": 45,
+      "age_max": 49,
+      "metric": "weight_kg",
+      "lower_exclusive": "70",
+      "upper_inclusive": "80",
+      "source_id": "D04",
+      "source_pages": [
+        4,
+        5
+      ],
+      "decision": "A04/A17",
+      "age_uncertain_at": [
+        15
+      ],
+      "classic_limit": null,
+      "normalization_ids": [
+        "annual_age",
+        "fifteen_uncertainty",
+        "bodybuilding_masters"
+      ]
+    },
+    {
+      "id": "bodybuilding-masters-45-90",
+      "discipline": "bodybuilding",
+      "name": "Bodybuilding masters 45–49 > 80 à ≤ 90",
+      "sex": "M",
+      "division": "masters",
+      "sections": [
+        "amateur",
+        "pro"
+      ],
+      "age_min": 45,
+      "age_max": 49,
+      "metric": "weight_kg",
+      "lower_exclusive": "80",
+      "upper_inclusive": "90",
+      "source_id": "D04",
+      "source_pages": [
+        4,
+        5
+      ],
+      "decision": "A04/A17",
+      "age_uncertain_at": [
+        15
+      ],
+      "classic_limit": null,
+      "normalization_ids": [
+        "annual_age",
+        "fifteen_uncertainty",
+        "bodybuilding_masters"
+      ]
+    },
+    {
+      "id": "bodybuilding-masters-45-open",
+      "discipline": "bodybuilding",
+      "name": "Bodybuilding masters 45–49 > 90",
+      "sex": "M",
+      "division": "masters",
+      "sections": [
+        "amateur",
+        "pro"
+      ],
+      "age_min": 45,
+      "age_max": 49,
+      "metric": "weight_kg",
+      "lower_exclusive": "90",
+      "upper_inclusive": null,
+      "source_id": "D04",
+      "source_pages": [
+        4,
+        5
+      ],
+      "decision": "A04/A17",
+      "age_uncertain_at": [
+        15
+      ],
+      "classic_limit": null,
+      "normalization_ids": [
+        "annual_age",
+        "fifteen_uncertainty",
+        "bodybuilding_masters"
+      ]
+    },
+    {
+      "id": "bodybuilding-masters-50-80",
+      "discipline": "bodybuilding",
+      "name": "Bodybuilding masters 50–54 ≤ 80",
+      "sex": "M",
+      "division": "masters",
+      "sections": [
+        "amateur",
+        "pro"
+      ],
+      "age_min": 50,
+      "age_max": 54,
+      "metric": "weight_kg",
+      "lower_exclusive": null,
+      "upper_inclusive": "80",
+      "source_id": "D04",
+      "source_pages": [
+        4,
+        5
+      ],
+      "decision": "A04/A17",
+      "age_uncertain_at": [
+        15
+      ],
+      "classic_limit": null,
+      "normalization_ids": [
+        "annual_age",
+        "fifteen_uncertainty",
+        "bodybuilding_masters"
+      ]
+    },
+    {
+      "id": "bodybuilding-masters-50-open",
+      "discipline": "bodybuilding",
+      "name": "Bodybuilding masters 50–54 > 80",
+      "sex": "M",
+      "division": "masters",
+      "sections": [
+        "amateur",
+        "pro"
+      ],
+      "age_min": 50,
+      "age_max": 54,
+      "metric": "weight_kg",
+      "lower_exclusive": "80",
+      "upper_inclusive": null,
+      "source_id": "D04",
+      "source_pages": [
+        4,
+        5
+      ],
+      "decision": "A04/A17",
+      "age_uncertain_at": [
+        15
+      ],
+      "classic_limit": null,
+      "normalization_ids": [
+        "annual_age",
+        "fifteen_uncertainty",
+        "bodybuilding_masters"
+      ]
+    },
+    {
+      "id": "bodybuilding-masters-55-75",
+      "discipline": "bodybuilding",
+      "name": "Bodybuilding masters 55–59 ≤ 75",
+      "sex": "M",
+      "division": "masters",
+      "sections": [
+        "amateur",
+        "pro"
+      ],
+      "age_min": 55,
+      "age_max": 59,
+      "metric": "weight_kg",
+      "lower_exclusive": null,
+      "upper_inclusive": "75",
+      "source_id": "D04",
+      "source_pages": [
+        4,
+        5
+      ],
+      "decision": "A04/A17",
+      "age_uncertain_at": [
+        15
+      ],
+      "classic_limit": null,
+      "normalization_ids": [
+        "annual_age",
+        "fifteen_uncertainty",
+        "bodybuilding_masters"
+      ]
+    },
+    {
+      "id": "bodybuilding-masters-55-open",
+      "discipline": "bodybuilding",
+      "name": "Bodybuilding masters 55–59 > 75",
+      "sex": "M",
+      "division": "masters",
+      "sections": [
+        "amateur",
+        "pro"
+      ],
+      "age_min": 55,
+      "age_max": 59,
+      "metric": "weight_kg",
+      "lower_exclusive": "75",
+      "upper_inclusive": null,
+      "source_id": "D04",
+      "source_pages": [
+        4,
+        5
+      ],
+      "decision": "A04/A17",
+      "age_uncertain_at": [
+        15
+      ],
+      "classic_limit": null,
+      "normalization_ids": [
+        "annual_age",
+        "fifteen_uncertainty",
+        "bodybuilding_masters"
+      ]
+    },
+    {
+      "id": "bodybuilding-masters-60-open",
+      "discipline": "bodybuilding",
+      "name": "Bodybuilding masters 60–64 Open",
+      "sex": "M",
+      "division": "masters",
+      "sections": [
+        "amateur",
+        "pro"
+      ],
+      "age_min": 60,
+      "age_max": 64,
+      "metric": "weight_kg",
+      "lower_exclusive": null,
+      "upper_inclusive": null,
+      "source_id": "D04",
+      "source_pages": [
+        4,
+        5
+      ],
+      "decision": "A04/A17",
+      "age_uncertain_at": [
+        15
+      ],
+      "classic_limit": null,
+      "normalization_ids": [
+        "annual_age",
+        "fifteen_uncertainty",
+        "bodybuilding_masters"
+      ]
+    },
+    {
+      "id": "bodybuilding-masters-65-open",
+      "discipline": "bodybuilding",
+      "name": "Bodybuilding masters 65–+ Open",
+      "sex": "M",
+      "division": "masters",
+      "sections": [
+        "amateur",
+        "pro"
+      ],
+      "age_min": 65,
+      "age_max": null,
+      "metric": "weight_kg",
+      "lower_exclusive": null,
+      "upper_inclusive": null,
+      "source_id": "D04",
+      "source_pages": [
+        4,
+        5
+      ],
+      "decision": "A04/A17",
+      "age_uncertain_at": [
+        15
+      ],
+      "classic_limit": null,
+      "normalization_ids": [
+        "annual_age",
+        "fifteen_uncertainty",
+        "bodybuilding_masters"
+      ]
+    },
+    {
+      "id": "classic_bodybuilding-senior-all-168",
+      "discipline": "classic_bodybuilding",
+      "name": "Classic Bodybuilding senior ≤ 168",
+      "sex": "M",
+      "division": "senior",
+      "sections": [
+        "amateur",
+        "pro"
+      ],
+      "age_min": null,
+      "age_max": null,
+      "metric": "height_cm",
+      "lower_exclusive": null,
+      "upper_inclusive": "168",
+      "source_id": "D05",
+      "source_pages": [
+        4,
+        5
+      ],
+      "decision": "A04/A17",
+      "age_uncertain_at": [
+        15
+      ],
+      "classic_limit": "classic_bodybuilding",
+      "normalization_ids": [
+        "annual_age",
+        "fifteen_uncertainty"
+      ]
+    },
+    {
+      "id": "classic_bodybuilding-senior-all-171",
+      "discipline": "classic_bodybuilding",
+      "name": "Classic Bodybuilding senior > 168 à ≤ 171",
+      "sex": "M",
+      "division": "senior",
+      "sections": [
+        "amateur",
+        "pro"
+      ],
+      "age_min": null,
+      "age_max": null,
+      "metric": "height_cm",
+      "lower_exclusive": "168",
+      "upper_inclusive": "171",
+      "source_id": "D05",
+      "source_pages": [
+        4,
+        5
+      ],
+      "decision": "A04/A17",
+      "age_uncertain_at": [
+        15
+      ],
+      "classic_limit": "classic_bodybuilding",
+      "normalization_ids": [
+        "annual_age",
+        "fifteen_uncertainty"
+      ]
+    },
+    {
+      "id": "classic_bodybuilding-senior-all-175",
+      "discipline": "classic_bodybuilding",
+      "name": "Classic Bodybuilding senior > 171 à ≤ 175",
+      "sex": "M",
+      "division": "senior",
+      "sections": [
+        "amateur",
+        "pro"
+      ],
+      "age_min": null,
+      "age_max": null,
+      "metric": "height_cm",
+      "lower_exclusive": "171",
+      "upper_inclusive": "175",
+      "source_id": "D05",
+      "source_pages": [
+        4,
+        5
+      ],
+      "decision": "A04/A17",
+      "age_uncertain_at": [
+        15
+      ],
+      "classic_limit": "classic_bodybuilding",
+      "normalization_ids": [
+        "annual_age",
+        "fifteen_uncertainty"
+      ]
+    },
+    {
+      "id": "classic_bodybuilding-senior-all-180",
+      "discipline": "classic_bodybuilding",
+      "name": "Classic Bodybuilding senior > 175 à ≤ 180",
+      "sex": "M",
+      "division": "senior",
+      "sections": [
+        "amateur",
+        "pro"
+      ],
+      "age_min": null,
+      "age_max": null,
+      "metric": "height_cm",
+      "lower_exclusive": "175",
+      "upper_inclusive": "180",
+      "source_id": "D05",
+      "source_pages": [
+        4,
+        5
+      ],
+      "decision": "A04/A17",
+      "age_uncertain_at": [
+        15
+      ],
+      "classic_limit": "classic_bodybuilding",
+      "normalization_ids": [
+        "annual_age",
+        "fifteen_uncertainty"
+      ]
+    },
+    {
+      "id": "classic_bodybuilding-senior-all-open",
+      "discipline": "classic_bodybuilding",
+      "name": "Classic Bodybuilding senior > 180",
+      "sex": "M",
+      "division": "senior",
+      "sections": [
+        "amateur",
+        "pro"
+      ],
+      "age_min": null,
+      "age_max": null,
+      "metric": "height_cm",
+      "lower_exclusive": "180",
+      "upper_inclusive": null,
+      "source_id": "D05",
+      "source_pages": [
+        4,
+        5
+      ],
+      "decision": "A04/A17",
+      "age_uncertain_at": [
+        15
+      ],
+      "classic_limit": "classic_bodybuilding",
+      "normalization_ids": [
+        "annual_age",
+        "fifteen_uncertainty"
+      ]
+    },
+    {
+      "id": "classic_bodybuilding-junior-15-open",
+      "discipline": "classic_bodybuilding",
+      "name": "Classic Bodybuilding junior 15–20 Open",
+      "sex": "M",
+      "division": "junior",
+      "sections": [
+        "amateur",
+        "pro"
+      ],
+      "age_min": 15,
+      "age_max": 20,
+      "metric": "height_cm",
+      "lower_exclusive": null,
+      "upper_inclusive": null,
+      "source_id": "D05",
+      "source_pages": [
+        4,
+        5
+      ],
+      "decision": "A04/A17",
+      "age_uncertain_at": [
+        15
+      ],
+      "classic_limit": "classic_bodybuilding",
+      "normalization_ids": [
+        "annual_age",
+        "fifteen_uncertainty"
+      ]
+    },
+    {
+      "id": "classic_bodybuilding-junior-21-open",
+      "discipline": "classic_bodybuilding",
+      "name": "Classic Bodybuilding junior 21–23 Open",
+      "sex": "M",
+      "division": "junior",
+      "sections": [
+        "amateur",
+        "pro"
+      ],
+      "age_min": 21,
+      "age_max": 23,
+      "metric": "height_cm",
+      "lower_exclusive": null,
+      "upper_inclusive": null,
+      "source_id": "D05",
+      "source_pages": [
+        4,
+        5
+      ],
+      "decision": "A04/A17",
+      "age_uncertain_at": [
+        15
+      ],
+      "classic_limit": "classic_bodybuilding",
+      "normalization_ids": [
+        "annual_age",
+        "fifteen_uncertainty"
+      ]
+    },
+    {
+      "id": "classic_bodybuilding-masters-40-open",
+      "discipline": "classic_bodybuilding",
+      "name": "Classic Bodybuilding masters 40–44 Open",
+      "sex": "M",
+      "division": "masters",
+      "sections": [
+        "amateur",
+        "pro"
+      ],
+      "age_min": 40,
+      "age_max": 44,
+      "metric": "height_cm",
+      "lower_exclusive": null,
+      "upper_inclusive": null,
+      "source_id": "D05",
+      "source_pages": [
+        4,
+        5
+      ],
+      "decision": "A04/A17",
+      "age_uncertain_at": [
+        15
+      ],
+      "classic_limit": "classic_bodybuilding",
+      "normalization_ids": [
+        "annual_age",
+        "fifteen_uncertainty"
+      ]
+    },
+    {
+      "id": "classic_bodybuilding-masters-45-open",
+      "discipline": "classic_bodybuilding",
+      "name": "Classic Bodybuilding masters 45–49 Open",
+      "sex": "M",
+      "division": "masters",
+      "sections": [
+        "amateur",
+        "pro"
+      ],
+      "age_min": 45,
+      "age_max": 49,
+      "metric": "height_cm",
+      "lower_exclusive": null,
+      "upper_inclusive": null,
+      "source_id": "D05",
+      "source_pages": [
+        4,
+        5
+      ],
+      "decision": "A04/A17",
+      "age_uncertain_at": [
+        15
+      ],
+      "classic_limit": "classic_bodybuilding",
+      "normalization_ids": [
+        "annual_age",
+        "fifteen_uncertainty"
+      ]
+    },
+    {
+      "id": "classic_bodybuilding-masters-50-open",
+      "discipline": "classic_bodybuilding",
+      "name": "Classic Bodybuilding masters 50–+ Open",
+      "sex": "M",
+      "division": "masters",
+      "sections": [
+        "amateur",
+        "pro"
+      ],
+      "age_min": 50,
+      "age_max": null,
+      "metric": "height_cm",
+      "lower_exclusive": null,
+      "upper_inclusive": null,
+      "source_id": "D05",
+      "source_pages": [
+        4,
+        5
+      ],
+      "decision": "A04/A17",
+      "age_uncertain_at": [
+        15
+      ],
+      "classic_limit": "classic_bodybuilding",
+      "normalization_ids": [
+        "annual_age",
+        "fifteen_uncertainty"
+      ]
+    },
+    {
+      "id": "classic_physique-senior-all-168",
+      "discipline": "classic_physique",
+      "name": "Classic Physique senior ≤ 168",
+      "sex": "M",
+      "division": "senior",
+      "sections": [
+        "amateur",
+        "pro"
+      ],
+      "age_min": null,
+      "age_max": null,
+      "metric": "height_cm",
+      "lower_exclusive": null,
+      "upper_inclusive": "168",
+      "source_id": "D02",
+      "source_pages": [
+        4,
+        5
+      ],
+      "decision": "A04/A17",
+      "age_uncertain_at": [],
+      "classic_limit": "classic_physique",
+      "normalization_ids": [
+        "annual_age"
+      ]
+    },
+    {
+      "id": "classic_physique-senior-all-171",
+      "discipline": "classic_physique",
+      "name": "Classic Physique senior > 168 à ≤ 171",
+      "sex": "M",
+      "division": "senior",
+      "sections": [
+        "amateur",
+        "pro"
+      ],
+      "age_min": null,
+      "age_max": null,
+      "metric": "height_cm",
+      "lower_exclusive": "168",
+      "upper_inclusive": "171",
+      "source_id": "D02",
+      "source_pages": [
+        4,
+        5
+      ],
+      "decision": "A04/A17",
+      "age_uncertain_at": [],
+      "classic_limit": "classic_physique",
+      "normalization_ids": [
+        "annual_age"
+      ]
+    },
+    {
+      "id": "classic_physique-senior-all-175",
+      "discipline": "classic_physique",
+      "name": "Classic Physique senior > 171 à ≤ 175",
+      "sex": "M",
+      "division": "senior",
+      "sections": [
+        "amateur",
+        "pro"
+      ],
+      "age_min": null,
+      "age_max": null,
+      "metric": "height_cm",
+      "lower_exclusive": "171",
+      "upper_inclusive": "175",
+      "source_id": "D02",
+      "source_pages": [
+        4,
+        5
+      ],
+      "decision": "A04/A17",
+      "age_uncertain_at": [],
+      "classic_limit": "classic_physique",
+      "normalization_ids": [
+        "annual_age"
+      ]
+    },
+    {
+      "id": "classic_physique-senior-all-180",
+      "discipline": "classic_physique",
+      "name": "Classic Physique senior > 175 à ≤ 180",
+      "sex": "M",
+      "division": "senior",
+      "sections": [
+        "amateur",
+        "pro"
+      ],
+      "age_min": null,
+      "age_max": null,
+      "metric": "height_cm",
+      "lower_exclusive": "175",
+      "upper_inclusive": "180",
+      "source_id": "D02",
+      "source_pages": [
+        4,
+        5
+      ],
+      "decision": "A04/A17",
+      "age_uncertain_at": [],
+      "classic_limit": "classic_physique",
+      "normalization_ids": [
+        "annual_age"
+      ]
+    },
+    {
+      "id": "classic_physique-senior-all-open",
+      "discipline": "classic_physique",
+      "name": "Classic Physique senior > 180",
+      "sex": "M",
+      "division": "senior",
+      "sections": [
+        "amateur",
+        "pro"
+      ],
+      "age_min": null,
+      "age_max": null,
+      "metric": "height_cm",
+      "lower_exclusive": "180",
+      "upper_inclusive": null,
+      "source_id": "D02",
+      "source_pages": [
+        4,
+        5
+      ],
+      "decision": "A04/A17",
+      "age_uncertain_at": [],
+      "classic_limit": "classic_physique",
+      "normalization_ids": [
+        "annual_age"
+      ]
+    },
+    {
+      "id": "classic_physique-junior-16-open",
+      "discipline": "classic_physique",
+      "name": "Classic Physique junior 16–20 Open",
+      "sex": "M",
+      "division": "junior",
+      "sections": [
+        "amateur",
+        "pro"
+      ],
+      "age_min": 16,
+      "age_max": 20,
+      "metric": "height_cm",
+      "lower_exclusive": null,
+      "upper_inclusive": null,
+      "source_id": "D02",
+      "source_pages": [
+        4,
+        5
+      ],
+      "decision": "A04/A17",
+      "age_uncertain_at": [],
+      "classic_limit": "classic_physique",
+      "normalization_ids": [
+        "annual_age"
+      ]
+    },
+    {
+      "id": "classic_physique-junior-21-open",
+      "discipline": "classic_physique",
+      "name": "Classic Physique junior 21–23 Open",
+      "sex": "M",
+      "division": "junior",
+      "sections": [
+        "amateur",
+        "pro"
+      ],
+      "age_min": 21,
+      "age_max": 23,
+      "metric": "height_cm",
+      "lower_exclusive": null,
+      "upper_inclusive": null,
+      "source_id": "D02",
+      "source_pages": [
+        4,
+        5
+      ],
+      "decision": "A04/A17",
+      "age_uncertain_at": [],
+      "classic_limit": "classic_physique",
+      "normalization_ids": [
+        "annual_age"
+      ]
+    },
+    {
+      "id": "classic_physique-masters-40-open",
+      "discipline": "classic_physique",
+      "name": "Classic Physique masters 40–44 Open",
+      "sex": "M",
+      "division": "masters",
+      "sections": [
+        "amateur",
+        "pro"
+      ],
+      "age_min": 40,
+      "age_max": 44,
+      "metric": "height_cm",
+      "lower_exclusive": null,
+      "upper_inclusive": null,
+      "source_id": "D02",
+      "source_pages": [
+        4,
+        5
+      ],
+      "decision": "A04/A17",
+      "age_uncertain_at": [],
+      "classic_limit": "classic_physique",
+      "normalization_ids": [
+        "annual_age"
+      ]
+    },
+    {
+      "id": "classic_physique-masters-45-open",
+      "discipline": "classic_physique",
+      "name": "Classic Physique masters 45–49 Open",
+      "sex": "M",
+      "division": "masters",
+      "sections": [
+        "amateur",
+        "pro"
+      ],
+      "age_min": 45,
+      "age_max": 49,
+      "metric": "height_cm",
+      "lower_exclusive": null,
+      "upper_inclusive": null,
+      "source_id": "D02",
+      "source_pages": [
+        4,
+        5
+      ],
+      "decision": "A04/A17",
+      "age_uncertain_at": [],
+      "classic_limit": "classic_physique",
+      "normalization_ids": [
+        "annual_age"
+      ]
+    },
+    {
+      "id": "classic_physique-masters-50-open",
+      "discipline": "classic_physique",
+      "name": "Classic Physique masters 50–+ Open",
+      "sex": "M",
+      "division": "masters",
+      "sections": [
+        "amateur",
+        "pro"
+      ],
+      "age_min": 50,
+      "age_max": null,
+      "metric": "height_cm",
+      "lower_exclusive": null,
+      "upper_inclusive": null,
+      "source_id": "D02",
+      "source_pages": [
+        4,
+        5
+      ],
+      "decision": "A04/A17",
+      "age_uncertain_at": [],
+      "classic_limit": "classic_physique",
+      "normalization_ids": [
+        "annual_age"
+      ]
+    },
+    {
+      "id": "mens_physique-senior-all-170",
+      "discipline": "mens_physique",
+      "name": "Men’s Physique senior ≤ 170",
+      "sex": "M",
+      "division": "senior",
+      "sections": [
+        "amateur",
+        "pro"
+      ],
+      "age_min": null,
+      "age_max": null,
+      "metric": "height_cm",
+      "lower_exclusive": null,
+      "upper_inclusive": "170",
+      "source_id": "D10",
+      "source_pages": [
+        4
+      ],
+      "decision": "A04/A17",
+      "age_uncertain_at": [
+        15
+      ],
+      "classic_limit": null,
+      "normalization_ids": [
+        "annual_age",
+        "fifteen_uncertainty",
+        "mens_physique_182"
+      ]
+    },
+    {
+      "id": "mens_physique-senior-all-173",
+      "discipline": "mens_physique",
+      "name": "Men’s Physique senior > 170 à ≤ 173",
+      "sex": "M",
+      "division": "senior",
+      "sections": [
+        "amateur",
+        "pro"
+      ],
+      "age_min": null,
+      "age_max": null,
+      "metric": "height_cm",
+      "lower_exclusive": "170",
+      "upper_inclusive": "173",
+      "source_id": "D10",
+      "source_pages": [
+        4
+      ],
+      "decision": "A04/A17",
+      "age_uncertain_at": [
+        15
+      ],
+      "classic_limit": null,
+      "normalization_ids": [
+        "annual_age",
+        "fifteen_uncertainty",
+        "mens_physique_182"
+      ]
+    },
+    {
+      "id": "mens_physique-senior-all-176",
+      "discipline": "mens_physique",
+      "name": "Men’s Physique senior > 173 à ≤ 176",
+      "sex": "M",
+      "division": "senior",
+      "sections": [
+        "amateur",
+        "pro"
+      ],
+      "age_min": null,
+      "age_max": null,
+      "metric": "height_cm",
+      "lower_exclusive": "173",
+      "upper_inclusive": "176",
+      "source_id": "D10",
+      "source_pages": [
+        4
+      ],
+      "decision": "A04/A17",
+      "age_uncertain_at": [
+        15
+      ],
+      "classic_limit": null,
+      "normalization_ids": [
+        "annual_age",
+        "fifteen_uncertainty",
+        "mens_physique_182"
+      ]
+    },
+    {
+      "id": "mens_physique-senior-all-179",
+      "discipline": "mens_physique",
+      "name": "Men’s Physique senior > 176 à ≤ 179",
+      "sex": "M",
+      "division": "senior",
+      "sections": [
+        "amateur",
+        "pro"
+      ],
+      "age_min": null,
+      "age_max": null,
+      "metric": "height_cm",
+      "lower_exclusive": "176",
+      "upper_inclusive": "179",
+      "source_id": "D10",
+      "source_pages": [
+        4
+      ],
+      "decision": "A04/A17",
+      "age_uncertain_at": [
+        15
+      ],
+      "classic_limit": null,
+      "normalization_ids": [
+        "annual_age",
+        "fifteen_uncertainty",
+        "mens_physique_182"
+      ]
+    },
+    {
+      "id": "mens_physique-senior-all-182",
+      "discipline": "mens_physique",
+      "name": "Men’s Physique senior > 179 à ≤ 182",
+      "sex": "M",
+      "division": "senior",
+      "sections": [
+        "amateur",
+        "pro"
+      ],
+      "age_min": null,
+      "age_max": null,
+      "metric": "height_cm",
+      "lower_exclusive": "179",
+      "upper_inclusive": "182",
+      "source_id": "D10",
+      "source_pages": [
+        4
+      ],
+      "decision": "A04/A17",
+      "age_uncertain_at": [
+        15
+      ],
+      "classic_limit": null,
+      "normalization_ids": [
+        "annual_age",
+        "fifteen_uncertainty",
+        "mens_physique_182"
+      ]
+    },
+    {
+      "id": "mens_physique-senior-all-open",
+      "discipline": "mens_physique",
+      "name": "Men’s Physique senior > 182",
+      "sex": "M",
+      "division": "senior",
+      "sections": [
+        "amateur",
+        "pro"
+      ],
+      "age_min": null,
+      "age_max": null,
+      "metric": "height_cm",
+      "lower_exclusive": "182",
+      "upper_inclusive": null,
+      "source_id": "D10",
+      "source_pages": [
+        4
+      ],
+      "decision": "A04/A17",
+      "age_uncertain_at": [
+        15
+      ],
+      "classic_limit": null,
+      "normalization_ids": [
+        "annual_age",
+        "fifteen_uncertainty",
+        "mens_physique_182"
+      ]
+    },
+    {
+      "id": "mens_physique-junior-16-open",
+      "discipline": "mens_physique",
+      "name": "Men’s Physique junior 16–17 Open",
+      "sex": "M",
+      "division": "junior",
+      "sections": [
+        "amateur",
+        "pro"
+      ],
+      "age_min": 16,
+      "age_max": 17,
+      "metric": "height_cm",
+      "lower_exclusive": null,
+      "upper_inclusive": null,
+      "source_id": "D10",
+      "source_pages": [
+        4
+      ],
+      "decision": "A04/A17",
+      "age_uncertain_at": [
+        15
+      ],
+      "classic_limit": null,
+      "normalization_ids": [
+        "annual_age",
+        "fifteen_uncertainty"
+      ]
+    },
+    {
+      "id": "mens_physique-junior-18-open",
+      "discipline": "mens_physique",
+      "name": "Men’s Physique junior 18–20 Open",
+      "sex": "M",
+      "division": "junior",
+      "sections": [
+        "amateur",
+        "pro"
+      ],
+      "age_min": 18,
+      "age_max": 20,
+      "metric": "height_cm",
+      "lower_exclusive": null,
+      "upper_inclusive": null,
+      "source_id": "D10",
+      "source_pages": [
+        4
+      ],
+      "decision": "A04/A17",
+      "age_uncertain_at": [
+        15
+      ],
+      "classic_limit": null,
+      "normalization_ids": [
+        "annual_age",
+        "fifteen_uncertainty"
+      ]
+    },
+    {
+      "id": "mens_physique-junior-21-174",
+      "discipline": "mens_physique",
+      "name": "Men’s Physique junior 21–23 ≤ 174",
+      "sex": "M",
+      "division": "junior",
+      "sections": [
+        "amateur",
+        "pro"
+      ],
+      "age_min": 21,
+      "age_max": 23,
+      "metric": "height_cm",
+      "lower_exclusive": null,
+      "upper_inclusive": "174",
+      "source_id": "D10",
+      "source_pages": [
+        4
+      ],
+      "decision": "A04/A17",
+      "age_uncertain_at": [
+        15
+      ],
+      "classic_limit": null,
+      "normalization_ids": [
+        "annual_age",
+        "fifteen_uncertainty"
+      ]
+    },
+    {
+      "id": "mens_physique-junior-21-178",
+      "discipline": "mens_physique",
+      "name": "Men’s Physique junior 21–23 > 174 à ≤ 178",
+      "sex": "M",
+      "division": "junior",
+      "sections": [
+        "amateur",
+        "pro"
+      ],
+      "age_min": 21,
+      "age_max": 23,
+      "metric": "height_cm",
+      "lower_exclusive": "174",
+      "upper_inclusive": "178",
+      "source_id": "D10",
+      "source_pages": [
+        4
+      ],
+      "decision": "A04/A17",
+      "age_uncertain_at": [
+        15
+      ],
+      "classic_limit": null,
+      "normalization_ids": [
+        "annual_age",
+        "fifteen_uncertainty"
+      ]
+    },
+    {
+      "id": "mens_physique-junior-21-open",
+      "discipline": "mens_physique",
+      "name": "Men’s Physique junior 21–23 > 178",
+      "sex": "M",
+      "division": "junior",
+      "sections": [
+        "amateur",
+        "pro"
+      ],
+      "age_min": 21,
+      "age_max": 23,
+      "metric": "height_cm",
+      "lower_exclusive": "178",
+      "upper_inclusive": null,
+      "source_id": "D10",
+      "source_pages": [
+        4
+      ],
+      "decision": "A04/A17",
+      "age_uncertain_at": [
+        15
+      ],
+      "classic_limit": null,
+      "normalization_ids": [
+        "annual_age",
+        "fifteen_uncertainty"
+      ]
+    },
+    {
+      "id": "mens_physique-masters-40-open",
+      "discipline": "mens_physique",
+      "name": "Men’s Physique masters 40–44 Open",
+      "sex": "M",
+      "division": "masters",
+      "sections": [
+        "amateur",
+        "pro"
+      ],
+      "age_min": 40,
+      "age_max": 44,
+      "metric": "height_cm",
+      "lower_exclusive": null,
+      "upper_inclusive": null,
+      "source_id": "D10",
+      "source_pages": [
+        4
+      ],
+      "decision": "A04/A17",
+      "age_uncertain_at": [
+        15
+      ],
+      "classic_limit": null,
+      "normalization_ids": [
+        "annual_age",
+        "fifteen_uncertainty",
+        "mens_physique_masters"
+      ]
+    },
+    {
+      "id": "mens_physique-masters-45-open",
+      "discipline": "mens_physique",
+      "name": "Men’s Physique masters 45–49 Open",
+      "sex": "M",
+      "division": "masters",
+      "sections": [
+        "amateur",
+        "pro"
+      ],
+      "age_min": 45,
+      "age_max": 49,
+      "metric": "height_cm",
+      "lower_exclusive": null,
+      "upper_inclusive": null,
+      "source_id": "D10",
+      "source_pages": [
+        4
+      ],
+      "decision": "A04/A17",
+      "age_uncertain_at": [
+        15
+      ],
+      "classic_limit": null,
+      "normalization_ids": [
+        "annual_age",
+        "fifteen_uncertainty",
+        "mens_physique_masters"
+      ]
+    },
+    {
+      "id": "mens_physique-masters-50-open",
+      "discipline": "mens_physique",
+      "name": "Men’s Physique masters 50–+ Open",
+      "sex": "M",
+      "division": "masters",
+      "sections": [
+        "amateur",
+        "pro"
+      ],
+      "age_min": 50,
+      "age_max": null,
+      "metric": "height_cm",
+      "lower_exclusive": null,
+      "upper_inclusive": null,
+      "source_id": "D10",
+      "source_pages": [
+        4
+      ],
+      "decision": "A04/A17",
+      "age_uncertain_at": [
+        15
+      ],
+      "classic_limit": null,
+      "normalization_ids": [
+        "annual_age",
+        "fifteen_uncertainty",
+        "mens_physique_masters"
+      ]
+    },
+    {
+      "id": "muscular-senior-all-179",
+      "discipline": "muscular",
+      "name": "Muscular Men’s Physique senior ≤ 179",
+      "sex": "M",
+      "division": "senior",
+      "sections": [
+        "amateur",
+        "pro"
+      ],
+      "age_min": null,
+      "age_max": null,
+      "metric": "height_cm",
+      "lower_exclusive": null,
+      "upper_inclusive": "179",
+      "source_id": "D10",
+      "source_pages": [
+        4
+      ],
+      "decision": "A04/A17",
+      "age_uncertain_at": [],
+      "classic_limit": null,
+      "normalization_ids": [
+        "annual_age",
+        "muscular_divisions"
+      ]
+    },
+    {
+      "id": "muscular-senior-all-open",
+      "discipline": "muscular",
+      "name": "Muscular Men’s Physique senior > 179",
+      "sex": "M",
+      "division": "senior",
+      "sections": [
+        "amateur",
+        "pro"
+      ],
+      "age_min": null,
+      "age_max": null,
+      "metric": "height_cm",
+      "lower_exclusive": "179",
+      "upper_inclusive": null,
+      "source_id": "D10",
+      "source_pages": [
+        4
+      ],
+      "decision": "A04/A17",
+      "age_uncertain_at": [],
+      "classic_limit": null,
+      "normalization_ids": [
+        "annual_age",
+        "muscular_divisions"
+      ]
+    },
+    {
+      "id": "bikini-senior-all-158",
+      "discipline": "bikini",
+      "name": "Bikini senior ≤ 158",
+      "sex": "F",
+      "division": "senior",
+      "sections": [
+        "amateur",
+        "pro"
+      ],
+      "age_min": null,
+      "age_max": null,
+      "metric": "height_cm",
+      "lower_exclusive": null,
+      "upper_inclusive": "158",
+      "source_id": "D03",
+      "source_pages": [
+        4
+      ],
+      "decision": "A04/A17",
+      "age_uncertain_at": [],
+      "classic_limit": null,
+      "normalization_ids": [
+        "annual_age"
+      ]
+    },
+    {
+      "id": "bikini-senior-all-160",
+      "discipline": "bikini",
+      "name": "Bikini senior > 158 à ≤ 160",
+      "sex": "F",
+      "division": "senior",
+      "sections": [
+        "amateur",
+        "pro"
+      ],
+      "age_min": null,
+      "age_max": null,
+      "metric": "height_cm",
+      "lower_exclusive": "158",
+      "upper_inclusive": "160",
+      "source_id": "D03",
+      "source_pages": [
+        4
+      ],
+      "decision": "A04/A17",
+      "age_uncertain_at": [],
+      "classic_limit": null,
+      "normalization_ids": [
+        "annual_age"
+      ]
+    },
+    {
+      "id": "bikini-senior-all-162",
+      "discipline": "bikini",
+      "name": "Bikini senior > 160 à ≤ 162",
+      "sex": "F",
+      "division": "senior",
+      "sections": [
+        "amateur",
+        "pro"
+      ],
+      "age_min": null,
+      "age_max": null,
+      "metric": "height_cm",
+      "lower_exclusive": "160",
+      "upper_inclusive": "162",
+      "source_id": "D03",
+      "source_pages": [
+        4
+      ],
+      "decision": "A04/A17",
+      "age_uncertain_at": [],
+      "classic_limit": null,
+      "normalization_ids": [
+        "annual_age"
+      ]
+    },
+    {
+      "id": "bikini-senior-all-164",
+      "discipline": "bikini",
+      "name": "Bikini senior > 162 à ≤ 164",
+      "sex": "F",
+      "division": "senior",
+      "sections": [
+        "amateur",
+        "pro"
+      ],
+      "age_min": null,
+      "age_max": null,
+      "metric": "height_cm",
+      "lower_exclusive": "162",
+      "upper_inclusive": "164",
+      "source_id": "D03",
+      "source_pages": [
+        4
+      ],
+      "decision": "A04/A17",
+      "age_uncertain_at": [],
+      "classic_limit": null,
+      "normalization_ids": [
+        "annual_age"
+      ]
+    },
+    {
+      "id": "bikini-senior-all-166",
+      "discipline": "bikini",
+      "name": "Bikini senior > 164 à ≤ 166",
+      "sex": "F",
+      "division": "senior",
+      "sections": [
+        "amateur",
+        "pro"
+      ],
+      "age_min": null,
+      "age_max": null,
+      "metric": "height_cm",
+      "lower_exclusive": "164",
+      "upper_inclusive": "166",
+      "source_id": "D03",
+      "source_pages": [
+        4
+      ],
+      "decision": "A04/A17",
+      "age_uncertain_at": [],
+      "classic_limit": null,
+      "normalization_ids": [
+        "annual_age"
+      ]
+    },
+    {
+      "id": "bikini-senior-all-169",
+      "discipline": "bikini",
+      "name": "Bikini senior > 166 à ≤ 169",
+      "sex": "F",
+      "division": "senior",
+      "sections": [
+        "amateur",
+        "pro"
+      ],
+      "age_min": null,
+      "age_max": null,
+      "metric": "height_cm",
+      "lower_exclusive": "166",
+      "upper_inclusive": "169",
+      "source_id": "D03",
+      "source_pages": [
+        4
+      ],
+      "decision": "A04/A17",
+      "age_uncertain_at": [],
+      "classic_limit": null,
+      "normalization_ids": [
+        "annual_age"
+      ]
+    },
+    {
+      "id": "bikini-senior-all-172",
+      "discipline": "bikini",
+      "name": "Bikini senior > 169 à ≤ 172",
+      "sex": "F",
+      "division": "senior",
+      "sections": [
+        "amateur",
+        "pro"
+      ],
+      "age_min": null,
+      "age_max": null,
+      "metric": "height_cm",
+      "lower_exclusive": "169",
+      "upper_inclusive": "172",
+      "source_id": "D03",
+      "source_pages": [
+        4
+      ],
+      "decision": "A04/A17",
+      "age_uncertain_at": [],
+      "classic_limit": null,
+      "normalization_ids": [
+        "annual_age"
+      ]
+    },
+    {
+      "id": "bikini-senior-all-open",
+      "discipline": "bikini",
+      "name": "Bikini senior > 172",
+      "sex": "F",
+      "division": "senior",
+      "sections": [
+        "amateur",
+        "pro"
+      ],
+      "age_min": null,
+      "age_max": null,
+      "metric": "height_cm",
+      "lower_exclusive": "172",
+      "upper_inclusive": null,
+      "source_id": "D03",
+      "source_pages": [
+        4
+      ],
+      "decision": "A04/A17",
+      "age_uncertain_at": [],
+      "classic_limit": null,
+      "normalization_ids": [
+        "annual_age"
+      ]
+    },
+    {
+      "id": "bikini-junior-16-160",
+      "discipline": "bikini",
+      "name": "Bikini junior 16–20 ≤ 160",
+      "sex": "F",
+      "division": "junior",
+      "sections": [
+        "amateur",
+        "pro"
+      ],
+      "age_min": 16,
+      "age_max": 20,
+      "metric": "height_cm",
+      "lower_exclusive": null,
+      "upper_inclusive": "160",
+      "source_id": "D03",
+      "source_pages": [
+        4
+      ],
+      "decision": "A04/A17",
+      "age_uncertain_at": [],
+      "classic_limit": null,
+      "normalization_ids": [
+        "annual_age"
+      ]
+    },
+    {
+      "id": "bikini-junior-16-166",
+      "discipline": "bikini",
+      "name": "Bikini junior 16–20 > 160 à ≤ 166",
+      "sex": "F",
+      "division": "junior",
+      "sections": [
+        "amateur",
+        "pro"
+      ],
+      "age_min": 16,
+      "age_max": 20,
+      "metric": "height_cm",
+      "lower_exclusive": "160",
+      "upper_inclusive": "166",
+      "source_id": "D03",
+      "source_pages": [
+        4
+      ],
+      "decision": "A04/A17",
+      "age_uncertain_at": [],
+      "classic_limit": null,
+      "normalization_ids": [
+        "annual_age"
+      ]
+    },
+    {
+      "id": "bikini-junior-16-open",
+      "discipline": "bikini",
+      "name": "Bikini junior 16–20 > 166",
+      "sex": "F",
+      "division": "junior",
+      "sections": [
+        "amateur",
+        "pro"
+      ],
+      "age_min": 16,
+      "age_max": 20,
+      "metric": "height_cm",
+      "lower_exclusive": "166",
+      "upper_inclusive": null,
+      "source_id": "D03",
+      "source_pages": [
+        4
+      ],
+      "decision": "A04/A17",
+      "age_uncertain_at": [],
+      "classic_limit": null,
+      "normalization_ids": [
+        "annual_age"
+      ]
+    },
+    {
+      "id": "bikini-junior-21-160",
+      "discipline": "bikini",
+      "name": "Bikini junior 21–23 ≤ 160",
+      "sex": "F",
+      "division": "junior",
+      "sections": [
+        "amateur",
+        "pro"
+      ],
+      "age_min": 21,
+      "age_max": 23,
+      "metric": "height_cm",
+      "lower_exclusive": null,
+      "upper_inclusive": "160",
+      "source_id": "D03",
+      "source_pages": [
+        4
+      ],
+      "decision": "A04/A17",
+      "age_uncertain_at": [],
+      "classic_limit": null,
+      "normalization_ids": [
+        "annual_age"
+      ]
+    },
+    {
+      "id": "bikini-junior-21-166",
+      "discipline": "bikini",
+      "name": "Bikini junior 21–23 > 160 à ≤ 166",
+      "sex": "F",
+      "division": "junior",
+      "sections": [
+        "amateur",
+        "pro"
+      ],
+      "age_min": 21,
+      "age_max": 23,
+      "metric": "height_cm",
+      "lower_exclusive": "160",
+      "upper_inclusive": "166",
+      "source_id": "D03",
+      "source_pages": [
+        4
+      ],
+      "decision": "A04/A17",
+      "age_uncertain_at": [],
+      "classic_limit": null,
+      "normalization_ids": [
+        "annual_age"
+      ]
+    },
+    {
+      "id": "bikini-junior-21-open",
+      "discipline": "bikini",
+      "name": "Bikini junior 21–23 > 166",
+      "sex": "F",
+      "division": "junior",
+      "sections": [
+        "amateur",
+        "pro"
+      ],
+      "age_min": 21,
+      "age_max": 23,
+      "metric": "height_cm",
+      "lower_exclusive": "166",
+      "upper_inclusive": null,
+      "source_id": "D03",
+      "source_pages": [
+        4
+      ],
+      "decision": "A04/A17",
+      "age_uncertain_at": [],
+      "classic_limit": null,
+      "normalization_ids": [
+        "annual_age"
+      ]
+    },
+    {
+      "id": "bikini-masters-35-164",
+      "discipline": "bikini",
+      "name": "Bikini masters 35–39 ≤ 164",
+      "sex": "F",
+      "division": "masters",
+      "sections": [
+        "amateur",
+        "pro"
+      ],
+      "age_min": 35,
+      "age_max": 39,
+      "metric": "height_cm",
+      "lower_exclusive": null,
+      "upper_inclusive": "164",
+      "source_id": "D03",
+      "source_pages": [
+        4
+      ],
+      "decision": "A04/A17",
+      "age_uncertain_at": [],
+      "classic_limit": null,
+      "normalization_ids": [
+        "annual_age",
+        "female_masters"
+      ]
+    },
+    {
+      "id": "bikini-masters-35-open",
+      "discipline": "bikini",
+      "name": "Bikini masters 35–39 > 164",
+      "sex": "F",
+      "division": "masters",
+      "sections": [
+        "amateur",
+        "pro"
+      ],
+      "age_min": 35,
+      "age_max": 39,
+      "metric": "height_cm",
+      "lower_exclusive": "164",
+      "upper_inclusive": null,
+      "source_id": "D03",
+      "source_pages": [
+        4
+      ],
+      "decision": "A04/A17",
+      "age_uncertain_at": [],
+      "classic_limit": null,
+      "normalization_ids": [
+        "annual_age",
+        "female_masters"
+      ]
+    },
+    {
+      "id": "bikini-masters-40-open",
+      "discipline": "bikini",
+      "name": "Bikini masters 40–44 Open",
+      "sex": "F",
+      "division": "masters",
+      "sections": [
+        "amateur",
+        "pro"
+      ],
+      "age_min": 40,
+      "age_max": 44,
+      "metric": "height_cm",
+      "lower_exclusive": null,
+      "upper_inclusive": null,
+      "source_id": "D03",
+      "source_pages": [
+        4
+      ],
+      "decision": "A04/A17",
+      "age_uncertain_at": [],
+      "classic_limit": null,
+      "normalization_ids": [
+        "annual_age",
+        "female_masters"
+      ]
+    },
+    {
+      "id": "bikini-masters-45-open",
+      "discipline": "bikini",
+      "name": "Bikini masters 45–49 Open",
+      "sex": "F",
+      "division": "masters",
+      "sections": [
+        "amateur",
+        "pro"
+      ],
+      "age_min": 45,
+      "age_max": 49,
+      "metric": "height_cm",
+      "lower_exclusive": null,
+      "upper_inclusive": null,
+      "source_id": "D03",
+      "source_pages": [
+        4
+      ],
+      "decision": "A04/A17",
+      "age_uncertain_at": [],
+      "classic_limit": null,
+      "normalization_ids": [
+        "annual_age",
+        "female_masters"
+      ]
+    },
+    {
+      "id": "bikini-masters-50-open",
+      "discipline": "bikini",
+      "name": "Bikini masters 50–+ Open",
+      "sex": "F",
+      "division": "masters",
+      "sections": [
+        "amateur",
+        "pro"
+      ],
+      "age_min": 50,
+      "age_max": null,
+      "metric": "height_cm",
+      "lower_exclusive": null,
+      "upper_inclusive": null,
+      "source_id": "D03",
+      "source_pages": [
+        4
+      ],
+      "decision": "A04/A17",
+      "age_uncertain_at": [],
+      "classic_limit": null,
+      "normalization_ids": [
+        "annual_age",
+        "female_masters"
+      ]
+    },
+    {
+      "id": "wellness-senior-all-158",
+      "discipline": "wellness",
+      "name": "Wellness senior ≤ 158",
+      "sex": "F",
+      "division": "senior",
+      "sections": [
+        "amateur",
+        "pro"
+      ],
+      "age_min": null,
+      "age_max": null,
+      "metric": "height_cm",
+      "lower_exclusive": null,
+      "upper_inclusive": "158",
+      "source_id": "D19",
+      "source_pages": [
+        4
+      ],
+      "decision": "A04/A17",
+      "age_uncertain_at": [],
+      "classic_limit": null,
+      "normalization_ids": [
+        "annual_age"
+      ]
+    },
+    {
+      "id": "wellness-senior-all-163",
+      "discipline": "wellness",
+      "name": "Wellness senior > 158 à ≤ 163",
+      "sex": "F",
+      "division": "senior",
+      "sections": [
+        "amateur",
+        "pro"
+      ],
+      "age_min": null,
+      "age_max": null,
+      "metric": "height_cm",
+      "lower_exclusive": "158",
+      "upper_inclusive": "163",
+      "source_id": "D19",
+      "source_pages": [
+        4
+      ],
+      "decision": "A04/A17",
+      "age_uncertain_at": [],
+      "classic_limit": null,
+      "normalization_ids": [
+        "annual_age"
+      ]
+    },
+    {
+      "id": "wellness-senior-all-168",
+      "discipline": "wellness",
+      "name": "Wellness senior > 163 à ≤ 168",
+      "sex": "F",
+      "division": "senior",
+      "sections": [
+        "amateur",
+        "pro"
+      ],
+      "age_min": null,
+      "age_max": null,
+      "metric": "height_cm",
+      "lower_exclusive": "163",
+      "upper_inclusive": "168",
+      "source_id": "D19",
+      "source_pages": [
+        4
+      ],
+      "decision": "A04/A17",
+      "age_uncertain_at": [],
+      "classic_limit": null,
+      "normalization_ids": [
+        "annual_age"
+      ]
+    },
+    {
+      "id": "wellness-senior-all-open",
+      "discipline": "wellness",
+      "name": "Wellness senior > 168",
+      "sex": "F",
+      "division": "senior",
+      "sections": [
+        "amateur",
+        "pro"
+      ],
+      "age_min": null,
+      "age_max": null,
+      "metric": "height_cm",
+      "lower_exclusive": "168",
+      "upper_inclusive": null,
+      "source_id": "D19",
+      "source_pages": [
+        4
+      ],
+      "decision": "A04/A17",
+      "age_uncertain_at": [],
+      "classic_limit": null,
+      "normalization_ids": [
+        "annual_age"
+      ]
+    },
+    {
+      "id": "wellness-junior-16-open",
+      "discipline": "wellness",
+      "name": "Wellness junior 16–20 Open",
+      "sex": "F",
+      "division": "junior",
+      "sections": [
+        "amateur",
+        "pro"
+      ],
+      "age_min": 16,
+      "age_max": 20,
+      "metric": "height_cm",
+      "lower_exclusive": null,
+      "upper_inclusive": null,
+      "source_id": "D19",
+      "source_pages": [
+        4
+      ],
+      "decision": "A04/A17",
+      "age_uncertain_at": [],
+      "classic_limit": null,
+      "normalization_ids": [
+        "annual_age"
+      ]
+    },
+    {
+      "id": "wellness-junior-21-163",
+      "discipline": "wellness",
+      "name": "Wellness junior 21–23 ≤ 163",
+      "sex": "F",
+      "division": "junior",
+      "sections": [
+        "amateur",
+        "pro"
+      ],
+      "age_min": 21,
+      "age_max": 23,
+      "metric": "height_cm",
+      "lower_exclusive": null,
+      "upper_inclusive": "163",
+      "source_id": "D19",
+      "source_pages": [
+        4
+      ],
+      "decision": "A04/A17",
+      "age_uncertain_at": [],
+      "classic_limit": null,
+      "normalization_ids": [
+        "annual_age"
+      ]
+    },
+    {
+      "id": "wellness-junior-21-open",
+      "discipline": "wellness",
+      "name": "Wellness junior 21–23 > 163",
+      "sex": "F",
+      "division": "junior",
+      "sections": [
+        "amateur",
+        "pro"
+      ],
+      "age_min": 21,
+      "age_max": 23,
+      "metric": "height_cm",
+      "lower_exclusive": "163",
+      "upper_inclusive": null,
+      "source_id": "D19",
+      "source_pages": [
+        4
+      ],
+      "decision": "A04/A17",
+      "age_uncertain_at": [],
+      "classic_limit": null,
+      "normalization_ids": [
+        "annual_age"
+      ]
+    },
+    {
+      "id": "wellness-masters-35-open",
+      "discipline": "wellness",
+      "name": "Wellness masters 35–39 Open",
+      "sex": "F",
+      "division": "masters",
+      "sections": [
+        "amateur",
+        "pro"
+      ],
+      "age_min": 35,
+      "age_max": 39,
+      "metric": "height_cm",
+      "lower_exclusive": null,
+      "upper_inclusive": null,
+      "source_id": "D19",
+      "source_pages": [
+        4
+      ],
+      "decision": "A04/A17",
+      "age_uncertain_at": [],
+      "classic_limit": null,
+      "normalization_ids": [
+        "annual_age",
+        "wellness_masters"
+      ]
+    },
+    {
+      "id": "wellness-masters-40-open",
+      "discipline": "wellness",
+      "name": "Wellness masters 40–44 Open",
+      "sex": "F",
+      "division": "masters",
+      "sections": [
+        "amateur",
+        "pro"
+      ],
+      "age_min": 40,
+      "age_max": 44,
+      "metric": "height_cm",
+      "lower_exclusive": null,
+      "upper_inclusive": null,
+      "source_id": "D19",
+      "source_pages": [
+        4
+      ],
+      "decision": "A04/A17",
+      "age_uncertain_at": [],
+      "classic_limit": null,
+      "normalization_ids": [
+        "annual_age",
+        "wellness_masters"
+      ]
+    },
+    {
+      "id": "wellness-masters-45-open",
+      "discipline": "wellness",
+      "name": "Wellness masters 45–49 Open",
+      "sex": "F",
+      "division": "masters",
+      "sections": [
+        "amateur",
+        "pro"
+      ],
+      "age_min": 45,
+      "age_max": 49,
+      "metric": "height_cm",
+      "lower_exclusive": null,
+      "upper_inclusive": null,
+      "source_id": "D19",
+      "source_pages": [
+        4
+      ],
+      "decision": "A04/A17",
+      "age_uncertain_at": [],
+      "classic_limit": null,
+      "normalization_ids": [
+        "annual_age",
+        "wellness_masters"
+      ]
+    },
+    {
+      "id": "wellness-masters-50-open",
+      "discipline": "wellness",
+      "name": "Wellness masters 50–+ Open",
+      "sex": "F",
+      "division": "masters",
+      "sections": [
+        "amateur",
+        "pro"
+      ],
+      "age_min": 50,
+      "age_max": null,
+      "metric": "height_cm",
+      "lower_exclusive": null,
+      "upper_inclusive": null,
+      "source_id": "D19",
+      "source_pages": [
+        4
+      ],
+      "decision": "A04/A17",
+      "age_uncertain_at": [],
+      "classic_limit": null,
+      "normalization_ids": [
+        "annual_age",
+        "wellness_masters"
+      ]
+    },
+    {
+      "id": "bodyfitness-senior-all-158",
+      "discipline": "bodyfitness",
+      "name": "Bodyfitness senior ≤ 158",
+      "sex": "F",
+      "division": "senior",
+      "sections": [
+        "amateur",
+        "pro"
+      ],
+      "age_min": null,
+      "age_max": null,
+      "metric": "height_cm",
+      "lower_exclusive": null,
+      "upper_inclusive": "158",
+      "source_id": "D06",
+      "source_pages": [
+        4
+      ],
+      "decision": "A04/A17",
+      "age_uncertain_at": [],
+      "classic_limit": null,
+      "normalization_ids": [
+        "annual_age"
+      ]
+    },
+    {
+      "id": "bodyfitness-senior-all-163",
+      "discipline": "bodyfitness",
+      "name": "Bodyfitness senior > 158 à ≤ 163",
+      "sex": "F",
+      "division": "senior",
+      "sections": [
+        "amateur",
+        "pro"
+      ],
+      "age_min": null,
+      "age_max": null,
+      "metric": "height_cm",
+      "lower_exclusive": "158",
+      "upper_inclusive": "163",
+      "source_id": "D06",
+      "source_pages": [
+        4
+      ],
+      "decision": "A04/A17",
+      "age_uncertain_at": [],
+      "classic_limit": null,
+      "normalization_ids": [
+        "annual_age"
+      ]
+    },
+    {
+      "id": "bodyfitness-senior-all-168",
+      "discipline": "bodyfitness",
+      "name": "Bodyfitness senior > 163 à ≤ 168",
+      "sex": "F",
+      "division": "senior",
+      "sections": [
+        "amateur",
+        "pro"
+      ],
+      "age_min": null,
+      "age_max": null,
+      "metric": "height_cm",
+      "lower_exclusive": "163",
+      "upper_inclusive": "168",
+      "source_id": "D06",
+      "source_pages": [
+        4
+      ],
+      "decision": "A04/A17",
+      "age_uncertain_at": [],
+      "classic_limit": null,
+      "normalization_ids": [
+        "annual_age"
+      ]
+    },
+    {
+      "id": "bodyfitness-senior-all-open",
+      "discipline": "bodyfitness",
+      "name": "Bodyfitness senior > 168",
+      "sex": "F",
+      "division": "senior",
+      "sections": [
+        "amateur",
+        "pro"
+      ],
+      "age_min": null,
+      "age_max": null,
+      "metric": "height_cm",
+      "lower_exclusive": "168",
+      "upper_inclusive": null,
+      "source_id": "D06",
+      "source_pages": [
+        4
+      ],
+      "decision": "A04/A17",
+      "age_uncertain_at": [],
+      "classic_limit": null,
+      "normalization_ids": [
+        "annual_age"
+      ]
+    },
+    {
+      "id": "bodyfitness-junior-16-open",
+      "discipline": "bodyfitness",
+      "name": "Bodyfitness junior 16–20 Open",
+      "sex": "F",
+      "division": "junior",
+      "sections": [
+        "amateur",
+        "pro"
+      ],
+      "age_min": 16,
+      "age_max": 20,
+      "metric": "height_cm",
+      "lower_exclusive": null,
+      "upper_inclusive": null,
+      "source_id": "D06",
+      "source_pages": [
+        4
+      ],
+      "decision": "A04/A17",
+      "age_uncertain_at": [],
+      "classic_limit": null,
+      "normalization_ids": [
+        "annual_age"
+      ]
+    },
+    {
+      "id": "bodyfitness-junior-21-open",
+      "discipline": "bodyfitness",
+      "name": "Bodyfitness junior 21–23 Open",
+      "sex": "F",
+      "division": "junior",
+      "sections": [
+        "amateur",
+        "pro"
+      ],
+      "age_min": 21,
+      "age_max": 23,
+      "metric": "height_cm",
+      "lower_exclusive": null,
+      "upper_inclusive": null,
+      "source_id": "D06",
+      "source_pages": [
+        4
+      ],
+      "decision": "A04/A17",
+      "age_uncertain_at": [],
+      "classic_limit": null,
+      "normalization_ids": [
+        "annual_age"
+      ]
+    },
+    {
+      "id": "bodyfitness-masters-35-open",
+      "discipline": "bodyfitness",
+      "name": "Bodyfitness masters 35–39 Open",
+      "sex": "F",
+      "division": "masters",
+      "sections": [
+        "amateur",
+        "pro"
+      ],
+      "age_min": 35,
+      "age_max": 39,
+      "metric": "height_cm",
+      "lower_exclusive": null,
+      "upper_inclusive": null,
+      "source_id": "D06",
+      "source_pages": [
+        4
+      ],
+      "decision": "A04/A17",
+      "age_uncertain_at": [],
+      "classic_limit": null,
+      "normalization_ids": [
+        "annual_age",
+        "female_masters"
+      ]
+    },
+    {
+      "id": "bodyfitness-masters-40-open",
+      "discipline": "bodyfitness",
+      "name": "Bodyfitness masters 40–44 Open",
+      "sex": "F",
+      "division": "masters",
+      "sections": [
+        "amateur",
+        "pro"
+      ],
+      "age_min": 40,
+      "age_max": 44,
+      "metric": "height_cm",
+      "lower_exclusive": null,
+      "upper_inclusive": null,
+      "source_id": "D06",
+      "source_pages": [
+        4
+      ],
+      "decision": "A04/A17",
+      "age_uncertain_at": [],
+      "classic_limit": null,
+      "normalization_ids": [
+        "annual_age",
+        "female_masters"
+      ]
+    },
+    {
+      "id": "bodyfitness-masters-45-open",
+      "discipline": "bodyfitness",
+      "name": "Bodyfitness masters 45–49 Open",
+      "sex": "F",
+      "division": "masters",
+      "sections": [
+        "amateur",
+        "pro"
+      ],
+      "age_min": 45,
+      "age_max": 49,
+      "metric": "height_cm",
+      "lower_exclusive": null,
+      "upper_inclusive": null,
+      "source_id": "D06",
+      "source_pages": [
+        4
+      ],
+      "decision": "A04/A17",
+      "age_uncertain_at": [],
+      "classic_limit": null,
+      "normalization_ids": [
+        "annual_age",
+        "female_masters"
+      ]
+    },
+    {
+      "id": "bodyfitness-masters-50-open",
+      "discipline": "bodyfitness",
+      "name": "Bodyfitness masters 50–+ Open",
+      "sex": "F",
+      "division": "masters",
+      "sections": [
+        "amateur",
+        "pro"
+      ],
+      "age_min": 50,
+      "age_max": null,
+      "metric": "height_cm",
+      "lower_exclusive": null,
+      "upper_inclusive": null,
+      "source_id": "D06",
+      "source_pages": [
+        4
+      ],
+      "decision": "A04/A17",
+      "age_uncertain_at": [],
+      "classic_limit": null,
+      "normalization_ids": [
+        "annual_age",
+        "female_masters"
+      ]
+    },
+    {
+      "id": "womens_physique-senior-all-163",
+      "discipline": "womens_physique",
+      "name": "Women’s Physique senior ≤ 163",
+      "sex": "F",
+      "division": "senior",
+      "sections": [
+        "amateur",
+        "pro"
+      ],
+      "age_min": null,
+      "age_max": null,
+      "metric": "height_cm",
+      "lower_exclusive": null,
+      "upper_inclusive": "163",
+      "source_id": "D09",
+      "source_pages": [
+        4
+      ],
+      "decision": "A04/A17",
+      "age_uncertain_at": [],
+      "classic_limit": null,
+      "normalization_ids": [
+        "annual_age",
+        "womens_physique_divisions"
+      ]
+    },
+    {
+      "id": "womens_physique-senior-all-open",
+      "discipline": "womens_physique",
+      "name": "Women’s Physique senior > 163",
+      "sex": "F",
+      "division": "senior",
+      "sections": [
+        "amateur",
+        "pro"
+      ],
+      "age_min": null,
+      "age_max": null,
+      "metric": "height_cm",
+      "lower_exclusive": "163",
+      "upper_inclusive": null,
+      "source_id": "D09",
+      "source_pages": [
+        4
+      ],
+      "decision": "A04/A17",
+      "age_uncertain_at": [],
+      "classic_limit": null,
+      "normalization_ids": [
+        "annual_age",
+        "womens_physique_divisions"
+      ]
+    },
+    {
+      "id": "womens_physique-masters-35-open",
+      "discipline": "womens_physique",
+      "name": "Women’s Physique masters 35–+ Open",
+      "sex": "F",
+      "division": "masters",
+      "sections": [
+        "amateur",
+        "pro"
+      ],
+      "age_min": 35,
+      "age_max": null,
+      "metric": "height_cm",
+      "lower_exclusive": null,
+      "upper_inclusive": null,
+      "source_id": "D09",
+      "source_pages": [
+        4
+      ],
+      "decision": "A04/A17",
+      "age_uncertain_at": [],
+      "classic_limit": null,
+      "normalization_ids": [
+        "annual_age",
+        "womens_physique_divisions"
+      ]
+    }
+  ],
+  "classic_limits": {
+    "formula": "height_cm - 100 + coefficient",
+    "upper_inclusive_cm": [
+      "168",
+      "171",
+      "175",
+      "180",
+      "188",
+      "196",
+      null
+    ],
+    "coefficients": {
+      "classic_bodybuilding": {
+        "junior": [
+          0,
+          1,
+          2,
+          4,
+          5,
+          6,
+          7
+        ],
+        "senior": [
+          0,
+          2,
+          4,
+          7,
+          9,
+          11,
+          13
+        ],
+        "masters": [
+          0,
+          2,
+          4,
+          7,
+          9,
+          11,
+          13
+        ]
+      },
+      "classic_physique": {
+        "junior": [
+          2,
+          3,
+          4,
+          6,
+          7,
+          8,
+          9
+        ],
+        "senior": [
+          4,
+          6,
+          8,
+          11,
+          13,
+          15,
+          17
+        ],
+        "masters": [
+          4,
+          6,
+          8,
+          11,
+          13,
+          15,
+          17
+        ]
+      }
+    },
+    "sources": {
+      "classic_bodybuilding": {
+        "source_id": "D05",
+        "article": "3.1–3.3",
+        "pages": [
+          4,
+          5
+        ]
+      },
+      "classic_physique": {
+        "source_id": "D02",
+        "article": "3.1–3.3",
+        "pages": [
+          4,
+          5
+        ]
+      }
+    },
+    "precision": "0.1 cm / 0.1 kg ; Decimal exact, sans arrondi ni tolérance",
+    "decision": "A17 ; bandes de calcul distinctes des classes de taille."
+  },
+  "normalizations": {
+    "annual_age": {
+      "decision": "FIBDA A04",
+      "sources": [
+        "D01"
+      ],
+      "text": "Âge = année compétition − année naissance ; uniformisation aux frontières spécialisées. Senior sans borne 24–39 inventée ; crossover à contrôler."
+    },
+    "fifteen_uncertainty": {
+      "decision": "Confirmation sportive nécessaire",
+      "sources": [
+        "D01",
+        "D04",
+        "D05",
+        "D10"
+      ],
+      "text": "À 15 ans, Bodybuilding, Classic Bodybuilding et Men’s Physique demandent confirmation ; pas de conformité automatique ni rejet définitif."
+    },
+    "bodybuilding_senior_weight": {
+      "decision": "FIBDA A04",
+      "sources": [
+        "D04"
+      ],
+      "text": "Profil Senior en neuf classes de poids ; les trois classes IFBB de taille ne sont pas supprimées du règlement mais hors de ce profil."
+    },
+    "bodybuilding_masters": {
+      "decision": "FIBDA A04",
+      "sources": [
+        "D01",
+        "D04"
+      ],
+      "text": "Quatorze classes explicites de D04 ; 55–59 distinct de 60–64 et 65+, sans chevauchement."
+    },
+    "female_masters": {
+      "decision": "FIBDA A04",
+      "sources": [
+        "D01",
+        "D03",
+        "D06"
+      ],
+      "text": "Bikini/Bodyfitness : groupes spécialisés 35–39,40–44,45–49,50+ ; aucun groupe concurrent 45+."
+    },
+    "wellness_masters": {
+      "decision": "FIBDA A04, normalisation de lecture et non erratum IFBB",
+      "sources": [
+        "D01",
+        "D19"
+      ],
+      "text": "45–49 inclus puis 50+ : partition sans chevauchement de la formulation ambiguë and over."
+    },
+    "mens_physique_182": {
+      "decision": "FIBDA A04",
+      "sources": [
+        "D01",
+        "D10"
+      ],
+      "text": "Borne Senior >182 cm confirmée par D01 ; correction de Over 82 cm dans D10."
+    },
+    "mens_physique_masters": {
+      "decision": "FIBDA A04",
+      "sources": [
+        "D01",
+        "D10"
+      ],
+      "text": "40–44,45–49,50+ sans chevauchement selon D10."
+    },
+    "muscular_divisions": {
+      "decision": "Absence documentaire conservée",
+      "sources": [
+        "D01",
+        "D10"
+      ],
+      "text": "Senior 179/+179 uniquement ; aucune division Junior/Masters autonome activée, sans interdiction d’âge Senior inventée."
+    },
+    "womens_physique_divisions": {
+      "decision": "Absence documentaire conservée",
+      "sources": [
+        "D01",
+        "D09"
+      ],
+      "text": "Aucune division Junior autonome ; Masters 35+ open sans subdivision ajoutée."
+    }
+  }
+}

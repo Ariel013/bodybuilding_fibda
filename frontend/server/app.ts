@@ -1,0 +1,271 @@
+import { Hono, type Context } from "hono";
+import { getCookie, setCookie, deleteCookie } from "hono/cookie";
+import { createHash, timingSafeEqual } from "node:crypto";
+import { ADMIN, PREPARATION, require, intersects, union } from "./auth";
+import { Problem, DomainError } from "./problem";
+import { Store } from "./store";
+import type { User } from "./state";
+import { dump, find, uid } from "./util";
+import { applyCommand } from "./commands";
+import { projectState, publicState, exams, collective, syncCollectiveRewards } from "./projections";
+import { tick } from "./workflow";
+import { loadCatalogue, eligibility } from "../domain/catalogue";
+import { seedDemo } from "./demo";
+
+// Routes HTTP : même contrat que backend/fibda/app.py (docs/CONTRACT.md), sans WebSocket ni photos.
+export const VERSION = "0.2.0";
+export const COOKIE = "fibda_session";
+const MAX_BODY = 20 * 1024 * 1024;
+
+export type AppOptions = {
+  store: Store;
+  // Jeton secret exigé pour la configuration initiale, la restauration et la démonstration :
+  // en serverless il n'existe pas de « boucle locale », ce jeton en tient lieu.
+  setupToken?: string;
+  testing?: boolean;
+};
+
+export function createApp(opts: AppOptions) {
+  const { store } = opts;
+  const app = new Hono();
+
+  app.onError((err, c) => {
+    if (err instanceof Problem) return c.json({ detail: err.message }, err.status as any);
+    if (err instanceof DomainError) return c.json({ detail: err.message }, 422);
+    if (!opts.testing) console.error(err);
+    return c.json({ detail: "Erreur serveur." }, 500);
+  });
+  app.notFound((c) => c.json({ detail: "Route inconnue." }, 404));
+
+  app.use("*", async (c, next) => {
+    const origin = c.req.header("origin");
+    if (!["GET", "HEAD", "OPTIONS"].includes(c.req.method) && origin) {
+      const parsed = new URL(origin);
+      if (parsed.host !== c.req.header("host") || parsed.protocol.replace(":", "") !== scheme(c)) return c.json({ detail: "Origine de commande refusée." }, 403);
+    }
+    const length = Number(c.req.header("content-length") ?? 0);
+    if (length > MAX_BODY + 1024 * 1024) return c.json({ detail: "Requête trop volumineuse." }, 413);
+    await next();
+    c.header("X-Content-Type-Options", "nosniff");
+    c.header("Referrer-Policy", "same-origin");
+    c.header("X-Frame-Options", "SAMEORIGIN");
+    c.header("Cache-Control", "no-store");
+    c.header("Content-Security-Policy", "default-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self'; font-src 'self'; frame-ancestors 'self'; object-src 'none'; base-uri 'self'");
+  });
+
+  const scheme = (c: Context) => c.req.header("x-forwarded-proto") ?? new URL(c.req.url).protocol.replace(":", "");
+  const address = (c: Context) => (c.req.header("x-forwarded-for") ?? "local").split(",")[0].trim();
+  const actor = (c: Context) => store.authenticate(getCookie(c, COOKIE));
+  const view = async (state: any, u: User) => projectState(state, u, await store.allUsers(), store.clock());
+  const setSession = (c: Context, token: string) => setCookie(c, COOKIE, token, { httpOnly: true, secure: scheme(c) === "https", sameSite: "Strict", maxAge: 16 * 3600, path: "/" });
+  const requireSetupToken = (c: Context) => {
+    // Comparaison en temps constant sur les empreintes ; aucune porte ouverte si le jeton n'est pas configuré.
+    const given = c.req.header("x-setup-token") ?? "";
+    const digest = (s: string) => createHash("sha256").update(s).digest();
+    if (!opts.setupToken || !timingSafeEqual(digest(given), digest(opts.setupToken))) throw new Problem("Cette opération exige le jeton de configuration du serveur.", 403);
+  };
+
+  // Transitions temporisées (délai stagiaires) : exécutées à la demande, il n'y a pas de boucle serveur.
+  async function tickOnce(): Promise<void> {
+    await store.transact(async (tx) => {
+      const state = await store.read(tx);
+      const users = await store.allUsers(tx);
+      const before = state.version;
+      if (tick(state, users, store.clock())) {
+        state.version += 1;
+        await store.write(tx, state, before);
+        await store.record(tx, state, "server", "timer.transition", {});
+      }
+    });
+  }
+
+  app.get("/api/v1/health", async (c) => {
+    const state = await store.read();
+    return c.json({ status: "ok", version: VERSION, setup_required: (await store.allUsers()).length === 0, demo: state.demo, restore_id: state.restore_id, runtime: "serverless" });
+  });
+
+  app.post("/api/v1/auth/setup", async (c) => {
+    requireSetupToken(c);
+    const p = await c.req.json();
+    const [u, token] = await store.transact(async (tx) => {
+      if ((await store.allUsers(tx)).length) throw new Problem("Le chef est déjà configuré.", 409);
+      const u = await store.addUser(tx, p.name ?? "", ["chief"], p.code ?? "", true);
+      const token = await store.newSession(tx, u.id);
+      await store.record(tx, await store.read(tx), u.id, "auth.setup", {});
+      return [u, token] as const;
+    });
+    setSession(c, token);
+    return c.json({ user: u, event_id: (await store.read()).id });
+  });
+
+  app.post("/api/v1/auth/login", async (c) => {
+    const p = await c.req.json();
+    const code = p.code ?? "";
+    const addr = address(c);
+    if (!(await store.loginAllowed(addr))) throw new Problem("Trop de tentatives. Réessayez dans quelques minutes.", 429);
+    if (typeof code !== "string" || code.length > 128) throw new Problem("Code incorrect.", 401);
+    // Le hachage se fait hors transaction : un essai n'immobilise jamais les autres écritures.
+    const row = await store.userByCode(code);
+    if (!row) {
+      await store.loginFailed(addr);
+      throw new Problem("Code incorrect.", 401);
+    }
+    if (!row.approved) {
+      await store.loginFailed(addr);
+      throw new Problem("Accès en attente de validation du chef.", 403);
+    }
+    const token = await store.transact((tx) => store.newSession(tx, row.id));
+    await store.loginSucceeded(addr);
+    setSession(c, token);
+    return c.json({ user: { id: row.id, name: row.name, roles: JSON.parse(row.roles), approved: true, active: true }, event_id: (await store.read()).id });
+  });
+
+  app.post("/api/v1/auth/logout", async (c) => {
+    const token = getCookie(c, COOKIE);
+    if (token) await store.deleteSession(token);
+    deleteCookie(c, COOKIE, { path: "/" });
+    return c.json({ ok: true });
+  });
+
+  app.get("/api/v1/auth/me", async (c) => c.json({ user: await actor(c), event_id: (await store.read()).id }));
+
+  app.get("/api/v1/state", async (c) => {
+    const u = await actor(c);
+    await tickOnce();
+    return c.json(await view(await store.read(), u));
+  });
+
+  app.get("/api/v1/catalogue", async (c) => {
+    await actor(c);
+    return c.json(loadCatalogue());
+  });
+
+  app.get("/api/v1/eligibility/:person_id", async (c) => {
+    require(await actor(c), PREPARATION);
+    const s = await store.read();
+    return c.json({ proposals: eligibility(find(s.people, c.req.param("person_id"), "Personne"), Number(s.date.slice(0, 4))) });
+  });
+
+  app.post("/api/v1/command", async (c) => {
+    const u = await actor(c);
+    const p = await c.req.json();
+    if (!p || typeof p !== "object" || typeof p.id !== "string" || !p.id || p.id.length > 100 || !Number.isInteger(p.version) || !p.payload || typeof p.payload !== "object") throw new Problem("Commande, version et paramètres requis.");
+    const kind: string = p.type ?? "";
+    // Empreinte d'idempotence : le code personnel d'un user.invite n'y entre jamais (sinon il serait retrouvable hors ligne).
+    const fingerprinted = kind === "user.invite" ? { ...p.payload, code: undefined } : p.payload;
+    const fingerprint = createHash("sha256").update(dump({ type: kind, payload: fingerprinted })).digest("hex");
+    await tickOnce();
+    const [s, result] = await store.transact(async (tx) => {
+      const prior = (await tx.execute({ sql: "SELECT user_id, fingerprint, result FROM commands WHERE id = ?", args: [p.id] })).rows[0];
+      const s = await store.read(tx);
+      if (prior) {
+        if (prior.user_id !== u.id || prior.fingerprint !== fingerprint) throw new Problem("Identifiant de commande déjà utilisé pour une autre action.", 409);
+        return [s, JSON.parse(String(prior.result))] as const;
+      }
+      // Les votes concurrents portent une liste figée par tour : une mise à jour sans rapport ne bloque pas leur réception.
+      if (s.version !== p.version && kind !== "ballot.submit") throw new Problem("Les données ont changé. Rechargez avant de confirmer votre action.", 409);
+      const before = s.version;
+      let result: any;
+      try {
+        result = (await applyCommand(store, tx, s, u, kind, p.payload)) ?? {};
+      } catch (e: any) {
+        if (e instanceof TypeError) throw new Problem("Paramètres incomplets ou invalides : " + e.message);
+        throw e;
+      }
+      syncCollectiveRewards(s);
+      s.version += 1;
+      await store.write(tx, s, before);
+      await store.record(tx, s, u.id, kind, p.payload);
+      await tx.execute({ sql: "INSERT INTO commands (id, user_id, fingerprint, result, version) VALUES (?, ?, ?, ?, ?)", args: [p.id, u.id, fingerprint, dump(result), s.version] });
+      return [s, result] as const;
+    });
+    return c.json({ state: await view(s, u), result });
+  });
+
+  app.get("/api/v1/public/:screen", async (c) => c.json(publicState(await store.read(), c.req.param("screen"))));
+
+  app.get("/api/v1/speaker", async (c) => {
+    const u = await actor(c);
+    require(u, union(ADMIN, ["speaker", "regie"]));
+    return c.json(await view(await store.read(), u));
+  });
+  app.get("/api/v1/exams", async (c) => c.json(exams(await store.read(), await actor(c))));
+  app.get("/api/v1/collective", async (c) => {
+    require(await actor(c), union(ADMIN, ["regie", "speaker"]));
+    return c.json(collective(await store.read()));
+  });
+  app.get("/api/v1/audit", async (c) => {
+    require(await actor(c), ADMIN);
+    const rows = await store.execute("SELECT id, user_id, action, at, data FROM audit ORDER BY at");
+    return c.json(rows.map((r) => ({ id: r.id, user_id: r.user_id, action: r.action, at: r.at, data: JSON.parse(String(r.data)) })));
+  });
+
+  // Sauvegarde : export JSON des tables (état, comptes hachés, commandes, audit). Contient des données personnelles.
+  app.post("/api/v1/backup", async (c) => {
+    require(await actor(c), ADMIN);
+    const tables = ["events", "users", "commands", "audit"];
+    const out: any = { format: "fibda-backup-json-1", version: VERSION, created_at: store.clock() };
+    for (const t of tables) out[t] = await store.execute(`SELECT * FROM ${t}`);
+    const body = dump(out);
+    out.sha256 = createHash("sha256").update(body).digest("hex");
+    c.header("Content-Disposition", 'attachment; filename="fibda-sauvegarde.json"');
+    return c.body(dump(out), 200, { "Content-Type": "application/json" });
+  });
+
+  // Restauration : chef ou directeur, jeton de configuration, archive contrôlée, sessions et commandes purgées.
+  app.post("/api/v1/restore", async (c) => {
+    const u = await actor(c);
+    require(u, ["chief", "director"]);
+    requireSetupToken(c);
+    const body = await c.req.text();
+    let archive: any;
+    try {
+      archive = JSON.parse(body);
+    } catch {
+      throw new Problem("Archive illisible.");
+    }
+    if (archive?.format !== "fibda-backup-json-1" || !Array.isArray(archive.events) || archive.events.length !== 1 || typeof archive.events[0]?.data !== "string" || !Array.isArray(archive.users)) throw new Problem("Archive FIBDA attendue.");
+    const { sha256, ...rest } = archive;
+    if (createHash("sha256").update(dump(rest)).digest("hex") !== sha256) throw new Problem("Empreinte incorrecte : archive altérée.");
+    let raw: any;
+    try {
+      raw = JSON.parse(archive.events[0].data);
+    } catch {
+      throw new Problem("Archive FIBDA attendue.");
+    }
+    if (Boolean(raw.demo) !== store.demo) throw new Problem("Une sauvegarde de démonstration ne remplace pas une compétition officielle, et inversement.");
+    const restoreId = await store.transact(async (tx) => {
+      const before = await store.read(tx);
+      // L'état antérieur est conservé dans l'audit, jamais écrasé sans trace.
+      await store.record(tx, before, u.id, "restore.previous_state", { previous: before });
+      for (const t of ["events", "users", "sessions", "commands", "audit"]) await tx.execute(`DELETE FROM ${t}`);
+      raw.restore_id = uid();
+      raw.version += 1;
+      await tx.execute({ sql: "INSERT INTO events (id, version, data) VALUES (?, ?, ?)", args: [raw.id, raw.version, dump(raw)] });
+      for (const r of archive.users) await tx.execute({ sql: "INSERT INTO users (id, name, roles, approved, active, code_hash, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)", args: [r.id, r.name, r.roles, r.approved, r.active, r.code_hash, r.created_at] });
+      for (const r of archive.audit ?? []) await tx.execute({ sql: "INSERT INTO audit (id, event_id, user_id, action, at, data) VALUES (?, ?, ?, ?, ?, ?)", args: [r.id, r.event_id, r.user_id, r.action, r.at, r.data] });
+      await store.record(tx, raw, u.id, "restore", {});
+      return raw.restore_id;
+    });
+    return c.json({ restore_id: restoreId, relogin_required: true });
+  });
+
+  // Démonstration : peuplement fictif, jeton de configuration exigé, base de démonstration uniquement.
+  app.post("/api/v1/demo", async (c) => {
+    requireSetupToken(c);
+    if (!store.demo) throw new Problem("Ce serveur utilise les données officielles.", 403);
+    const [codes, chief, token] = await store.transact(async (tx) => {
+      const s = await store.read(tx);
+      const codes = await seedDemo(store, tx, s);
+      const chief = (await store.allUsers(tx)).find((u) => u.roles.includes("chief"))!;
+      const token = await store.newSession(tx, chief.id);
+      return [codes, chief, token] as const;
+    });
+    setSession(c, token);
+    return c.json({ codes, state: await view(await store.read(), chief) });
+  });
+
+  app.get("/api/v1/ws", (c) => c.json({ detail: "Pas de WebSocket en serverless : interrogation périodique." }, 404));
+
+  return app;
+}

@@ -36,7 +36,9 @@ la zone du projet concernée ne doit pas être commencée.
    différentes n'existe nulle part dans le référentiel : à définir explicitement par la
    fédération. **Ne pas coder sans réponse.**
 
-0quater. **[RÉSOLU LE 23/09]** Hébergement : le PO choisit un serveur hébergé sur Internet,
+0quater. **[REMPLACÉ LE 23/09 par ADR 0002]** Réécriture du backend en TypeScript serverless
+   (Vercel + Turso), frontend et contrat d'API conservés, Python sur Railway en plan B. Voir
+   `docs/decisions/0002-*.md`. Historique : hébergement : le PO choisit un serveur hébergé sur Internet,
    sur une VM gratuite. Décision et compromis dans `docs/decisions/0001-serveur-heberge-sur-internet-vm-gratuite.md`,
    procédure dans `docs/DEPLOIEMENT-INTERNET.md`, actions manuelles dans `A-FAIRE.md`.
    Reste à obtenir : la connexion Internet du lieu est-elle fiable, et un partage 4G de
@@ -109,3 +111,22 @@ la zone du projet concernée ne doit pas être commencée.
 - Mettre à jour `ARCHITECTURE.md` §7 en fonction de la structure de repo réelle
 - Si la fédération n'a pas encore validé le référentiel sportif : créer un jalon explicite
   "gel du référentiel" avant tout développement du moteur `domain.py`
+
+## Relevés du portage TypeScript (23/09) — portés tels quels, à trancher après samedi
+
+P1. `rank_ballots` : le chef est de fait obligatoire (`chief_id=None` échoue toujours sur
+   « Bulletin du chef manquant »). Conforme à RULES, mais la signature laisse croire l'inverse.
+P2. `elimination_result` ignore `chief_id` et `collective_results` ignore `tiebreak` :
+   paramètres morts, conformes à RULES (le chef n'annule pas une égalité ; départage par
+   places avant tout critère). À simplifier plus tard.
+P3. `exam_report` plante (KeyError) sur un tour hors overall sans `category_id` ou avec
+   `participant_ids: null` — jamais produit par le workflow, mais aucune garde.
+P4. Affichage des moyennes d'examen : `display` arrondi à 2 décimales peut montrer « 85.00 »
+   pour une moyenne exacte < 85 refusée. Le calcul est juste, l'affichage peut surprendre.
+P5. `measure` accepte tout ce que `Decimal(str)` accepte (blancs, `1E2`). Tolérance héritée.
+P6. Deux copies de `catalogue.json` (backend Python et `frontend/domain/`) tant que le plan B
+   Python existe : toute modification du catalogue se fait dans les deux (voir A-FAIRE.md).
+P7. `validate_confirmed_entries` : une dérogation dont `reason` vaut `null` est comptée comme
+   motivée (`str(None)` = « None » côté Python). Porté à l'identique ; trou probable.
+P8. `entry.late` avec `reason: null` : passe le premier contrôle puis plante en 500 au `strip()`.
+   Porté à l'identique.

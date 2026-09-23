@@ -7,13 +7,22 @@
     "dev": "vite --host 127.0.0.1",
     "build": "tsc -b && vite build",
     "typecheck": "tsc --noEmit",
-    "test": "node --import tsx --test src/ranking.test.ts"
+    "typecheck:domain": "tsc --noEmit -p domain/tsconfig.json",
+    "test": "node --import tsx --test src/ranking.test.ts",
+    "test:domain": "node --import tsx --test domain/*.test.ts",
+    "test:server": "node --import tsx --test server/*.test.ts",
+    "typecheck:server": "tsc --noEmit -p tsconfig.server.json",
+    "check": "npm run typecheck && npm run typecheck:server && npm test && npm run test:domain && npm run test:server",
+    "dev:server": "tsx server/dev.ts"
   },
   "dependencies": {
+    "@libsql/client": "^0.18.0",
+    "hono": "^4.13.8",
     "react": "^19.1.1",
     "react-dom": "^19.1.1"
   },
   "devDependencies": {
+    "@hono/node-server": "^2.1.1",
     "@types/node": "^22.18.0",
     "@types/react": "^19.1.10",
     "@types/react-dom": "^19.1.9",

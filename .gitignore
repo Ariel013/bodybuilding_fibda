@@ -34,5 +34,10 @@ sauvegardes/
 backups/
 
 # Archives de sauvegarde et états de restauration (données personnelles)
-fibda-sauvegarde*.zip
+fibda-sauvegarde*
 restorations/
+
+# Vercel / secrets locaux
+.vercel/
+.env*.local
+frontend/fibda-dev.sqlite*

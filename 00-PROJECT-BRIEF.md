@@ -17,7 +17,11 @@ Architecture cible telle que décrite dans le dossier reçu du PO :
   se connectent en Wi-Fi local, HTTPS obligatoire (certificat + DNS local)
 - **Packaging** : exécutable natif via PyInstaller (macOS validé, Windows non fait)
 
-## 1bis. Révélation critique — StrongMan vs Bodybuilding
+## 1bis. ~~Révélation critique — StrongMan vs Bodybuilding~~ [CADUC le 23/09/2026]
+
+> Section conservée pour l'historique. Après inspection réelle du code, la base de ce dépôt est
+> une application bodybuilding sans lien avec le StrongMan ; le PO a confirmé qu'il ne faut ni
+> cloner ni auditer ce repo. Statut réel du code : `JOURNAL.md`. Décisions : `docs/decisions/`.
 
 L'application déjà codée et testée décrite dans le dossier reçu (v0.1.0, 77 tests, packaging
 macOS) **a en réalité été construite pour le StrongMan**, un sport différent — pas pour le

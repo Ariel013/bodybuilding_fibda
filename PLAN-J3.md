@@ -1,5 +1,10 @@
 # PLAN-J3.md — Plan à 3 jours (compétition samedi 26/09/2026)
 
+> **23/09 soir** : les décisions n°1 et n°2 ci-dessous ont été amendées par le PO. Cible : version
+> TypeScript serverless (Vercel + Turso), plan B Python sur Railway. Voir `JOURNAL.md` et
+> `docs/decisions/0002-*.md`. Le reste du plan (scope minimal, test téléphone au plus tôt, plan
+> papier) reste valable.
+
 **À lire en premier, avant même CLAUDE.md.** Contexte : nous sommes mercredi 23/09. Il reste
 2 à 3 jours pleins avant l'événement. Développeur seul + Claude Code. Objectif : **que la
 compétition de samedi se déroule sans accroc** — pas de livrer un produit complet.

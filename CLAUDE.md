@@ -3,7 +3,14 @@
 Ce fichier s'adresse à l'agent (Claude Code ou équivalent) qui va effectivement écrire du code
 sur ce projet. Il doit être lu **avant toute action**, et relu si le contexte se perd.
 
-## ⚠️ Lire `PLAN-J3.md` avant tout le reste
+## ⚠️ Lire `JOURNAL.md` puis `PLAN-J3.md` avant tout le reste
+
+**Mise à jour du 23/09/2026** : le PO a tranché deux décisions structurantes, consignées en ADR :
+`docs/decisions/0001-*.md` (serveur hébergé sur Internet, pas dans la salle) et
+`docs/decisions/0002-*.md` (backend réécrit en TypeScript serverless sur Vercel + Turso, frontend et
+contrat d'API conservés, Python sur Railway en plan B). **Le repo StrongMan n'a aucun rapport avec
+ce projet : ne pas le cloner ni l'auditer**, quoi qu'en disent les paragraphes plus bas, écrits
+avant cette décision. La base de départ est le code de ce dépôt.
 
 La compétition a lieu **samedi 26/09/2026**. Il reste 2-3 jours. `PLAN-J3.md` fixe la stratégie
 (adapter le repo StrongMan existant plutôt que reconstruire) et `MVP-SCOPE.md` fixe le
@@ -14,7 +21,7 @@ priorité viennent de ces deux fichiers-là**, pas d'une lecture littérale du d
 
 1. Lire dans l'ordre : `PLAN-J3.md`, `MVP-SCOPE.md`, `00-PROJECT-BRIEF.md`, `ARCHITECTURE.md`,
    `AGENTS.md`, `RULES.md`, `OPEN-QUESTIONS.md`.
-2. **Cloner et auditer le repo StrongMan** :
+2. ~~**Cloner et auditer le repo StrongMan**~~ **[CADUC le 23/09/2026, voir en tête de fichier]** :
    `https://github.com/Ariel013/strongmanrepo.git` (ou `git@github.com:Ariel013/strongmanrepo.git`
    en SSH). C'est l'app écrite précédemment par l'utilisateur pour un autre sport (StrongMan),
    et vu le délai, **c'est la base de code de départ, pas une simple source d'inspiration**.

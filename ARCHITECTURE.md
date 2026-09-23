@@ -18,6 +18,10 @@ Un seul processus serveur = une seule autorité sur **un seul événement actif*
 
 ## 2. Backend
 
+**Depuis l'ADR 0002 (23/09/2026)** : le backend cible est en TypeScript dans `frontend/server/`
+(Hono, libSQL/Turso, fonctions Vercel), au même contrat d'API et même modèle d'état. Le backend
+Python décrit ci-dessous reste le plan B (Railway, `docs/DEPLOIEMENT-RAILWAY.md`).
+
 - Langage : Python 3.12+
 - Stockage : SQLite local (WAL, `synchronous=FULL`), verrou applicatif + `BEGIN IMMEDIATE`
   pour sérialiser les écritures
@@ -86,7 +90,11 @@ la salle » décrit ci-dessous reste supporté par le code mais n'est pas testé
 - Pas de connexion automatique par QR personnel ni par SMS
 - Pas de synchronisation multi-serveurs / cloud
 
-## 6bis. Origine réelle de ce plan technique
+## 6bis. ~~Origine réelle de ce plan technique~~ [CADUC le 23/09/2026]
+
+> Le moteur `domain.py` et `catalogue.json` sont bien du bodybuilding et ont été portés en
+> TypeScript avec différentiel à l'identique (ADR 0002). Le référentiel reste **non validé par la
+> fédération** (Q5), c'est le seul point qui subsiste de cette section.
 
 Ce plan technique s'inspire d'une app déjà construite pour le **StrongMan**, pas pour le
 bodybuilding (confusion initiale du PO). **Le PO veut un nouveau dépôt, une app distincte** —

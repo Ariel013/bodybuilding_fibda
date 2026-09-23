@@ -12,6 +12,7 @@ Cocher quand c'est fait, avec la date.
       créer une base `fibda`, me transmettre l'URL `libsql://…` et un jeton en
       variable d'environnement, jamais dans un fichier du dépôt.
 - [x] (23/09) Projet Vercel `fibda-bodybuilding` créé par la CLI, variables posées, production déployée et vérifiée : https://fibda-bodybuilding.vercel.app
+- [ ] (24/09) **PO : créer les comptes des juges réels** (au moins 4 juges en plus du chef : le jury doit compter 5, 7, 9 ou 11 officiels, chef inclus), puis composer le jury dans Préparation.
 - [ ] (23/09) **PO : ouvrir l'URL sur un téléphone**, ajouter à l'écran d'accueil, se connecter avec le code du chef (fichier `~/fibda-secrets-2026-09-23.txt` sur le poste de dev), créer un juge, envoyer un bulletin de test. C'est la recette minimale de `docs/DEPLOIEMENT-VERCEL.md` §5.
 - [ ] (24/09) **Lire l'onglet « Aide » de l'app** avec le profil chef, signaler toute étape fausse ou manquante : le manuel est la référence des juges samedi.
 - [ ] (23/09) **Entraînement des juges** : leur envoyer https://fibda-bodybuilding-demo.vercel.app et un code de juge fictif (fichier de secrets), pour qu'ils pratiquent le geste de jugement avant samedi.

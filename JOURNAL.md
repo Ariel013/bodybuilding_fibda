@@ -21,15 +21,15 @@ Carte des documents :
 
 ## 📍 État actuel & prochaine action
 
-*(Mis à jour le 2026-09-24, 0 h.)*
+*(Mis à jour le 2026-09-24, 2 h.)*
 
 - **Version en prod** : https://fibda-bodybuilding.vercel.app (Vercel, base Turso Irlande),
   déployée le 23/09 au soir depuis la CLI, **vérifiée au curl** : santé, jeton de configuration
   exigé, chef créé, connexion, état, écran public, en-têtes de sécurité, contrôle d'origine.
   Démonstration séparée : https://fibda-bodybuilding-demo.vercel.app (base `fibda-demo`,
   24 athlètes fictifs, 9 comptes). **Aucun test sur téléphone réel encore.** Secrets hors dépôt : `~/fibda-secrets-2026-09-23.txt`.
-- **Code** : `main` poussé sur `origin` (voir `git log`). `npm run check` = 99 tests verts
-  (20 interface dont 6 sur le manuel, 15 moteur, 64 serveur). Déploiement : toujours
+- **Code** : `main` poussé sur `origin` (voir `git log`). `npm run check` = 107 tests verts
+  (20 interface dont 6 sur le manuel, 15 moteur, 72 serveur). Déploiement : toujours
   `vercel build` puis `vercel deploy --prebuilt` (`docs/DEPLOIEMENT-VERCEL.md` §2).
 - **Livré le 23/09 au soir** : impressions HTML (bulletin vierge = plan papier), export CSV,
   import CSV, mode d'emploi par profil dans l'onglet « Aide » (source
@@ -37,7 +37,11 @@ Carte des documents :
   depuis l'écran réparée, aide de connexion réécrite pour la version en ligne.
 - **Décisions du PO (23/09 soir)** : overall final toutes disciplines (H1 : sexes confondus, à
   confirmer), codes admin 8 caractères, 4G prévu, Railway en suspens.
-- **Hors périmètre actuel** : photos (P9), exports XLSX/PDF, WebSocket.
+- **Photos** portées le 24/09 (Turso, réduction navigateur, relues : conforme), envoi réel
+  vérifié sur la démo. **Hors périmètre** : import ZIP de photos, XLSX/PDF, WebSocket.
+- **Retour du PO en production (24/09)** : « Erreur serveur » sur la composition du jury →
+  les erreurs du moteur (DomainError) et de la préparation (PyValueError) n'étaient pas rendues
+  en 422 ; corrigé, testé, déployé. Le PO a un chef et un juge ; il en faut 5 officiels.
 - **Prochaine action** : le PO ouvre l'URL sur son téléphone, installe la PWA, se connecte
   avec le code du chef, crée un juge, envoie un bulletin de test (`A-FAIRE.md`). Critère de
   fin : accusé de réception d'un bulletin depuis un téléphone sur réseau mobile.

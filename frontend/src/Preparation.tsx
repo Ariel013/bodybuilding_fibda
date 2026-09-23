@@ -1147,13 +1147,27 @@ async function reducePhoto(
 ): Promise<Blob> {
   const url = URL.createObjectURL(file);
   try {
-    const image = await new Promise<HTMLImageElement>((resolve, reject) => {
-      const img = new Image();
-      img.onload = () => resolve(img);
-      img.onerror = () =>
-        reject(new Error("Image illisible par le navigateur (JPEG, PNG ou WEBP attendu)."));
-      img.src = url;
-    });
+    // L'orientation EXIF (photo prise en portrait) est appliquée par le navigateur :
+    // createImageBitmap avec « from-image » quand il existe, sinon l'élément Image, que les
+    // navigateurs récents orientent aussi par défaut.
+    const image: { naturalWidth: number; naturalHeight: number; source: CanvasImageSource } = await (async () => {
+      if (typeof createImageBitmap === "function") {
+        try {
+          const bitmap = await createImageBitmap(file, { imageOrientation: "from-image" });
+          return { naturalWidth: bitmap.width, naturalHeight: bitmap.height, source: bitmap };
+        } catch {
+          // Format non pris en charge par createImageBitmap : repli sur Image.
+        }
+      }
+      const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+        const el = new Image();
+        el.onload = () => resolve(el);
+        el.onerror = () =>
+          reject(new Error("Image illisible par le navigateur (JPEG, PNG ou WEBP attendu)."));
+        el.src = url;
+      });
+      return { naturalWidth: img.naturalWidth, naturalHeight: img.naturalHeight, source: img };
+    })();
     const [left, top, right, bottom] = crop ?? [
       0,
       0,
@@ -1174,7 +1188,7 @@ async function reducePhoto(
     const context = canvas.getContext("2d");
     if (!context) throw new Error("Réduction d’image impossible sur ce navigateur.");
     context.drawImage(
-      image,
+      image.source,
       left,
       top,
       sourceWidth,

@@ -30,3 +30,23 @@ Décision : accepté / accepté avec réserves / refusé (rayer les mentions inu
 Réserves bloquantes, responsable et date de reprise : __________________________________.
 
 Signatures technique / sportive / direction : __________________________________.
+
+## Recette API sur l'infrastructure réelle — 24/09/2026, 2 h (version serverless, démonstration)
+
+Exécutée par script contre https://fibda-bodybuilding-demo.vercel.app (Vercel + Turso Irlande),
+données fictives, depuis le poste de développement. Ce n'est pas une recette terrain (aucun
+téléphone, aucun réseau de salle) ; c'est la preuve que le serveur réel tient le parcours.
+
+| Étape | Résultat mesuré |
+|---|---|
+| Sauvegarde JSON avant essai | 200, 129 ko |
+| Jury (chef + 4 juges + 1 stagiaire), réglages, programme, démarrage | 200 à chaque commande, ~2,5 s chacune |
+| Tour ouvert automatiquement | demi-finale, 8 participants |
+| 5 bulletins officiels depuis 5 sessions distinctes | 200 avec accusé, ~3,5 s par juge connexion comprise |
+| Attente stagiaire après le dernier officiel | délai armé, tour toujours ouvert (règle 60 s) |
+| Bulletin du stagiaire | 200, tour passé en attente de validation |
+| Validation par le chef | 200, résultat calculé |
+| Écran public avant scène / après scène « qualifiés » | projection sans bulletin, sans date de naissance, sans code |
+| Restauration de la sauvegarde d'avant essai | 200, sessions invalidées, état revenu en préparation |
+
+Reste à réaliser sur le terrain : tout le tableau ci-dessus, avec de vrais téléphones.

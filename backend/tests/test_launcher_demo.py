@@ -73,3 +73,18 @@ def test_old_sqlite_refuses_network_and_warns_local(monkeypatch,capsys):
     assert 'AVERTISSEMENT' in capsys.readouterr().out
     monkeypatch.setattr(launcher.sqlite3,'sqlite_version_info',(3,51,3))
     launcher.check_sqlite('0.0.0.0')
+
+
+def test_behind_proxy_requires_public_url_and_forbids_local_tls(monkeypatch):
+    args=argparse.Namespace(host='0.0.0.0',port=8080,cert=None,key=None,public_url=None,behind_proxy=True)
+    with pytest.raises(ValueError,match='public-url'):launcher.validate_config(args)
+    args.public_url='https://fibda.example.test'
+    launcher.validate_config(args)   # port public 443 ≠ port d'écoute : accepté derrière un proxy
+    args.public_url='http://fibda.example.test'
+    with pytest.raises(ValueError,match='HTTPS'):launcher.validate_config(args)
+    args.public_url='https://fibda.example.test';args.cert='cert.pem';args.key='key.pem'
+    with pytest.raises(ValueError,match='cert'):launcher.validate_config(args)
+    monkeypatch.setattr(launcher.sqlite3,'sqlite_version_info',(3,50,4))
+    monkeypatch.setattr(launcher.sqlite3,'sqlite_version','3.50.4')
+    with pytest.raises(ValueError,match='3.51.3'):launcher.check_sqlite('127.0.0.1',behind_proxy=True)
+    launcher.check_sqlite('127.0.0.1')

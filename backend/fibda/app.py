@@ -29,8 +29,34 @@ from . import __version__
 COOKIE='fibda_session'
 
 
-def create_app(directory, demo=False, testing=False, clock=None):
+LOOPBACK={'127.0.0.1','::1'}
+
+
+def create_app(directory, demo=False, testing=False, clock=None, behind_proxy=False):
+    """behind_proxy : hébergeur (Railway) où le TLS est terminé par un proxy qui ajoute X-Forwarded-For/Proto.
+    Hors de ce mode, les en-têtes X-Forwarded-* sont ignorés."""
     store=Store(directory,demo,clock);sockets=set();previews={};attempts={};last_backup=[0]
+
+    def via_proxy(request):
+        # Toute requête passée par le proxy porte X-Forwarded-For ; une requête interne au conteneur
+        # (curl sur 127.0.0.1 via railway ssh) n'en porte pas.
+        return behind_proxy and 'x-forwarded-for' in request.headers
+
+    def request_scheme(request):
+        if not via_proxy(request):return request.url.scheme
+        return request.headers['x-forwarded-proto'].split(',')[0].strip().lower() if 'x-forwarded-proto' in request.headers else ''
+
+    def request_host(request):
+        # Le proxy Railway réécrit X-Forwarded-Host avec le nom public ; Host est aussi accepté.
+        hosts={request.headers.get('host')}
+        if via_proxy(request):hosts.add(request.headers.get('x-forwarded-host'))
+        return hosts
+
+    def client_address(request):
+        if not via_proxy(request):return request.client.host
+        # Railway ajoute l'adresse réelle en DERNIÈRE position de X-Forwarded-For sans retirer les valeurs
+        # fournies par le client : seule la dernière est fiable (réponse du support Railway, 08/2024).
+        return request.headers['x-forwarded-for'].split(',')[-1].strip() or request.client.host
 
     def backup_file():
         with store.lock:
@@ -96,7 +122,7 @@ def create_app(directory, demo=False, testing=False, clock=None):
         origin=request.headers.get('origin')
         if request.method not in {'GET','HEAD','OPTIONS'} and origin:
             parsed=urlparse(origin)
-            if parsed.netloc!=request.headers.get('host') or parsed.scheme!=request.url.scheme:return JSONResponse({'detail':'Origine de commande refusée.'},status_code=403)
+            if parsed.netloc not in request_host(request) or parsed.scheme!=request_scheme(request):return JSONResponse({'detail':'Origine de commande refusée.'},status_code=403)
         length=request.headers.get('content-length')
         if length and int(length)>MAX_TOTAL+1024*1024:return JSONResponse({'detail':'Requête trop volumineuse.'},status_code=413)
         response=await call_next(request)
@@ -112,8 +138,18 @@ def create_app(directory, demo=False, testing=False, clock=None):
             result['alerts'].append({'id':'server-background-error','message':'Incident serveur à vérifier : '+app.state.last_background_error,'roles':list(ADMIN)})
         return result
     def local_only(request):
-        if not testing and request.client.host not in {'127.0.0.1','::1'}:raise Problem('Cette opération se prépare depuis l’ordinateur serveur.',403)
-    def set_cookie(response,token,request):response.set_cookie(COOKIE,token,httponly=True,secure=request.url.scheme=='https',samesite='strict',max_age=16*3600)
+        if testing:return
+        # En mode proxy, une requête venue d'Internet arrive depuis une adresse interne : c'est la présence
+        # de X-Forwarded-For qui la distingue d'une requête interne au conteneur, refusée dans tous les cas.
+        if via_proxy(request) or request.client.host not in LOOPBACK:raise Problem('Cette opération se prépare depuis l’ordinateur serveur.',403)
+    def set_cookie(response,token,request):
+        if behind_proxy:
+            # Le seul accès public est en HTTPS via le proxy ; une requête proxy non HTTPS est refusée,
+            # une requête interne (setup via railway ssh) reçoit un cookie Secure inutilisé mais cohérent.
+            if via_proxy(request) and request_scheme(request)!='https':raise Problem('Connexion refusée : HTTPS obligatoire.',400)
+            secure=True
+        else:secure=request.url.scheme=='https'
+        response.set_cookie(COOKIE,token,httponly=True,secure=secure,samesite='strict',max_age=16*3600)
 
     @app.get('/api/v1/health')
     def health():
@@ -130,7 +166,7 @@ def create_app(directory, demo=False, testing=False, clock=None):
 
     @app.post('/api/v1/auth/login')
     async def login(request:Request,response:Response):
-        p=await request.json();code=p.get('code','');address=request.client.host;now=store.clock()
+        p=await request.json();code=p.get('code','');address=client_address(request);now=store.clock()
         attempts[address]=[x for x in attempts.get(address,[]) if now-x<300]
         if len(attempts[address])>=15:raise Problem('Trop de tentatives. Réessayez dans quelques minutes.',429)
         if not isinstance(code,str) or len(code)>128:raise Problem('Code incorrect.',401)
@@ -212,7 +248,7 @@ def create_app(directory, demo=False, testing=False, clock=None):
     @app.websocket('/api/v1/ws')
     async def websocket(ws:WebSocket):
         origin=ws.headers.get('origin')
-        if origin and urlparse(origin).netloc!=ws.headers.get('host'):await ws.close(code=1008);return
+        if origin and urlparse(origin).netloc not in request_host(ws):await ws.close(code=1008);return
         try:authenticate(store,ws.cookies.get(COOKIE))
         except Problem:await ws.close(code=1008);return
         await ws.accept();sockets.add(ws)

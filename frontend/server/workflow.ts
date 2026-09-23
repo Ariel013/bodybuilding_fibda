@@ -61,6 +61,8 @@ const CLOSED = new Set(["validated", "published"]);
 
 export function ready(state: any, r: any): boolean {
   if (state.status !== "running" || state.active_round_id || r.status !== "pending") return false;
+  // Overall final (toutes disciplines) : prêt dès que toutes les disciplines sont terminées.
+  if (r.grand_final) return currentDiscipline(state) === null;
   if (r.discipline !== currentDiscipline(state)) return false;
   const group = state.rounds.filter((x: any) => x.discipline === r.discipline);
   if (group.some((x: any) => PHASES[x.phase] < PHASES[r.phase] && !CLOSED.has(x.status))) return false;
@@ -142,7 +144,7 @@ export function syncRewards(state: any, r: any): void {
       entry_id: row.entry_id,
       rank: row.rank,
       kind: r.phase,
-      title: r.phase === "overall" ? "Champion overall" : row.rank + "e place",
+      title: r.grand_final ? "Champion overall toutes disciplines" : r.phase === "overall" ? "Champion overall" : row.rank + "e place",
       prepared: false,
       delivered: false,
       trophy: "",
@@ -278,6 +280,7 @@ function applySportInner(state: any, actor: User, kind: string, p: any, users: U
   }
   if (kind === "event.finish") {
     if (state.status !== "running" || currentDiscipline(state)) throw new Problem("Toutes les disciplines et récompenses doivent être terminées.");
+    if (state.rounds.some((r: any) => r.grand_final && !CLOSED.has(r.status) && r.status !== "no_title")) throw new Problem("L’overall final doit être validé avant la clôture.");
     state.status = "finished";
     return {};
   }
@@ -416,6 +419,31 @@ function applySportInner(state: any, actor: User, kind: string, p: any, users: U
     if (!ids.length) r.status = "no_title";
     state.rounds.push(r);
     (progress.overall_sections ??= []).push(section);
+    tick(state, users, now);
+    return { round_id: r.id, champions: ids.length };
+  }
+  if (kind === "overall.final") {
+    // Décision PO du 23/09/2026 : les champions overall de chaque discipline s'affrontent pour un
+    // champion définitif. Un seul tour par section, jugé par le panel comme un overall ordinaire.
+    const section: string = p.section;
+    if (state.status !== "running") throw new Problem("La compétition n’est pas en cours.");
+    if (currentDiscipline(state) !== null) throw new Problem("Toutes les disciplines doivent être terminées avant l’overall final.");
+    if (section !== "amateur" && section !== "pro") throw new Problem("Section invalide.");
+    if (state.rounds.some((r: any) => r.grand_final && r.section === section)) throw new Problem("Overall final déjà constitué pour cette section.");
+    const overalls = state.rounds.filter((r: any) => r.phase === "overall" && !r.grand_final && r.section === section);
+    if (!overalls.length) throw new Problem("Aucun overall de discipline pour cette section.");
+    if (overalls.some((r: any) => !CLOSED.has(r.status) && r.status !== "no_title")) throw new Problem("Tous les overalls de discipline doivent être validés.");
+    const rows = overalls.flatMap((r: any) => (r.result ?? { official: [] }).official);
+    let ids: string[] = overallCandidates(rows, state.entries, eligibleIds(state));
+    const absent = new Set<string>(p.absent_ids ?? []);
+    if (!isSubset(absent, new Set(ids))) throw new Problem("Absence overall inconnue.");
+    ids = ids.filter((i) => !absent.has(i));
+    const cat = { id: "overall-final-" + section, discipline: "overall", section };
+    const r = makeRound(state, cat, "overall", ids);
+    r.grand_final = true;
+    r.absent_ids = [...absent];
+    if (!ids.length) r.status = "no_title";
+    state.rounds.push(r);
     tick(state, users, now);
     return { round_id: r.id, champions: ids.length };
   }

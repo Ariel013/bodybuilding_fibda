@@ -64,6 +64,8 @@ export const SESSION_SECONDS = 16 * 3600;
 export function validateNewUser(name: string, roles: string[], code: unknown): { name: string; roles: string[] } {
   if (typeof code !== "string" || code.length < 4 || code.length > 128) throw new Problem("Le code personnel doit contenir de 4 à 128 caractères.");
   if (!name.trim() || !roles.length || !roles.every((r) => ROLES.has(r))) throw new Problem("Nom et fonctions valides obligatoires.");
+  // Décision PO du 23/09/2026 : 8 caractères minimum pour chef, responsable et directeur.
+  if (intersects(roles, ADMIN) && code.length < 8) throw new Problem("Le code d’un accès de direction doit contenir au moins 8 caractères.");
   if (roles.includes("director") && intersects(roles, ["chief", "responsable", "judge", "trainee"])) throw new Problem("Le directeur ne peut cumuler une fonction de vote.");
   if (roles.includes("trainee") && intersects(roles, ["chief", "responsable", "judge"])) throw new Problem("Un stagiaire ne siège pas simultanément comme juge officiel.");
   return { name: name.trim(), roles: [...new Set(roles)] };

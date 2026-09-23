@@ -32,18 +32,19 @@ test("état initial créé, lecture et écriture versionnée", async () => {
 
 test("comptes : hachage, doublon de code, chef unique, session et authentification", async () => {
   const store = memory();
-  const chief = await store.transact((tx) => store.addUser(tx, "Chef", ["chief"], "abcd", true));
+  const chief = await store.transact((tx) => store.addUser(tx, "Chef", ["chief"], "abcd5678", true));
   assert.equal(chief.approved, true);
-  await assert.rejects(store.transact((tx) => store.addUser(tx, "Autre", ["judge"], "abcd")), /déjà utilisé/);
-  await assert.rejects(store.transact((tx) => store.addUser(tx, "Chef 2", ["chief"], "efgh")), /Un chef existe déjà/);
-  await assert.rejects(store.transact((tx) => store.addUser(tx, "Dir", ["director", "judge"], "ijkl")), /directeur/);
+  await assert.rejects(store.transact((tx) => store.addUser(tx, "Autre", ["judge"], "abcd5678")), /déjà utilisé/);
+  await assert.rejects(store.transact((tx) => store.addUser(tx, "Chef 2", ["chief"], "efgh1234")), /Un chef existe déjà/);
+  await assert.rejects(store.transact((tx) => store.addUser(tx, "Dir", ["director", "judge"], "ijkl1234")), /directeur/);
   const rows = await store.execute("SELECT code_hash FROM users");
   assert.match(String(rows[0].code_hash), /^[0-9a-f]{32}:[0-9a-f]{64}$/);
   const token = await store.transact((tx) => store.newSession(tx, chief.id));
   const me = await store.authenticate(token);
   assert.equal(me.id, chief.id);
   await assert.rejects(store.authenticate("faux"), /Session expirée/);
-  assert.equal((await store.userByCode("abcd"))?.id, chief.id);
+  await assert.rejects(store.transact((tx) => store.addUser(tx, "Resp", ["responsable"], "court")), /au moins 8/);
+  assert.equal((await store.userByCode("abcd5678"))?.id, chief.id);
   assert.equal(await store.userByCode("zzzz"), null);
   const judge = await store.transact((tx) => store.addUser(tx, "Juge", ["judge"], "mnop"));
   const t2 = await store.transact((tx) => store.newSession(tx, judge.id));

@@ -15,6 +15,16 @@ import {
   entryLabel,
   JsonDetails,
 } from "./ui";
+/** Nom affiché d'un tour : un overall final n'a pas de catégorie dans `state.categories`. */
+function roundName(s: State, round: Round): string {
+  if (round.grand_final)
+    return `Overall final · ${labels[round.section || ""] || round.section || ""}`;
+  return s.categories.find((c) => c.id === round.category_id)?.name || "";
+}
+/** Sous-libellé d'un tour : phase, ou « Toutes disciplines » pour l'overall final. */
+function roundPhase(round: Round): string {
+  return round.grand_final ? "Toutes disciplines" : labels[round.phase];
+}
 export function Competition({ s, command }: { s: State; command: Command }) {
   const [selected, setSelected] = useState("");
   const r =
@@ -25,6 +35,16 @@ export function Competition({ s, command }: { s: State; command: Command }) {
     [section, setSection] = useState("amateur"),
     [overallExams, setOverallExams] = useState<string[]>([]);
   const examCandidates = overallExamCandidates(s.users, s.jury?.trainees || []);
+  // Overall final toutes disciplines : possible seulement quand chaque discipline est terminée.
+  const disciplines = Array.from(
+    new Set(s.categories.filter((c) => !c.archived).map((c) => c.discipline)),
+  );
+  const allDisciplinesDone =
+    disciplines.length > 0 &&
+    disciplines.every((d) => s.discipline_progress?.[d]?.completed);
+  const sections = ["amateur", "pro"].filter((sec) =>
+    s.categories.some((c) => !c.archived && c.section === sec),
+  );
   return (
     <>
       <div className="page-title">
@@ -44,10 +64,8 @@ export function Competition({ s, command }: { s: State; command: Command }) {
           columns={["Catégorie / phase", "État", "Bulletins reçus", "Action"]}
           rows={s.rounds.map((round) => [
             <>
-              <strong>
-                {s.categories.find((c) => c.id === round.category_id)?.name}
-              </strong>
-              <small>{labels[round.phase]}</small>
+              <strong>{roundName(s, round)}</strong>
+              <small>{roundPhase(round)}</small>
             </>,
             <Status value={round.status} />,
             `${round.panel.filter((id) => round.ballots?.[id]).length}/${round.panel.length} officiels · ${round.trainees.filter((id) => round.ballots?.[id]).length}/${round.trainees.length} stagiaires`,
@@ -129,6 +147,33 @@ export function Competition({ s, command }: { s: State; command: Command }) {
           </AsyncButton>
         </div>
       </Panel>
+      {s.status === "running" &&
+        allDisciplinesDone &&
+        canCommand(s.me.roles, "overall.final") && (
+          <Panel title="Overall final toutes disciplines">
+            <p className="muted">
+              Toutes les disciplines sont terminées. Les champions overall de
+              chaque discipline s’affrontent pour le titre définitif de la
+              section. Le tour s’ouvre aussitôt s’il y a au moins deux
+              champions ; avec un seul champion, confirmez-le depuis son
+              dossier.
+            </p>
+            <div className="actions">
+              {sections.map((sec) => (
+                <AsyncButton
+                  key={sec}
+                  allowed={canCommand(s.me.roles, "overall.final")}
+                  disabled={s.rounds.some(
+                    (round) => round.grand_final && round.section === sec,
+                  )}
+                  action={() => command("overall.final", { section: sec })}
+                >
+                  Lancer l’overall final {labels[sec]}
+                </AsyncButton>
+              ))}
+            </div>
+          </Panel>
+        )}
     </>
   );
 }
@@ -155,7 +200,7 @@ function RoundControl({
   return (
     <>
       <Panel
-        title={`${s.categories.find((c) => c.id === r.category_id)?.name} · ${labels[r.phase]}`}
+        title={`${roundName(s, r)} · ${roundPhase(r)}`}
         actions={<Status value={r.status} />}
       >
         <div className="actions">

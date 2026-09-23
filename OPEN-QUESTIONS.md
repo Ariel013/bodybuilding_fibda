@@ -26,25 +26,22 @@ la zone du projet concernée ne doit pas être commencée.
    - **Pas encore répondu** : nombre concret de catégories et d'athlètes ; Wi-Fi/routeur du
      lieu (dépend de Q0quater).
 
-0ter. **[NOUVEAU — règle sportive, bloque le calcul de l'overall]** Le code actuel calcule
-   l'overall uniquement entre **finales validées de même discipline et même section**
-   (`docs/REFERENTIEL.md` §Overall, `domain.py` `overall_candidates`). Le PO dit "les premiers
-   de toutes les catégories". Question : l'overall de samedi oppose-t-il les vainqueurs
-   **d'une même discipline** (ex. tous les Men's Physique, un overall par discipline), ou
-   **toutes disciplines confondues** (un seul champion pour toute la compétition) ? Dans le
-   second cas, le moteur doit être adapté, et la règle de départage entre disciplines
-   différentes n'existe nulle part dans le référentiel : à définir explicitement par la
-   fédération. **Ne pas coder sans réponse.**
+0ter. **[RÉPONDU LE 23/09]** Overall : « tous les premiers de chaque discipline s'affrontent
+   pour un champion définitif ». Implémenté côté TypeScript : commande `overall.final`
+   {section} disponible quand toutes les disciplines sont terminées ; participants = champions
+   des overalls de discipline (dédupliqués par personne), tour jugé par le panel comme un
+   overall ordinaire, récompense « Champion overall toutes disciplines ».
+   **Hypothèse H1 à confirmer** : un seul overall final, hommes et femmes confondus, par
+   section. Si la fédération veut un champion par sexe, dire-le : c'est une ligne à changer.
 
 0quater. **[REMPLACÉ LE 23/09 par ADR 0002]** Réécriture du backend en TypeScript serverless
    (Vercel + Turso), frontend et contrat d'API conservés, Python sur Railway en plan B. Voir
    `docs/decisions/0002-*.md`. Historique : hébergement : le PO choisit un serveur hébergé sur Internet,
    sur une VM gratuite. Décision et compromis dans `docs/decisions/0001-serveur-heberge-sur-internet-vm-gratuite.md`,
    procédure dans `docs/DEPLOIEMENT-INTERNET.md`, actions manuelles dans `A-FAIRE.md`.
-   Reste à obtenir : la connexion Internet du lieu est-elle fiable, et un partage 4G de
-   secours est-il prévu ?
+   Réponse du 23/09 : partage 4G prévu.
 
-0quinquies. **[NOUVEAU — sécurité, décision PO]** Longueur minimale des codes personnels.
+0quinquies. **[RÉPONDU LE 23/09 : 8 caractères pour chef, responsable, directeur ; 4 pour les autres — implémenté côté TypeScript]** Longueur minimale des codes personnels.
    Décision du 23/09 (REPRISE.md) : 4 caractères minimum. La passe sécurité du 23/09 relève
    qu'un code à 4 chiffres = 10 000 combinaisons et que le login sans identifiant teste tous
    les comptes à chaque essai. Proposition : garder 4 pour les juges, exiger 8 pour chef,

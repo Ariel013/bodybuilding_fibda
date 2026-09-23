@@ -5,12 +5,14 @@ Cocher quand c'est fait, avec la date.
 
 ## Avant samedi 26/09/2026
 
-- [ ] (23/09) **Créer le compte Railway** avec ton GitHub (sans carte), installer la
+- [ ] (23/09, **EN SUSPENS** sur décision PO : on finit l'app d'abord) ~~Créer le compte Railway~~ (compte créé) avec ton GitHub (sans carte), installer la
       CLI (`npm i -g @railway/cli`), puis `railway login`. Plan B Python (ADR 0002).
-- [ ] (23/09) **Créer le compte Turso** (https://turso.tech, GitHub, sans carte),
+- [x] (23/09) Compte Turso créé. Reste : `turso db show fibda --url` et `turso db tokens create fibda`, valeurs à mettre dans Vercel.
+- [ ] (23/09) ~~**Créer le compte Turso**~~ (https://turso.tech, GitHub, sans carte),
       créer une base `fibda`, me transmettre l'URL `libsql://…` et un jeton en
       variable d'environnement, jamais dans un fichier du dépôt.
-- [ ] (23/09) **Compte Vercel** relié au dépôt GitHub ; `npm i -g vercel` puis
+- [x] (23/09) Compte Vercel relié au dépôt GitHub. Reste : dans le projet Vercel, « Root Directory » = `frontend`, variables `TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN`, `FIBDA_SETUP_TOKEN` (Production).
+- [ ] (23/09) ~~**Compte Vercel** relié au dépôt GitHub~~ ; `npm i -g vercel` puis
       `vercel login` (taper `! vercel login` dans cette session).
 - [ ] (23/09) Dire ce que « tout et même plus » contient au-delà de l'app Python.
 
@@ -24,9 +26,8 @@ Cocher quand c'est fait, avec la date.
       la VM. Ce nom sera dans le QR des juges.
 - [ ] (23/09) Suivre `docs/DEPLOIEMENT-INTERNET.md` jusqu'au test sur un vrai
       téléphone, **au plus tard jeudi 24/09 soir**.
-- [ ] (23/09) Décider longueur minimale des codes admin (`OPEN-QUESTIONS.md`
-      Q0quinquies).
-- [ ] (23/09) Répondre Q0ter : overall par discipline ou toutes disciplines.
+- [x] (23/09) Codes admin : 8 caractères, décidé et implémenté.
+- [x] (23/09) Q0ter répondue : overall final toutes disciplines. Reste H1 (par sexe ou non).
 - [ ] (23/09) Plan papier de secours : imprimer feuilles de jugement vierges par
       catégorie ; désigner qui les distribue si le réseau tombe.
 

@@ -7,6 +7,9 @@ export type Round = Entity & {
   status: string;
   phase: string;
   category_id: string;
+  /** Overall final toutes disciplines (décision PO du 23/09/2026) : catégorie hors `state.categories`. */
+  grand_final?: boolean;
+  section?: string;
 };
 export type State = {
   id: string;

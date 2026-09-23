@@ -9,7 +9,7 @@ import { exams, collective } from "./projections";
 
 // Dispatch des commandes : copie de commands.py. Chaque commande vérifie ses droits côté serveur.
 const PREP = new Set(["event.update", "person.save", "entry.save", "measurement.save", "category.save", "category.fuse", "programme.reorder", "bibs.assign", "entry.late", "official.save"]);
-const SPORTS = new Set(["jury.configure", "programme.generate", "event.start", "event.finish", "round.configure", "round.open", "round.next", "round.validate", "round.correct", "round.incident", "round.resolve", "panel.reduce", "overall.create", "overall.confirm", "discipline.advance", "ballot.submit", "paper.submit", "rewards.complete"]);
+const SPORTS = new Set(["jury.configure", "programme.generate", "event.start", "event.finish", "round.configure", "round.open", "round.next", "round.validate", "round.correct", "round.incident", "round.resolve", "panel.reduce", "overall.create", "overall.final", "overall.confirm", "discipline.advance", "ballot.submit", "paper.submit", "rewards.complete"]);
 
 export async function applyCommand(store: Store, conn: Conn, state: any, actor: User, kind: string, p: any): Promise<any> {
   const users = await store.allUsers(conn);

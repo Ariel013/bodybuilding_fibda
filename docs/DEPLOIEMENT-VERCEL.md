@@ -1,14 +1,15 @@
 # Déploiement de la version TypeScript (Vercel + Turso) — ADR 0002
 
-Statut : **rédigé le 23/09, à exécuter et cocher dans `A-FAIRE.md`**. Aucune
-étape ci-dessous n'a encore été vérifiée sur un vrai compte.
+Statut : **exécuté le 23/09/2026 au soir**. Production : https://fibda-bodybuilding.vercel.app
+(santé, jeton, création du chef, connexion, état et écran public vérifiés au curl).
+Secrets remis au PO hors dépôt (`~/fibda-secrets-2026-09-23.txt` sur le poste de développement).
 
 ## 1. Base Turso (gratuit, sans carte)
 
 ```bash
 curl -sSfL https://get.tur.so/install.sh | bash
 turso auth login                 # ouvre le navigateur, compte GitHub
-turso db create fibda --location cdg   # Paris ; choisir le plus proche du lieu
+turso db create fibda --location aws-eu-west-1   # Irlande, le plus proche disponible le 23/09
 turso db show fibda --url        # → libsql://fibda-….turso.io
 turso db tokens create fibda     # → jeton, à garder secret
 ```
@@ -18,9 +19,13 @@ Deux bases distinctes si l'on veut une démonstration : `fibda-demo` avec
 
 ## 2. Projet Vercel
 
-Racine du projet Vercel : le dossier `frontend/` (réglage « Root Directory »).
-`vercel.json` y définit le build Vite, la fonction unique `api/index.ts` et le
-repli SPA.
+Projet créé et déployé **depuis la CLI**, dans `frontend/` (`vercel link --yes --project
+fibda-bodybuilding`, puis `vercel deploy --prod --yes`) : il n'est pas relié au dépôt
+GitHub, un push ne déploie rien. `vercel.json` définit le build Vite, la fonction unique et le
+repli SPA. **L'API est regroupée par esbuild** (`npm run build:api`, entrée
+`server/vercel.ts` → `api/index.js`, ignoré par git) : Vercel ne regroupe pas les modules
+ESM lui-même, la première mise en ligne a échoué pour cette raison. Le gestionnaire accepte
+les signatures Node `(req, res)` et web `(Request)`.
 
 Variables d'environnement (Production) :
 
@@ -32,8 +37,12 @@ Variables d'environnement (Production) :
 | `FIBDA_DEMO` | absent en production, `1` pour la base de démonstration |
 
 ```bash
-npm i -g vercel
-cd frontend && vercel link && vercel --prod
+npm i -g vercel && vercel login
+cd frontend && vercel link --yes --project fibda-bodybuilding
+printf '%s' "$URL"   | vercel env add TURSO_DATABASE_URL production --yes
+printf '%s' "$TOKEN" | vercel env add TURSO_AUTH_TOKEN production --sensitive --yes
+printf '%s' "$SETUP" | vercel env add FIBDA_SETUP_TOKEN production --sensitive --yes
+vercel deploy --prod --yes
 ```
 
 ## 3. Premier chef, restauration, démonstration

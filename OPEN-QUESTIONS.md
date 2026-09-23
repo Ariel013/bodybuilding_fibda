@@ -127,3 +127,7 @@ P7. `validate_confirmed_entries` : une dérogation dont `reason` vaut `null` est
    motivée (`str(None)` = « None » côté Python). Porté à l'identique ; trou probable.
 P8. `entry.late` avec `reason: null` : passe le premier contrôle puis plante en 500 au `strip()`.
    Porté à l'identique.
+P9. **Photos non portées en serverless** (23/09 soir). Le Python écrit les photos sur disque ;
+   Vercel n'a pas de disque. Options : stockage dans Turso en base64 après redimensionnement
+   côté navigateur (simple, ~50 Ko par photo), ou Vercel Blob. Hors périmètre de samedi
+   (`MVP-SCOPE.md` : photos peuvent attendre). Les routes `/api/v1/photos*` renvoient 404.

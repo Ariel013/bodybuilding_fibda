@@ -148,25 +148,38 @@ function Workspace() {
     let disposed = false;
     let socket: WebSocket;
     let reconnect: ReturnType<typeof setTimeout>;
+    // Le serveur serverless (Vercel) n'a pas de WebSocket : si la première connexion n'aboutit
+    // jamais, on n'insiste pas et l'état « Connecté » suit l'interrogation périodique.
+    let everOpened = false;
+    let pollEvery = 10000;
     const connect = () => {
       socket = new WebSocket(
         `${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/api/v1/ws`,
       );
       socket.onopen = () => {
+        everOpened = true;
         setConnection("Connecté au serveur");
         refresh().catch(() => {});
       };
       socket.onmessage = () => refresh().catch(() => {});
       socket.onclose = () => {
-        if (!disposed) {
-          setConnection("Reconnexion…");
-          reconnect = setTimeout(connect, 2500);
+        if (disposed) return;
+        if (!everOpened) {
+          pollEvery = 6000;
+          restartPoll();
+          return;
         }
+        setConnection("Reconnexion…");
+        reconnect = setTimeout(connect, 2500);
       };
       socket.onerror = () => socket.close();
     };
     connect();
-    const poll = setInterval(() => refresh().catch(() => {}), 10000);
+    let poll = setInterval(() => refresh().catch(() => {}), pollEvery);
+    const restartPoll = () => {
+      clearInterval(poll);
+      poll = setInterval(() => refresh().catch(() => {}), pollEvery);
+    };
     const online = () => refresh().catch(() => {});
     window.addEventListener("online", online);
     return () => {

@@ -7,11 +7,13 @@ Cocher quand c'est fait, avec la date.
 
 - [ ] (23/09, **EN SUSPENS** sur décision PO : on finit l'app d'abord) ~~Créer le compte Railway~~ (compte créé) avec ton GitHub (sans carte), installer la
       CLI (`npm i -g @railway/cli`), puis `railway login`. Plan B Python (ADR 0002).
-- [x] (23/09) Compte Turso créé. Reste : `turso db show fibda --url` et `turso db tokens create fibda`, valeurs à mettre dans Vercel.
+- [x] (23/09) Compte Turso créé, base `fibda` créée en Irlande, jeton posé dans Vercel.
 - [ ] (23/09) ~~**Créer le compte Turso**~~ (https://turso.tech, GitHub, sans carte),
       créer une base `fibda`, me transmettre l'URL `libsql://…` et un jeton en
       variable d'environnement, jamais dans un fichier du dépôt.
-- [x] (23/09) Compte Vercel relié au dépôt GitHub. Reste : dans le projet Vercel, « Root Directory » = `frontend`, variables `TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN`, `FIBDA_SETUP_TOKEN` (Production).
+- [x] (23/09) Projet Vercel `fibda-bodybuilding` créé par la CLI, variables posées, production déployée et vérifiée : https://fibda-bodybuilding.vercel.app
+- [ ] (23/09) **PO : ouvrir l'URL sur un téléphone**, ajouter à l'écran d'accueil, se connecter avec le code du chef (fichier `~/fibda-secrets-2026-09-23.txt` sur le poste de dev), créer un juge, envoyer un bulletin de test. C'est la recette minimale de `docs/DEPLOIEMENT-VERCEL.md` §5.
+- [ ] (23/09) **PO : changer le code du chef** généré par la machine dès la première connexion (créer un second compte de direction avec un code choisi, puis désactiver le premier), ou le garder s'il convient.
 - [ ] (23/09) ~~**Compte Vercel** relié au dépôt GitHub~~ ; `npm i -g vercel` puis
       `vercel login` (taper `! vercel login` dans cette session).
 - [ ] (23/09) Dire ce que « tout et même plus » contient au-delà de l'app Python.

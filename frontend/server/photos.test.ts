@@ -1,0 +1,220 @@
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import { createApp } from "./app";
+import { Store } from "./store";
+import { inspectImage, detectImage } from "./photos";
+import { Problem } from "./problem";
+import { loadCatalogue } from "../domain/catalogue";
+
+// Photos en serverless : contrôle du fichier (photos.ts), routes /photos* (app.ts), écran public,
+// sauvegarde et restauration avec photo. Mêmes attendus que backend/tests (photo_get, save_photo).
+
+function make() {
+  const store = new Store({ url: ":memory:", clock: () => 1000 });
+  return { store, app: createApp({ store, setupToken: "jeton-test", testing: true }) };
+}
+const json = (body: any, headers: Record<string, string> = {}) => ({ method: "POST", body: JSON.stringify(body), headers: { "content-type": "application/json", ...headers } });
+const cookieOf = (r: Response) => (r.headers.get("set-cookie") ?? "").split(";")[0];
+const body = async (r: Response | Promise<Response>): Promise<any> => { const t = await (await r).text(); try { return JSON.parse(t); } catch { return t; } };
+
+// PNG 1×1 réel (base64) ; JPEG réduit à son en-tête (SOI, SOF0 1×1, EOI) ; WEBP VP8L 1×1 (en-tête).
+const PNG = new Uint8Array(Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==", "base64"));
+const JPEG = new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x04, 0x00, 0x00, 0xff, 0xc0, 0x00, 0x11, 0x08, 0x00, 0x02, 0x00, 0x03, 0x03, 0x01, 0x11, 0x00, 0x02, 0x11, 0x01, 0x03, 0x11, 0x01, 0xff, 0xd9]);
+const WEBP = new Uint8Array([0x52, 0x49, 0x46, 0x46, 0x1a, 0, 0, 0, 0x57, 0x45, 0x42, 0x50, 0x56, 0x50, 0x38, 0x4c, 0x0d, 0, 0, 0, 0x2f, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
+// PNG dont l'en-tête annonce 6000 × 5000 = 30 Mpx.
+const PNG_HUGE = (() => { const b = new Uint8Array(PNG); b.set([0, 0, 0x17, 0x70], 16); b.set([0, 0, 0x13, 0x88], 20); return b; })();
+
+async function setup() {
+  const { app, store } = make();
+  await app.request("/api/v1/auth/setup", json({ name: "Chef", code: "abcd1234" }, { "x-setup-token": "jeton-test" }));
+  const cookie = cookieOf(await app.request("/api/v1/auth/login", json({ code: "abcd1234" })));
+  const person = { id: "p1", first_name: "Jean", last_name: "Test", birth_date: "1990-01-01", sex: "M", section: "amateur", country: "CI", nationalities: ["CI"], height_cm: "170", weight_kg: "69", measurements_confirmed: true, status_approved: true, licence_ok: true, payment_ok: true };
+  let r = await app.request("/api/v1/command", json({ id: "c1", version: 0, type: "person.save", payload: { person } }, { cookie }));
+  assert.equal(r.status, 200, JSON.stringify(await body(r)));
+  r = await app.request("/api/v1/command", json({ id: "c2", version: 1, type: "user.invite", payload: { name: "Juge", roles: ["judge"], code: "juge0001" } }, { cookie }));
+  assert.equal(r.status, 200);
+  // Catégorie, inscription confirmée et scène « catégorie » : l'écran public ne montre que les athlètes en scène.
+  const rule = loadCatalogue().rules.find((x) => x.discipline === "bodybuilding" && x.division === "senior" && x.upper_inclusive === "70")!;
+  r = await app.request("/api/v1/command", json({ id: "c3", version: 2, type: "category.save", payload: { category: { id: "cat1", rule_id: rule.id, section: "amateur" } } }, { cookie }));
+  assert.equal(r.status, 200, JSON.stringify(await body(r)));
+  r = await app.request("/api/v1/command", json({ id: "c4", version: 3, type: "entry.save", payload: { entry: { person_id: "p1", category_id: "cat1", confirmed: true } } }, { cookie }));
+  assert.equal(r.status, 200, JSON.stringify(await body(r)));
+  r = await app.request("/api/v1/command", json({ id: "c5", version: 4, type: "scene.set", payload: { screen: "main", scene: { kind: "category", category_id: "cat1" } } }, { cookie }));
+  assert.equal(r.status, 200, JSON.stringify(await body(r)));
+  const judge = cookieOf(await app.request("/api/v1/auth/login", json({ code: "juge0001" })));
+  return { app, store, cookie, judge };
+}
+
+function upload(app: any, cookie: string, bytes: Uint8Array, name = "photo.jpg", fields: Record<string, string> = {}) {
+  const fd = new FormData();
+  fd.append("file", new File([bytes], name, { type: "image/jpeg" }));
+  fd.append("owner_type", fields.owner_type ?? "person");
+  fd.append("owner_id", fields.owner_id ?? "p1");
+  fd.append("kind", fields.kind ?? "portrait");
+  if (fields.crop) fd.append("crop", fields.crop);
+  return app.request("/api/v1/photos", { method: "POST", body: fd, headers: { cookie } });
+}
+
+test("photos.ts : type par octets magiques, dimensions dans l'en-tête, refus au-delà de 25 Mpx", () => {
+  assert.deepEqual(inspectImage(PNG), { mime: "image/png", width: 1, height: 1 });
+  assert.deepEqual(inspectImage(JPEG), { mime: "image/jpeg", width: 3, height: 2 });
+  assert.deepEqual(inspectImage(WEBP), { mime: "image/webp", width: 1, height: 1 });
+  assert.equal(detectImage(new TextEncoder().encode("<html>")), null);
+  assert.throws(() => inspectImage(new TextEncoder().encode("GIF89a....")), (e: any) => e instanceof Problem && e.status === 422);
+  assert.throws(() => inspectImage(PNG_HUGE), (e: any) => e instanceof Problem && e.status === 422 && /dimensions/.test(e.message));
+  assert.throws(() => inspectImage(new Uint8Array([0xff, 0xd8, 0xff, 0xd9])), (e: any) => e instanceof Problem && /illisible/.test(e.message));
+  assert.throws(() => inspectImage(new Uint8Array(1024 * 1024 + 1)), (e: any) => e instanceof Problem && e.status === 413);
+});
+
+test("upload JPEG valide : état mis à jour, non approuvé ; crop accepté et ignoré", async () => {
+  const { app, cookie } = await setup();
+  const r = await upload(app, cookie, JPEG, "photo.jpg", { crop: "[0,0,1,1]" });
+  const out = await body(r);
+  assert.equal(r.status, 200, JSON.stringify(out));
+  assert.equal(typeof out.id, "string");
+  assert.deepEqual([out.width, out.height], [3, 2]);
+  const s = await body(app.request("/api/v1/state", { headers: { cookie } }));
+  const p = s.people.find((x: any) => x.id === "p1");
+  assert.equal(p.photo_portrait, out.id);
+  assert.equal(p.photo_approved, false);
+  assert.equal(p.photo_consent, false);
+  assert.equal(s.version, 6);
+  const audit = await body(app.request("/api/v1/audit", { headers: { cookie } }));
+  assert.ok(audit.some((a: any) => a.action === "photo.upload" && a.data.photo_id === out.id));
+  // Propriétaire inconnu ou type invalide.
+  assert.equal((await upload(app, cookie, JPEG, "x.jpg", { owner_id: "inconnu" })).status, 404);
+  assert.equal((await upload(app, cookie, JPEG, "x.jpg", { kind: "autre" })).status, 422);
+});
+
+test("contenu non image renommé .jpg → 422 ; plus de 1 Mo → 413 ; juge → 403", async () => {
+  const { app, cookie, judge } = await setup();
+  let r = await upload(app, cookie, new TextEncoder().encode("<script>alert(1)</script>"), "photo.jpg");
+  assert.equal(r.status, 422);
+  assert.match((await body(r)).detail, /JPEG, PNG ou WEBP/);
+  const big = new Uint8Array(1024 * 1024 + 1);
+  big.set(PNG);
+  r = await upload(app, cookie, big, "grand.png");
+  assert.equal(r.status, 413);
+  r = await upload(app, cookie, PNG_HUGE, "immense.png");
+  assert.equal(r.status, 422);
+  r = await upload(app, cookie, PNG, "photo.png");
+  assert.equal(r.status, 200);
+  assert.equal((await upload(app, judge, PNG, "photo.png")).status, 403);
+  assert.equal((await upload(app, "", PNG, "photo.png")).status, 401);
+  assert.equal((await app.request("/api/v1/photos", { method: "POST", body: new FormData(), headers: { cookie } })).status, 422);
+});
+
+test("lecture : privée avant approbation, publique après, avec consentement obligatoire", async () => {
+  const { app, cookie, judge } = await setup();
+  const { id } = await body(upload(app, cookie, PNG, "photo.png"));
+  // Sans session et avec une session de juge : refusé tant que non approuvée.
+  assert.equal((await app.request("/api/v1/photos/" + id)).status, 401);
+  assert.equal((await app.request("/api/v1/photos/" + id, { headers: { cookie: judge } })).status, 403);
+  let r = await app.request("/api/v1/photos/" + id, { headers: { cookie } });
+  assert.equal(r.status, 200);
+  assert.equal(r.headers.get("content-type"), "image/png");
+  assert.equal(r.headers.get("cache-control"), "private, no-store");
+  assert.equal(r.headers.get("content-disposition"), "inline");
+  assert.equal(r.headers.get("x-content-type-options"), "nosniff");
+  assert.equal((await app.request("/api/v1/photos/inconnue", { headers: { cookie } })).status, 404);
+  // Approbation : consentement explicite exigé, préparation seulement.
+  r = await app.request("/api/v1/photos/" + id + "/approve", json({}, { cookie }));
+  assert.equal(r.status, 422);
+  r = await app.request("/api/v1/photos/" + id + "/approve", json({ consent: "oui" }, { cookie }));
+  assert.equal(r.status, 422);
+  assert.equal((await app.request("/api/v1/photos/" + id + "/approve", json({ consent: true }, { cookie: judge }))).status, 403);
+  assert.equal((await app.request("/api/v1/photos/inconnue/approve", json({ consent: true }, { cookie }))).status, 404);
+  // Écran public : aucune photo avant approbation.
+  let pub = await body(app.request("/api/v1/public/main"));
+  assert.equal(pub.people.find((x: any) => x.id === "p1").photo_portrait, undefined);
+  r = await app.request("/api/v1/photos/" + id + "/approve", json({ consent: true }, { cookie }));
+  assert.deepEqual(await body(r), { approved: true });
+  const s = await body(app.request("/api/v1/state", { headers: { cookie } }));
+  const p = s.people.find((x: any) => x.id === "p1");
+  assert.equal(p.photo_approved, true);
+  assert.equal(p.photo_consent, true);
+  assert.deepEqual(p.approved_photo_ids, [id]);
+  assert.equal(s.version, 7);
+  r = await app.request("/api/v1/photos/" + id);
+  assert.equal(r.status, 200);
+  assert.match(r.headers.get("content-type") ?? "", /^image\//);
+  assert.equal(r.headers.get("cache-control"), "private, max-age=300");
+  assert.deepEqual(new Uint8Array(await r.arrayBuffer()), PNG);
+  pub = await body(app.request("/api/v1/public/main"));
+  assert.equal(pub.people.find((x: any) => x.id === "p1").photo_portrait, id);
+  // Nouvelle photo : l'ancienne n'est plus courante et redevient privée, la nouvelle n'est pas approuvée.
+  const second = (await body(upload(app, cookie, JPEG, "autre.jpg"))).id;
+  assert.equal((await app.request("/api/v1/photos/" + id)).status, 401);
+  assert.equal((await app.request("/api/v1/photos/" + second)).status, 401);
+  pub = await body(app.request("/api/v1/public/main"));
+  assert.equal(pub.people.find((x: any) => x.id === "p1").photo_portrait, undefined);
+});
+
+test("officiel : photo_id, approbation et écran public", async () => {
+  const { app, cookie } = await setup();
+  let r = await app.request("/api/v1/command", json({ id: "c6", version: 5, type: "official.save", payload: { official: { id: "o1", first_name: "Aya", last_name: "Koné", post: "Juge" } } }, { cookie }));
+  assert.equal(r.status, 200, JSON.stringify(await body(r)));
+  r = await app.request("/api/v1/command", json({ id: "c7", version: 6, type: "scene.set", payload: { screen: "main", scene: { kind: "official", official_id: "o1" } } }, { cookie }));
+  assert.equal(r.status, 200, JSON.stringify(await body(r)));
+  const { id } = await body(upload(app, cookie, PNG, "o.png", { owner_type: "official", owner_id: "o1" }));
+  assert.equal((await app.request("/api/v1/photos/" + id)).status, 401);
+  await app.request("/api/v1/photos/" + id + "/approve", json({ consent: true }, { cookie }));
+  assert.equal((await app.request("/api/v1/photos/" + id)).status, 200);
+  const pub = await body(app.request("/api/v1/public/main"));
+  assert.equal(pub.officials.find((x: any) => x.id === "o1").photo_id, id);
+});
+
+test("import ZIP : 501 avec message explicite", async () => {
+  const { app, cookie, judge } = await setup();
+  const r = await app.request("/api/v1/photos/batch", { method: "POST", body: new FormData(), headers: { cookie } });
+  assert.equal(r.status, 501);
+  assert.equal((await body(r)).detail, "Import ZIP de photos indisponible sur cette version : ajouter les photos une par une.");
+  assert.equal((await app.request("/api/v1/photos/batch", { method: "POST", body: new FormData(), headers: { cookie: judge } })).status, 403);
+});
+
+test("sauvegarde et restauration avec une photo approuvée ; sauvegarde sans photos → fiche remise à zéro", async () => {
+  const a = await setup();
+  const { id } = await body(upload(a.app, a.cookie, PNG, "photo.png"));
+  await a.app.request("/api/v1/photos/" + id + "/approve", json({ consent: true }, { cookie: a.cookie }));
+  const archive = await body(a.app.request("/api/v1/backup", { method: "POST", headers: { cookie: a.cookie } }));
+  assert.equal(archive.photos_omitted, false);
+  assert.equal(archive.photos.length, 1);
+  assert.equal(archive.photos[0].data, Buffer.from(PNG).toString("base64"));
+  assert.equal(archive.photos[0].approved, 1);
+  const restoreInto = async (text: string) => {
+    const b = make();
+    await b.app.request("/api/v1/auth/setup", json({ name: "Chef B", code: "efgh5678" }, { "x-setup-token": "jeton-test" }));
+    const cb = cookieOf(await b.app.request("/api/v1/auth/login", json({ code: "efgh5678" })));
+    const r = await b.app.request("/api/v1/restore", { method: "POST", body: text, headers: { cookie: cb, "x-setup-token": "jeton-test" } });
+    assert.equal(r.status, 200, JSON.stringify(await body(r)));
+    const cookie = cookieOf(await b.app.request("/api/v1/auth/login", json({ code: "abcd1234" })));
+    return { app: b.app, cookie };
+  };
+  // Restauration complète : la photo est de nouveau servie publiquement.
+  const full = await restoreInto(JSON.stringify(archive));
+  let r = await full.app.request("/api/v1/photos/" + id);
+  assert.equal(r.status, 200);
+  assert.deepEqual(new Uint8Array(await r.arrayBuffer()), PNG);
+  let s = await body(full.app.request("/api/v1/state", { headers: { cookie: full.cookie } }));
+  assert.equal(s.people[0].photo_portrait, id);
+  assert.equal(s.people[0].photo_approved, true);
+  // Sauvegarde allégée (photos omises) : plus de photo, plus d'approbation, état cohérent.
+  const { sha256: _old, ...rest } = archive;
+  const light: any = { ...rest, photos: [], photos_omitted: true };
+  const { createHash } = await import("node:crypto");
+  light.sha256 = createHash("sha256").update(JSON.stringify(light)).digest("hex");
+  const partial = await restoreInto(JSON.stringify(light));
+  assert.equal((await partial.app.request("/api/v1/photos/" + id, { headers: { cookie: partial.cookie } })).status, 404);
+  s = await body(partial.app.request("/api/v1/state", { headers: { cookie: partial.cookie } }));
+  assert.equal(s.people[0].photo_portrait, null);
+  assert.equal(s.people[0].photo_approved, false);
+  assert.deepEqual(s.people[0].approved_photo_ids, []);
+  // Photo altérée dans l'archive : refusée avant toute écriture.
+  const bad: any = { ...rest, photos: [{ ...archive.photos[0], data: Buffer.from("pas une image").toString("base64") }] };
+  bad.sha256 = createHash("sha256").update(JSON.stringify(bad)).digest("hex");
+  const b = make();
+  await b.app.request("/api/v1/auth/setup", json({ name: "Chef B", code: "efgh5678" }, { "x-setup-token": "jeton-test" }));
+  const cb = cookieOf(await b.app.request("/api/v1/auth/login", json({ code: "efgh5678" })));
+  r = await b.app.request("/api/v1/restore", { method: "POST", body: JSON.stringify(bad), headers: { cookie: cb, "x-setup-token": "jeton-test" } });
+  assert.equal(r.status, 422);
+});

@@ -127,10 +127,13 @@ P7. `validate_confirmed_entries` : une dérogation dont `reason` vaut `null` est
    motivée (`str(None)` = « None » côté Python). Porté à l'identique ; trou probable.
 P8. `entry.late` avec `reason: null` : passe le premier contrôle puis plante en 500 au `strip()`.
    Porté à l'identique.
-P9. **Photos non portées en serverless** (23/09 soir). Le Python écrit les photos sur disque ;
-   Vercel n'a pas de disque. Options : stockage dans Turso en base64 après redimensionnement
-   côté navigateur (simple, ~50 Ko par photo), ou Vercel Blob. Hors périmètre de samedi
-   (`MVP-SCOPE.md` : photos peuvent attendre). Les routes `/api/v1/photos*` renvoient 404.
+P9. **[RÉSOLU LE 24/09]** Photos portées en serverless : stockées dans Turso (table `photos`,
+   BLOB ≤ 1 Mo après réduction dans le navigateur, type vérifié par octets magiques, pas de
+   re-encodage serveur), mêmes règles d'approbation et de consentement que le Python, incluses
+   dans la sauvegarde JSON tant qu'elle reste sous 4 Mo. Seul l'import ZIP de photos reste
+   indisponible (501). Réserve : l'orientation EXIF n'est pas corrigée (le Python le faisait) ;
+   une photo prise en portrait peut apparaître pivotée, à contrôler à l'œil.
+
 P10. **Import XLSX indisponible** (23/09 soir). Audit mesuré : `exceljs` 4.4.0 → 2 vulnérabilités
    modérées ; `xlsx` 0.18.5 → 1 vulnérabilité haute sans correctif. Conformément à RULES.md,
    aucune dépendance ajoutée : `POST /imports/preview` répond 415 « Format XLSX indisponible :

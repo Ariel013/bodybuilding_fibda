@@ -20,7 +20,7 @@ Commands (payload):
 - reward.update {reward_id,prepared?,delivered?,title?,trophy?,medal?,lot?,prize?,currency?}; exam.program {user_id,round_ids}; exam.decide {user_id,decision,reason}; collective.decide {kind,winner,reason} signatures server.
 - ballot.submit {round_id,ranking OR selected,restore_id}; paper.submit {round_id,judge_id,ranking OR selected,signature,reason}; chief-only paper with original recorded. Local drafts IndexedDB scoped event/restore/judge/round/version, never silent send.
 - GET /eligibility/{person_id} proposals; GET /exams; GET /collective.
-- POST /photos multipart file + owner_type person|official + owner_id + kind portrait|full → unapproved photo id. POST /photos/{id}/approve {consent:true}; GET /photos/{id} privateauth OR publiconlyapproved. POST /imports/preview multipart CSV/XLSX; POST /imports/commit {preview_id}; POST /photos/batch ZIP explicit mappings.
+- POST /photos multipart file + owner_type person|official + owner_id + kind portrait|full → unapproved photo id. POST /photos/{id}/approve {consent:true}; GET /photos/{id} privateauth OR publiconlyapproved. POST /imports/preview multipart CSV/XLSX; POST /imports/commit {preview_id}; POST /photos/batch ZIP explicit mappings (version serverless : 501, indisponible).
 - GET /print/{kind}?category_id=&round_id=&judge_id= → escaped printable HTML with print button CSS category pagebreak, logo. Kinds blank,ballot,recap,registrations,programme,measures,results,rewards,diploma,exams,officials. Individual ballot no exam comparison. GET /export/{kind}?format=csv|xlsx|pdf.
 - POST /backup → ZIP file; POST /restore multipart file (chief/director, preserveold, newrestoreid, invalidateallsessions), GET /audit.
 

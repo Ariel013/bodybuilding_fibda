@@ -33,6 +33,13 @@ Le chef de jury et le responsable disposent des onglets Vue d'ensemble, Prépara
 3. « Propositions et motifs du référentiel » affiche les catégories admissibles calculées par le serveur. Une dérogation du chef se note avec son motif.
 4. Un fichier CSV ou XLSX peut être importé depuis « Importer des inscriptions » : lisez la prévisualisation, corrigez les erreurs, puis confirmez.
 
+### Photographies
+
+1. Sur la fiche de la personne (rubrique **Personnes**) ou de l'officiel (rubrique **Officiels**), bloc « Photographie et droit de diffusion » : choisissez le type (Portrait ou Plein pied), le fichier JPEG, PNG ou WEBP, recadrez si besoin, puis « Importer la photo ». La photo est réduite par le navigateur avant l'envoi (1 Mo au maximum) ; une image que le navigateur ne sait pas lire est refusée.
+2. Une photo importée est **privée** : elle n'apparaît sur aucun écran public tant qu'elle n'est pas approuvée. Cochez « Consentement de diffusion recueilli et photo vérifiée » seulement si l'autorisation de la personne (ou de son représentant légal pour un mineur) est en votre possession, puis « Autoriser la diffusion publique ».
+3. Importer une nouvelle photo remplace la précédente et annule l'approbation : il faut approuver de nouveau.
+4. L'import par archive ZIP n'est pas disponible sur cette version : ajoutez les photos une par une.
+
 ### Contrôler les mesures
 
 - Rubrique **Mesures** : saisissez la taille et le poids réellement mesurés, puis touchez « Confirmer » sur chaque ligne après contrôle physique.
@@ -93,6 +100,7 @@ Le chef de jury et le responsable disposent des onglets Vue d'ensemble, Prépara
 ### Sauvegarder
 
 - Onglet **Documents** (ou rubrique **Documents** de Préparation), panneau « Sauvegarde et restauration », bouton « Télécharger une sauvegarde complète » : le navigateur télécharge un fichier JSON contenant l'événement et les comptes. Faites-le après la préparation, après chaque bloc de finales et à la clôture, et copiez le fichier hors du téléphone ou de l'ordinateur.
+- **Ce fichier est sensible** : il contient l'identité des athlètes (dont des mineurs), les photos et les codes hachés. Ne le partagez jamais par messagerie, ne le déposez jamais dans un dépôt de code ; conservez-le sur un support contrôlé et supprimez-le après la compétition.
 - La restauration remplace l'événement en ligne par le fichier choisi, conserve une copie serveur de l'état précédent et **déconnecte tous les appareils** : ne l'utilisez qu'après avoir prévenu tout le monde et arrêté le jugement.
 
 ### Clôturer la compétition
@@ -188,6 +196,13 @@ Le secrétariat dispose des onglets Vue d'ensemble, Préparation, Récompenses, 
 1. **Préparation**, rubrique **Personnes** : saisissez identité, date de naissance, sexe, nationalités, pays, club et section, puis « Enregistrer ».
 2. Ajoutez l'inscription dans la catégorie voulue. Cochez « Confirmer cette nouvelle inscription » seulement après contrôle des documents, de la licence et du paiement. Une inscription tardive exige un motif.
 3. Le champ « Rechercher » retrouve une personne déjà saisie.
+
+### Photographies
+
+1. Sur la fiche de la personne (rubrique **Personnes**) ou de l'officiel (rubrique **Officiels**), bloc « Photographie et droit de diffusion » : choisissez le type (Portrait ou Plein pied), le fichier JPEG, PNG ou WEBP, recadrez si besoin, puis « Importer la photo ». La photo est réduite par le navigateur avant l'envoi (1 Mo au maximum) ; une image que le navigateur ne sait pas lire est refusée.
+2. Une photo importée est **privée** : elle n'apparaît sur aucun écran public tant qu'elle n'est pas approuvée. Cochez « Consentement de diffusion recueilli et photo vérifiée » seulement si l'autorisation de la personne (ou de son représentant légal pour un mineur) est en votre possession, puis « Autoriser la diffusion publique ».
+3. Importer une nouvelle photo remplace la précédente et annule l'approbation : il faut approuver de nouveau.
+4. L'import par archive ZIP n'est pas disponible sur cette version : ajoutez les photos une par une.
 
 ### Saisir les mesures
 

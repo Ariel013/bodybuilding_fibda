@@ -1136,7 +1136,70 @@ function Jury({ s, command }: Props) {
     </>
   );
 }
-export function PhotoUpload({
+export // Réduction de la photo dans le navigateur avant envoi : le serveur (serverless, sans bibliothèque
+// d'image) n'accepte que 1 Mo au maximum et ne re-encode pas. Côté le plus long ramené à 1200 px,
+// JPEG qualité 0,85 ; le recadrage éventuel (en pixels de l'original) est appliqué ici.
+const PHOTO_MAX_SIDE = 1200;
+const PHOTO_MAX_BYTES = 1024 * 1024;
+async function reducePhoto(
+  file: File,
+  crop: number[] | null,
+): Promise<Blob> {
+  const url = URL.createObjectURL(file);
+  try {
+    const image = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = () =>
+        reject(new Error("Image illisible par le navigateur (JPEG, PNG ou WEBP attendu)."));
+      img.src = url;
+    });
+    const [left, top, right, bottom] = crop ?? [
+      0,
+      0,
+      image.naturalWidth,
+      image.naturalHeight,
+    ];
+    const sourceWidth = right - left,
+      sourceHeight = bottom - top;
+    if (sourceWidth <= 0 || sourceHeight <= 0)
+      throw new Error("Recadrage hors photo.");
+    const scale = Math.min(
+      1,
+      PHOTO_MAX_SIDE / Math.max(sourceWidth, sourceHeight),
+    );
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, Math.round(sourceWidth * scale));
+    canvas.height = Math.max(1, Math.round(sourceHeight * scale));
+    const context = canvas.getContext("2d");
+    if (!context) throw new Error("Réduction d’image impossible sur ce navigateur.");
+    context.drawImage(
+      image,
+      left,
+      top,
+      sourceWidth,
+      sourceHeight,
+      0,
+      0,
+      canvas.width,
+      canvas.height,
+    );
+    for (const quality of [0.85, 0.7, 0.5]) {
+      const blob = await new Promise<Blob | null>((resolve) =>
+        canvas.toBlob(resolve, "image/jpeg", quality),
+      );
+      if (!blob) throw new Error("Réduction d’image impossible sur ce navigateur.");
+      if (blob.size <= PHOTO_MAX_BYTES) return blob;
+    }
+    throw new Error(
+      "La photo reste trop lourde après réduction (plus de 1 Mo) : choisissez une image plus petite.",
+    );
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
+function PhotoUpload({
   owner,
   ownerType,
   refresh,
@@ -1264,6 +1327,10 @@ export function PhotoUpload({
           </small>
         </>
       )}
+      <small>
+        La photo est réduite dans le navigateur avant l’envoi (1200 px de côté
+        au plus, 1 Mo maximum).
+      </small>
       <AsyncButton
         disabled={
           !file ||
@@ -1275,17 +1342,15 @@ export function PhotoUpload({
         }
         action={async () => {
           try {
+            // Recadrage et réduction faits ici : le serveur reçoit un JPEG déjà prêt (1 Mo maxi).
+            const crop = cropEnabled
+              ? bounds.map((value, index) =>
+                  Math.round((value / 100) * dimensions[index % 2]),
+                )
+              : null;
+            const reduced = await reducePhoto(file!, crop);
             const fd = new FormData();
-            fd.append("file", file!);
-            if (cropEnabled)
-              fd.append(
-                "crop",
-                JSON.stringify(
-                  bounds.map((value, index) =>
-                    Math.round((value / 100) * dimensions[index % 2]),
-                  ),
-                ),
-              );
+            fd.append("file", reduced, "photo.jpg");
             fd.append("owner_type", ownerType);
             fd.append("owner_id", owner.id);
             fd.append("kind", kind);
@@ -1551,141 +1616,16 @@ export function Documents({ s, refresh }: Props) {
     </>
   );
 }
-function BatchPhotos({
-  s,
-  refresh,
-}: {
-  s: State;
-  refresh: () => Promise<void>;
-}) {
-  const [file, setFile] = useState<File>();
-  const [rows, setRows] = useState<
-    Array<{
-      filename: string;
-      owner_type: string;
-      owner_id: string;
-      kind: string;
-    }>
-  >([{ filename: "", owner_type: "person", owner_id: "", kind: "portrait" }]);
-  const [error, setError] = useState(""),
-    [done, setDone] = useState("");
-  function edit(i: number, key: string, value: string) {
-    setRows(rows.map((r, n) => (n === i ? { ...r, [key]: value } : r)));
-  }
+function BatchPhotos(_props: { s: State; refresh: () => Promise<void> }) {
+  // L'import par archive ZIP (POST /photos/batch) répond 501 sur cette version serverless :
+  // chaque photo s'ajoute depuis la fiche individuelle, avec son consentement.
   return (
     <Panel title="Importer un lot de photographies">
-      <p>
-        Associez explicitement chaque nom de fichier dans l’archive à sa
-        personne. L’import n’autorise pas la diffusion : contrôlez ensuite
-        chaque photo et son consentement sur la fiche individuelle.
-      </p>
-      <Field label="Archive ZIP">
-        <input
-          type="file"
-          accept=".zip"
-          onChange={(e) => setFile(e.target.files?.[0])}
-        />
-      </Field>
-      {rows.map((r, i) => (
-        <div className="batch-row" key={i}>
-          <Field label="Nom exact dans le ZIP">
-            <input
-              placeholder="portraits/athlete.jpg"
-              value={r.filename}
-              onChange={(e) => edit(i, "filename", e.target.value)}
-            />
-          </Field>
-          <Field label="Profil">
-            <select
-              value={r.owner_type}
-              onChange={(e) => {
-                setRows(
-                  rows.map((x, n) =>
-                    n === i
-                      ? { ...x, owner_type: e.target.value, owner_id: "" }
-                      : x,
-                  ),
-                );
-              }}
-            >
-              <option value="person">Athlète</option>
-              <option value="official">Officiel</option>
-            </select>
-          </Field>
-          <Field label="Personne">
-            <select
-              value={r.owner_id}
-              onChange={(e) => edit(i, "owner_id", e.target.value)}
-            >
-              <option value="">Choisir…</option>
-              {(r.owner_type === "person" ? s.people : s.officials).map((p) => (
-                <option key={p.id} value={p.id}>
-                  {personName(p)}
-                </option>
-              ))}
-            </select>
-          </Field>
-          <Field label="Photo">
-            <select
-              value={r.kind}
-              onChange={(e) => edit(i, "kind", e.target.value)}
-            >
-              <option value="portrait">Portrait</option>
-              <option value="full">Plein pied</option>
-            </select>
-          </Field>
-          <button
-            className="ghost"
-            disabled={rows.length === 1}
-            onClick={() => setRows(rows.filter((_, n) => n !== i))}
-          >
-            Retirer
-          </button>
-        </div>
-      ))}
-      <div className="actions">
-        <button
-          className="ghost"
-          onClick={() =>
-            setRows([
-              ...rows,
-              {
-                filename: "",
-                owner_type: "person",
-                owner_id: "",
-                kind: "portrait",
-              },
-            ])
-          }
-        >
-          Ajouter une association
-        </button>
-        <AsyncButton
-          disabled={!file || rows.some((r) => !r.owner_id || !r.filename)}
-          action={async () => {
-            try {
-              const fd = new FormData();
-              fd.append("file", file!);
-              fd.append("mappings", JSON.stringify(rows));
-              const result = await api("/photos/batch", {
-                method: "POST",
-                body: fd,
-              });
-              await refresh();
-              setDone(
-                `${result.ids.length} photos importées, à approuver individuellement.`,
-              );
-              setError("");
-            } catch (e) {
-              setError((e as Error).message);
-            }
-          }}
-        >
-          Importer les associations vérifiées
-        </AsyncButton>
-      </div>
-      {error && <Notice kind="error">{error}</Notice>}
-      {done && <Notice kind="success">{done}</Notice>}
+      <Notice kind="info">
+        L’import par archive ZIP n’est pas disponible sur cette version :
+        ajoutez les photos une par une depuis la fiche de chaque personne ou
+        officiel, puis contrôlez le consentement de diffusion sur la fiche.
+      </Notice>
     </Panel>
   );
 }

@@ -13,11 +13,39 @@ import { loadCatalogue, eligibility } from "../domain/catalogue";
 import { seedDemo } from "./demo";
 import { previewImport, savePreview, commitPreview, MAX_FILE as MAX_IMPORT } from "./transfers";
 import { KINDS, renderPrint, exportDocument, type Filters } from "./printing";
+import { inspectImage, photoHeaders, MAX_PHOTO, OWNER_TYPES, KINDS as PHOTO_KINDS } from "./photos";
 
-// Routes HTTP : même contrat que backend/fibda/app.py (docs/CONTRACT.md), sans WebSocket ni photos.
+// Routes HTTP : même contrat que backend/fibda/app.py (docs/CONTRACT.md), sans WebSocket ; photos en base.
 export const VERSION = "0.2.0";
 export const COOKIE = "fibda_session";
 const MAX_BODY = 20 * 1024 * 1024;
+// Au-delà, la réponse de sauvegarde dépasserait la limite Vercel (4,5 Mo) : les photos en sont retirées.
+const MAX_BACKUP = 4 * 1024 * 1024;
+
+// Un BLOB libSQL revient en ArrayBuffer (client HTTP) ou en Buffer (client natif).
+const blobBytes = (v: unknown): Uint8Array<ArrayBuffer> => {
+  const source = v instanceof ArrayBuffer ? new Uint8Array(v) : v instanceof Uint8Array ? v : new Uint8Array(0);
+  const copy = new Uint8Array(source.length);
+  copy.set(source);
+  return copy;
+};
+
+// Retire des fiches toute référence à une photo absente de la base, avec son approbation.
+function reconcilePhotos(state: any, present: Set<string>): void {
+  for (const owner of [...(state.people ?? []), ...(state.officials ?? [])]) {
+    let missing = false;
+    for (const k of ["photo_portrait", "photo_full", "photo_id"]) {
+      if (owner[k] && !present.has(owner[k])) {
+        owner[k] = null;
+        missing = true;
+      }
+    }
+    if (missing) {
+      owner.photo_approved = false;
+      owner.approved_photo_ids = [];
+    } else if (Array.isArray(owner.approved_photo_ids)) owner.approved_photo_ids = owner.approved_photo_ids.filter((id: string) => present.has(id));
+  }
+}
 
 export type AppOptions = {
   store: Store;
@@ -33,7 +61,9 @@ export function createApp(opts: AppOptions) {
 
   app.onError((err, c) => {
     if (err instanceof Problem) return c.json({ detail: err.message }, err.status as any);
-    if (err instanceof DomainError) return c.json({ detail: err.message }, 422);
+    // Erreurs métier du moteur (domain/domain.ts a sa propre classe DomainError) et erreurs de
+    // valeur de la préparation (équivalent ValueError → 422 côté Python) : message rendu au client.
+    if (err instanceof DomainError || (err as any)?.name === "DomainError" || (err as any)?.name === "PyValueError") return c.json({ detail: err.message }, 422);
     if (!opts.testing) console.error(err);
     return c.json({ detail: "Erreur serveur." }, 500);
   });
@@ -51,7 +81,8 @@ export function createApp(opts: AppOptions) {
     c.header("X-Content-Type-Options", "nosniff");
     c.header("Referrer-Policy", "same-origin");
     c.header("X-Frame-Options", "SAMEORIGIN");
-    c.header("Cache-Control", "no-store");
+    // Les photos approuvées posent leur propre politique de cache (photos.ts) ; tout le reste : jamais en cache.
+    if (!c.res.headers.has("Cache-Control")) c.header("Cache-Control", "no-store");
     c.header("Content-Security-Policy", "default-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self'; font-src 'self'; frame-ancestors 'self'; object-src 'none'; base-uri 'self'");
   });
 
@@ -208,6 +239,14 @@ export function createApp(opts: AppOptions) {
     const tables = ["events", "users", "commands", "audit"];
     const out: any = { format: "fibda-backup-json-1", version: VERSION, created_at: store.clock() };
     for (const t of tables) out[t] = await store.execute(`SELECT * FROM ${t}`);
+    // Photos : BLOB encodé en base64. Au-delà de ~4 Mo (limite de réponse Vercel : 4,5 Mo), les
+    // photos sont omises et la sauvegarde le dit ; la restauration remet alors les fiches sans photo.
+    out.photos = (await store.execute("SELECT * FROM photos")).map((r) => ({ ...r, data: Buffer.from(blobBytes(r.data)).toString("base64") }));
+    out.photos_omitted = false;
+    if (dump(out).length > MAX_BACKUP) {
+      out.photos = [];
+      out.photos_omitted = true;
+    }
     const body = dump(out);
     out.sha256 = createHash("sha256").update(body).digest("hex");
     c.header("Content-Disposition", 'attachment; filename="fibda-sauvegarde.json"');
@@ -235,6 +274,15 @@ export function createApp(opts: AppOptions) {
       throw new Problem("Archive illisible.");
     }
     if (archive?.format !== "fibda-backup-json-1" || !Array.isArray(archive.events) || archive.events.length !== 1 || typeof archive.events[0]?.data !== "string" || !Array.isArray(archive.users)) throw new Problem("Archive FIBDA attendue.");
+    // Photos (facultatives, sauvegardes antérieures ou allégées) : chaque fichier est recontrôlé comme à l'envoi.
+    const photos: any[] = archive.photos === undefined ? [] : archive.photos;
+    if (!Array.isArray(photos)) throw new Problem("Archive FIBDA attendue.");
+    const photoRows = photos.map((r) => {
+      if (!r || typeof r.id !== "string" || typeof r.owner_id !== "string" || !OWNER_TYPES.has(r.owner_type) || !PHOTO_KINDS.has(r.kind) || typeof r.data !== "string") throw new Problem("Archive FIBDA attendue : photo mal formée.");
+      const bytes = new Uint8Array(Buffer.from(r.data, "base64"));
+      const info = inspectImage(bytes);
+      return { id: r.id, owner_id: r.owner_id, owner_type: r.owner_type, kind: r.kind, approved: r.approved ? 1 : 0, consent: r.consent ? 1 : 0, mime: info.mime, size: bytes.length, data: bytes, created_at: Number(r.created_at) || store.clock() };
+    });
     const { sha256, ...rest } = archive;
     if (createHash("sha256").update(dump(rest)).digest("hex") !== sha256) throw new Problem("Empreinte incorrecte : archive altérée.");
     let raw: any;
@@ -248,7 +296,10 @@ export function createApp(opts: AppOptions) {
       const before = await store.read(tx);
       // L'état antérieur est conservé dans l'audit, jamais écrasé sans trace.
       await store.record(tx, before, u.id, "restore.previous_state", { previous: before });
-      for (const t of ["events", "users", "sessions", "commands", "audit", "import_previews"]) await tx.execute(`DELETE FROM ${t}`);
+      for (const t of ["events", "users", "sessions", "commands", "audit", "import_previews", "photos"]) await tx.execute(`DELETE FROM ${t}`);
+      for (const r of photoRows) await tx.execute({ sql: "INSERT INTO photos (id, owner_id, owner_type, kind, approved, consent, mime, size, data, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", args: [r.id, r.owner_id, r.owner_type, r.kind, r.approved, r.consent, r.mime, r.size, r.data, r.created_at] });
+      // État cohérent : une fiche dont la photo manque (sauvegarde allégée) perd sa référence et son approbation.
+      reconcilePhotos(raw, new Set(photoRows.map((r) => r.id)));
       raw.restore_id = uid();
       raw.version += 1;
       await tx.execute({ sql: "INSERT INTO events (id, version, data) VALUES (?, ?, ?)", args: [raw.id, raw.version, dump(raw)] });
@@ -348,6 +399,84 @@ export function createApp(opts: AppOptions) {
     require(u, PREPARATION);
     const p = await c.req.json().catch(() => ({}));
     return c.json({ count: await commitPreview(store, u, p?.preview_id) });
+  });
+
+  // Photos : même contrat et même mutation d'état que backend/fibda/app.py (save_photo, photo_approve,
+  // photo_get). Le fichier est contrôlé (photos.ts) et conservé tel quel en base.
+  app.post("/api/v1/photos", async (c) => {
+    const u = await actor(c);
+    require(u, PREPARATION);
+    const form = await c.req.parseBody().catch(() => ({}) as Record<string, unknown>);
+    const file = form["file"];
+    const ownerType = String(form["owner_type"] ?? "");
+    const ownerId = String(form["owner_id"] ?? "");
+    const kind = String(form["kind"] ?? "");
+    // Le champ « crop » du contrat est accepté mais ignoré : le recadrage se fait dans le navigateur.
+    if (!(file instanceof File)) throw new Problem("Fichier requis (champ « file »).");
+    if (file.size > MAX_PHOTO) throw new Problem("Photo trop volumineuse : 1 Mo au maximum après réduction par le navigateur.", 413);
+    if (!OWNER_TYPES.has(ownerType) || !PHOTO_KINDS.has(kind)) throw new Problem("Type de photo invalide.");
+    const bytes = new Uint8Array(await file.arrayBuffer());
+    const info = inspectImage(bytes);
+    const photoId = await store.transact(async (tx) => {
+      const s = await store.read(tx);
+      const owner = find(ownerType === "person" ? s.people : s.officials, ownerId, "Personne");
+      const ident = uid();
+      await tx.execute({
+        sql: "INSERT INTO photos (id, owner_id, owner_type, kind, approved, consent, mime, size, data, created_at) VALUES (?, ?, ?, ?, 0, 0, ?, ?, ?, ?)",
+        args: [ident, ownerId, ownerType, kind, info.mime, bytes.length, bytes, store.clock()],
+      });
+      owner[ownerType === "official" ? "photo_id" : "photo_" + kind] = ident;
+      owner.photo_approved = false;
+      owner.photo_consent = false;
+      const before = s.version;
+      s.version += 1;
+      await store.write(tx, s, before);
+      await store.record(tx, s, u.id, "photo.upload", { photo_id: ident, owner_id: ownerId, kind, mime: info.mime, width: info.width, height: info.height });
+      return ident;
+    });
+    return c.json({ id: photoId, width: info.width, height: info.height });
+  });
+
+  app.post("/api/v1/photos/batch", async (c) => {
+    require(await actor(c), PREPARATION);
+    return c.json({ detail: "Import ZIP de photos indisponible sur cette version : ajouter les photos une par une." }, 501);
+  });
+
+  app.post("/api/v1/photos/:photo_id/approve", async (c) => {
+    const u = await actor(c);
+    require(u, PREPARATION);
+    const p = await c.req.json().catch(() => ({}));
+    if (p?.consent !== true) throw new Problem("Autorisation de diffusion obligatoire.");
+    const photoId = c.req.param("photo_id");
+    await store.transact(async (tx) => {
+      const row = (await tx.execute({ sql: "SELECT owner_id, owner_type FROM photos WHERE id = ?", args: [photoId] })).rows[0];
+      if (!row) throw new Problem("Photo inconnue.", 404);
+      const s = await store.read(tx);
+      const owner = find(row.owner_type === "person" ? s.people : s.officials, String(row.owner_id), "Personne");
+      owner.photo_approved = true;
+      owner.photo_consent = true;
+      owner.approved_photo_ids = [...new Set([...(owner.approved_photo_ids ?? []), photoId])];
+      await tx.execute({ sql: "UPDATE photos SET approved = 1, consent = 1 WHERE id = ?", args: [photoId] });
+      const before = s.version;
+      s.version += 1;
+      await store.write(tx, s, before);
+      await store.record(tx, s, u.id, "photo.approve", { photo_id: photoId });
+    });
+    return c.json({ approved: true });
+  });
+
+  // Servie sans session uniquement si approuvée, consentie, listée dans approved_photo_ids du
+  // propriétaire et encore sa photo courante ; sinon, session de préparation exigée.
+  app.get("/api/v1/photos/:photo_id", async (c) => {
+    const photoId = c.req.param("photo_id");
+    const row = (await store.execute("SELECT * FROM photos WHERE id = ?", [photoId]))[0];
+    if (!row) throw new Problem("Photo inconnue.", 404);
+    const s = await store.read();
+    const owner = (row.owner_type === "person" ? s.people : s.officials).find((x: any) => x.id === row.owner_id);
+    const current = Boolean(owner) && [owner.photo_portrait, owner.photo_full, owner.photo_id].includes(photoId);
+    const isPublic = Boolean(row.approved && row.consent && owner && owner.photo_consent && owner.photo_approved && (owner.approved_photo_ids ?? []).includes(photoId) && current);
+    if (!isPublic) require(await actor(c), PREPARATION);
+    return c.body(blobBytes(row.data), 200, photoHeaders(String(row.mime), isPublic));
   });
 
   app.get("/api/v1/ws", (c) => c.json({ detail: "Pas de WebSocket en serverless : interrogation périodique." }, 404));

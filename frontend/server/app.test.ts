@@ -111,3 +111,17 @@ test("écran public sans session, jamais de données privées", async () => {
   assert.equal((await app.request("/api/v1/public/regie")).status, 404);
   assert.equal((await app.request("/api/v1/state")).status, 401);
 });
+
+test("une erreur du moteur sportif ou de la préparation est rendue en 422 avec son message", async () => {
+  const { app } = make();
+  await app.request("/api/v1/auth/setup", json({ name: "Chef", code: "abcd1234" }, { "x-setup-token": "jeton-test" }));
+  const cookie = cookieOf(await app.request("/api/v1/auth/login", json({ code: "abcd1234" })));
+  // Jury vide : DomainError du moteur, pas une erreur serveur.
+  let r = await app.request("/api/v1/command", json({ id: "j1", version: 0, type: "jury.configure", payload: {} }, { cookie }));
+  assert.equal(r.status, 422);
+  assert.match((await body(r)).detail, /Jury distinct de 5, 7, 9 ou 11/);
+  // Date de naissance postérieure à l'événement : erreur de valeur de la préparation.
+  r = await app.request("/api/v1/command", json({ id: "j2", version: 0, type: "person.save", payload: { person: { first_name: "A", last_name: "B", birth_date: "2099-01-01", sex: "M", section: "amateur" } } }, { cookie }));
+  assert.notEqual(r.status, 500);
+  assert.ok(typeof (await body(r)).detail === "string");
+});

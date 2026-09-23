@@ -4,7 +4,7 @@ import { newState, type User } from "./state";
 import { findByCode, hashCodeAsync, newToken, safeUser, sessionId, validateNewUser, SESSION_SECONDS, type UserRow } from "./auth";
 import { dump, uid, wallClock, type Clock } from "./util";
 
-// Même schéma que le backend Python (store.py), sans les photos sur disque.
+// Même schéma que le backend Python (store.py) ; les photos sont en base plutôt que sur disque.
 const SCHEMA = [
   "CREATE TABLE IF NOT EXISTS events (id TEXT PRIMARY KEY, version INTEGER NOT NULL, data TEXT NOT NULL)",
   "CREATE TABLE IF NOT EXISTS users (id TEXT PRIMARY KEY, name TEXT NOT NULL, roles TEXT NOT NULL, approved INTEGER NOT NULL, active INTEGER NOT NULL, code_hash TEXT NOT NULL, created_at REAL NOT NULL)",
@@ -15,6 +15,8 @@ const SCHEMA = [
   "CREATE TABLE IF NOT EXISTS attempts (address TEXT NOT NULL, at REAL NOT NULL)",
   // Aperçus d'import : en base plutôt qu'en mémoire, deux appels serverless pouvant tomber sur deux instances.
   "CREATE TABLE IF NOT EXISTS import_previews (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, created_at REAL NOT NULL, data TEXT NOT NULL)",
+  // Photos : en base (BLOB) et non sur disque, Vercel n'ayant pas de disque persistant. Voir photos.ts.
+  "CREATE TABLE IF NOT EXISTS photos (id TEXT PRIMARY KEY, owner_id TEXT NOT NULL, owner_type TEXT NOT NULL, kind TEXT NOT NULL, approved INTEGER NOT NULL, consent INTEGER NOT NULL, mime TEXT NOT NULL, size INTEGER NOT NULL, data BLOB NOT NULL, created_at REAL NOT NULL)",
 ];
 
 export type Conn = Transaction | Client;

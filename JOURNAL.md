@@ -74,9 +74,18 @@ dans les logs, qu'il a fallu aller chercher avec `vercel logs`. Puis la fonction
 muette : gestionnaire web `(Request)` appelé avec la signature Node `(req, res)`.
 Règle : l'API serverless est regroupée par esbuild en un fichier au build, et le
 gestionnaire accepte les deux signatures. Le premier curl de recette est `/api/v1/health`.
+Déploiement en `--prebuilt` uniquement.
+→ coffre : `brain/10-lecons/une-fonction-serverless-s-envoie-regroupee-et-se-verifie-au-curl.md`.
+
+### Un test de route emprunte le chemin que l'écran emprunte réellement (2026-09-23)
+64 tests serveur verts, restauration impossible depuis l'écran : l'écran envoyait un fichier en
+multipart, le serveur lisait du JSON brut, et le test envoyait du JSON brut. Vu en écrivant
+le mode d'emploi. Règle : lire le code du client avant d'écrire le test d'une route qu'il
+consomme. → coffre : `brain/10-lecons/un-test-de-route-emprunte-le-chemin-de-l-ecran.md`.
 
 ### Un hébergement « gratuit » se vérifie avant d'écrire la procédure (2026-09-23)
 Procédure Oracle rédigée, ADR écrit, puis inscription refusée sans paiement.
 Les offres gratuites changent de mois en mois et se lisent sur la page du fournisseur, pas de
 mémoire.
 Règle : avant un ADR d'hébergement, l'inscription est faite et la ressource créée.
+→ coffre : `brain/10-lecons/l-inscription-a-une-offre-gratuite-se-fait-avant-l-adr.md`.

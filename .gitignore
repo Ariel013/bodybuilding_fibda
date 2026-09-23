@@ -43,3 +43,4 @@ restorations/
 frontend/fibda-dev.sqlite*
 frontend/api/index.js
 .vercel
+.vercel_python_packages/

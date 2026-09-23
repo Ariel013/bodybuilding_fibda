@@ -8,6 +8,7 @@ import { Preparation, Documents } from "./Preparation";
 import { Judge } from "./Judge";
 import { Competition, Exams, Collective } from "./Competition";
 import { Regie, PublicScreen, Rewards } from "./Regie";
+import { Aide } from "./Aide";
 import { Panel, Notice, Field, Status, DataTable, JsonDetails } from "./ui";
 const navigation = [
   { id: "home", label: "Vue d’ensemble", icon: "◈", roles: [] },
@@ -80,6 +81,7 @@ const navigation = [
     icon: "≡",
     roles: ["chief", "director"],
   },
+  { id: "aide", label: "Aide", icon: "?", roles: [] },
 ];
 export default function App() {
   const screen = location.pathname.match(
@@ -408,6 +410,8 @@ function Workspace() {
             <Collective s={s} command={command} />
           ) : active === "documents" ? (
             <Documents s={s} command={command} refresh={refresh} />
+          ) : active === "aide" ? (
+            <Aide roles={user.roles || []} />
           ) : (
             <Audit s={s} />
           )}
@@ -522,6 +526,12 @@ function Login({
           le serveur.
         </small>
         {!setup && <ConnectionHelp />}
+        {!setup && (
+          <details className="aide-connexion">
+            <summary>Mode d’emploi</summary>
+            <Aide />
+          </details>
+        )}
         {demo && (
           <details>
             <summary>Initialiser la démonstration isolée</summary>

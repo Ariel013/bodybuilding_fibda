@@ -219,7 +219,15 @@ export function createApp(opts: AppOptions) {
     const u = await actor(c);
     require(u, ["chief", "director"]);
     requireSetupToken(c);
-    const body = await c.req.text();
+    // L'écran envoie le fichier en multipart (champ « file ») ; curl peut envoyer le JSON brut.
+    let body: string;
+    if ((c.req.header("content-type") ?? "").startsWith("multipart/form-data")) {
+      const form = await c.req.parseBody();
+      const file = form["file"];
+      if (!(file instanceof File)) throw new Problem("Fichier de sauvegarde requis.");
+      if (file.size > MAX_BODY) throw new Problem("Fichier trop volumineux.", 413);
+      body = await file.text();
+    } else body = await c.req.text();
     let archive: any;
     try {
       archive = JSON.parse(body);

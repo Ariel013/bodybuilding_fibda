@@ -84,6 +84,9 @@ impose des règles de discipline plus strictes que d'habitude, pas moins :
 5. Ne jamais annoncer une fonctionnalité "livrée" si elle n'a été vérifiée que par un test
    automatisé en mémoire — utiliser le mot "implémentée et testée en unitaire", pas "livrée" ou
    "reçue" (cf. `RULES.md` dernier paragraphe).
+6. Tout changement de comportement visible (écran, commande, règle, message) met à jour
+   `frontend/src/aide/MODE-D-EMPLOI.md` (lien `docs/MODE-D-EMPLOI.md`) dans la même tâche ; `npm test` échoue si un rôle ou un onglet n'y
+   est pas couvert (`frontend/src/aide.test.ts`).
 
 ## 3. Si quelque chose ne colle pas
 

@@ -87,7 +87,10 @@ test("sauvegarde puis restauration sur un serveur vierge, archive altérée refu
   let r = await b.app.request("/api/v1/restore", { method: "POST", body: archive.replace("Coupe FIBDA", "Coupe XXXXX"), headers: { cookie: cb, "x-setup-token": "jeton-test" } });
   assert.equal(r.status, 422);
   assert.match((await body(r)).detail, /Empreinte/);
-  r = await b.app.request("/api/v1/restore", { method: "POST", body: archive, headers: { cookie: cb, "x-setup-token": "jeton-test" } });
+  // Chemin réel de l'écran Préparation : le fichier JSON est envoyé en multipart, champ « file ».
+  const fd = new FormData();
+  fd.append("file", new File([archive], "fibda-sauvegarde.json", { type: "application/json" }));
+  r = await b.app.request("/api/v1/restore", { method: "POST", body: fd, headers: { cookie: cb, "x-setup-token": "jeton-test" } });
   const restored = await body(r);
   assert.equal(r.status, 200, JSON.stringify(restored));
   assert.equal(restored.relogin_required, true);

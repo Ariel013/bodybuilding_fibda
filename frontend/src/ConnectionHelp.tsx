@@ -3,29 +3,31 @@ export function ConnectionHelp() {
     <details className="connection-help">
       <summary>Aide · connexion et envoi du bulletin</summary>
       <ol>
-        <li>Connectez le téléphone au même Wi-Fi que le poste central.</li>
         <li>
-          Scannez le QR commun du lanceur, ou saisissez l’adresse HTTPS fournie
-          par l’organisation.
+          Ouvrez l’adresse de l’application transmise par l’organisation, avec le
+          Wi-Fi de la salle ou votre connexion mobile. Ajoutez-la à l’écran
+          d’accueil pour la retrouver d’un geste.
         </li>
         <li>
           Saisissez votre code personnel, remis après approbation du chef de
-          jury. Le QR ouvre l’application ; il ne remplace pas le code.
+          jury. Ne le communiquez à personne.
         </li>
         <li>
           Classez les dossards, puis vérifiez et validez. Attendez « Bulletin
-          reçu et verrouillé par le serveur » : c’est la confirmation de
-          réception par le poste central.
+          reçu et verrouillé par le serveur » : c’est la seule confirmation de
+          réception.
         </li>
       </ol>
       <p>
-        Les tours et leur état se mettent à jour automatiquement. Vos positions
-        restent un brouillon sur ce téléphone jusqu’à la validation. « Connecté
-        au serveur » ne signifie pas que votre bulletin a été envoyé.
+        Les tours et leur état se mettent à jour automatiquement, toutes les
+        quelques secondes. Vos positions restent un brouillon sur ce téléphone
+        jusqu’à la validation. « Connecté au serveur » ne signifie pas que votre
+        bulletin a été envoyé.
       </p>
       <p>
         Si la connexion se coupe, gardez la page ouverte. Au retour du réseau,
-        vérifiez si le bulletin a été reçu avant de le renvoyer.
+        vérifiez si le bulletin a été reçu avant de le renvoyer. L’onglet
+        « Aide » contient le mode d’emploi complet de votre profil.
       </p>
     </details>
   );

@@ -2038,3 +2038,118 @@ dialog.athlete-card::backdrop {
     line-height: 1.2;
   }
 }
+
+/* ---------- Mode d'emploi (onglet Aide) ---------- */
+.aide {
+  max-width: 760px;
+  font-size: 16px;
+  line-height: 1.65;
+}
+.aide h1 {
+  font-size: 28px;
+  margin: 0 0 14px;
+}
+.aide h2 {
+  font-size: 22px;
+  margin: 34px 0 10px;
+  padding-top: 22px;
+  border-top: 1px solid #c9ddd3;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 12px;
+}
+.aide h2 small {
+  font-size: 14px;
+  font-weight: 600;
+  color: #427962;
+}
+.aide h3 {
+  font-size: 18px;
+  margin: 22px 0 6px;
+}
+.aide p,
+.aide li {
+  font-size: 16px;
+}
+.aide ul,
+.aide ol {
+  padding-left: 22px;
+}
+.aide li {
+  margin-bottom: 6px;
+}
+.aide-filtre,
+.aide-sommaire {
+  background: linear-gradient(130deg, #ffffffc9, #ffffff80);
+  border: 1px solid #ffffffef;
+  border-radius: 19px;
+  padding: 18px 22px;
+  margin-bottom: 20px;
+}
+.aide-filtre {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.aide-filtre p {
+  margin: 0;
+}
+.aide-sommaire > ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.aide-sommaire > ul > li {
+  margin-bottom: 10px;
+}
+.aide-sommaire > ul > li > button {
+  min-height: 48px;
+  width: 100%;
+  justify-content: flex-start;
+  font-size: 16px;
+}
+.aide-sommaire ul ul {
+  margin: 4px 0 0 12px;
+  padding-left: 16px;
+  font-size: 14px;
+  color: #486457;
+}
+.aide-sommaire ul ul li {
+  margin-bottom: 2px;
+}
+.aide-section {
+  scroll-margin-top: 16px;
+}
+.aide-connexion {
+  margin-top: 14px;
+}
+.aide-connexion > summary {
+  cursor: pointer;
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  font-weight: 700;
+}
+.aide-connexion .aide {
+  max-height: 60vh;
+  overflow: auto;
+  padding-right: 6px;
+}
+.aide-connexion .aide h1 {
+  font-size: 20px;
+}
+@media (max-width: 600px) {
+  .aide h1 {
+    font-size: 23px;
+  }
+  .aide h2 {
+    font-size: 20px;
+  }
+  .aide-filtre,
+  .aide-sommaire {
+    padding: 14px 16px;
+  }
+}

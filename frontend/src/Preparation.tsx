@@ -1506,7 +1506,7 @@ export function Documents({ s, refresh }: Props) {
           <AsyncButton
             action={async () => {
               try {
-                await download("/backup", "fibda-sauvegarde.zip", "POST");
+                await download("/backup", "fibda-sauvegarde.json", "POST");
               } catch (e) {
                 setError((e as Error).message);
               }
@@ -1514,10 +1514,10 @@ export function Documents({ s, refresh }: Props) {
           >
             Télécharger une sauvegarde complète
           </AsyncButton>
-          <Field label="Sauvegarde ZIP à restaurer">
+          <Field label="Sauvegarde (fichier fibda-sauvegarde.json) à restaurer">
             <input
               type="file"
-              accept=".zip"
+              accept=".json,application/json"
               onChange={(e) => {
                 setBackup(e.target.files?.[0]);
                 setConfirm(false);

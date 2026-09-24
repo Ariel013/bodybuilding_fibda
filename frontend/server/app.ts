@@ -373,14 +373,12 @@ export function createApp(opts: AppOptions) {
     const kind = c.req.param("kind");
     const format = c.req.query("format") ?? "pdf"; // même défaut que le Python (app.py:357)
     const [s, filters] = await printable(c, kind);
-    // Hors périmètre de cette version : pas de reportlab ni d'openpyxl en serverless.
-    if (format === "xlsx" || format === "pdf") return c.json({ detail: "Format non disponible sur cette version : utiliser csv ou l'impression HTML." }, 501);
     const { data, mime, name } = exportDocument(s, kind, format, filters);
     c.header("Content-Disposition", 'attachment; filename="' + name + '"');
     return c.body(data, 200, { "Content-Type": mime });
   });
 
-  // Imports d'inscriptions : aperçu contrôlé (CSV ; XLSX répond 415, voir transfers.ts) conservé en
+  // Imports d'inscriptions : aperçu contrôlé (CSV ou XLSX, voir transfers.ts) conservé en
   // base une heure, puis application par les commandes de préparation. Réservé à la préparation.
   app.post("/api/v1/imports/preview", async (c) => {
     const u = await actor(c);

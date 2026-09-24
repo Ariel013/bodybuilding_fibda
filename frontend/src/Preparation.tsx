@@ -1562,9 +1562,9 @@ export function Documents({ s, refresh }: Props) {
             ))}
         </div>
         <div className="actions">
-          {/* Version serveur actuelle : seul l'export CSV existe ; l'impression passe par le HTML. */}
+          {/* Exports produits par le serveur (printing.ts) ; l'impression passe aussi par le HTML. */}
           {!personalOnly &&
-            ["csv"].map((format) => (
+            ["csv", "xlsx", "pdf"].map((format) => (
               <a
                 className="button ghost"
                 key={format}

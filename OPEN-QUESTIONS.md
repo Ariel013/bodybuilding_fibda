@@ -136,3 +136,16 @@ P10. **Import XLSX indisponible** (23/09 soir). Audit mesuré : `exceljs` 4.4.0 
    modérées ; `xlsx` 0.18.5 → 1 vulnérabilité haute sans correctif. Conformément à RULES.md,
    aucune dépendance ajoutée : `POST /imports/preview` répond 415 « Format XLSX indisponible :
    convertir en CSV ». L'import CSV complet est porté (4 Mo maxi, limite Vercel).
+   **Résolu (24/09)** — demande PO « import et export par PDF et XLSX ». Second audit mesuré
+   (`npm audit --json` dans un dossier jetable) : `pdf-lib` 1.17.1, 0 vulnérabilité, JS pur,
+   5 dépendances transitives, dernière publication 12/05/2022 ; `@e965/xlsx` 0.20.3 (miroir npm
+   de SheetJS CE), 0 vulnérabilité, JS pur, 0 dépendance, dernière publication 19/07/2024 par un
+   tiers (l'amont ne publie plus sur npm). Aucune des deux ne satisfait « maintenue » (RULES.md
+   §Sécurité) : solution retenue = écriture maison sans dépendance, `frontend/server/xlsx.ts`
+   (ZIP + XML par expressions régulières, lecture première feuille, formules rendues « =… » donc
+   refusées, bornes anti-bombe 20 Mo par entrée / 40 Mo total / taille réelle contrôlée) et
+   `frontend/server/pdf.ts` (PDF 1.4, Helvetica non embarquée, WinAnsi, tableau simple, diplôme
+   en paysage). `GET /export/{kind}?format=xlsx|pdf` et l'import XLSX sont implémentés et testés
+   en unitaire ; limites : mise en page PDF sommaire, caractères hors WinAnsi rendus « ? »
+   (≤ ≥ → substitués), pas de lecteur PDF sur la machine de développement pour un contrôle
+   visuel — à ouvrir dans un lecteur réel avant la compétition.

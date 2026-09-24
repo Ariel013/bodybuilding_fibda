@@ -127,7 +127,7 @@ Cette section suit une compétition du début à la fin, dans l'ordre que le ser
 - Où : **Préparation**, rubrique **Événement**, bouton « Terminer la compétition ».
 - Ce que cela fait : l'événement passe à « Terminé » ; toute modification de préparation est ensuite refusée (« Événement terminé. »).
 - Le serveur refuse tant qu'une discipline n'a pas été terminée à l'étape 12 : « Toutes les disciplines et récompenses doivent être terminées. ».
-- Avant de toucher le bouton : téléchargez la sauvegarde finale (étape 14) et les documents de l'onglet **Documents** (Résultats, Récompenses, Diplôme, Récapitulatif jury, export « Résultats CSV »).
+- Avant de toucher le bouton : téléchargez la sauvegarde finale (étape 14) et les documents de l'onglet **Documents** (Résultats, Récompenses, Diplôme, Récapitulatif jury, exports « Résultats CSV », « Résultats XLSX » et « Résultats PDF »).
 
 ### 14. Sauvegarder à chaque étape clé
 
@@ -170,7 +170,7 @@ Le chef de jury et le responsable disposent des onglets Vue d'ensemble, Prépara
 1. Rubrique **Personnes** : identité, date de naissance, sexe, nationalités, pays, club et section (Amateur ou Professionnel), puis « Enregistrer ».
 2. Sous la fiche, ajoutez une inscription dans une catégorie. Cochez « Confirmer cette nouvelle inscription » seulement après contrôle des documents et des mesures. Une inscription tardive exige un motif.
 3. « Propositions et motifs du référentiel » affiche les catégories admissibles calculées par le serveur. Une dérogation du chef se note avec son motif.
-4. Un fichier CSV ou XLSX peut être importé depuis « Importer des inscriptions » : lisez la prévisualisation, corrigez les erreurs, puis confirmez.
+4. Un fichier CSV (UTF-8) ou XLSX (première feuille du classeur, sans formule) peut être importé depuis « Importer des inscriptions » : lisez la prévisualisation, corrigez les erreurs, puis confirmez.
 
 ### Photographies
 
@@ -244,7 +244,7 @@ Le chef de jury et le responsable disposent des onglets Vue d'ensemble, Prépara
 ### Clôturer la compétition
 
 1. Vérifiez que toutes les manches sont validées et toutes les récompenses remises.
-2. Téléchargez la sauvegarde finale et les documents utiles (onglet **Documents** : Résultats, Récompenses, Diplôme, Récapitulatif jury ; export « Résultats CSV »).
+2. Téléchargez la sauvegarde finale et les documents utiles (onglet **Documents** : Résultats, Récompenses, Diplôme, Récapitulatif jury ; exports « Résultats CSV », « Résultats XLSX » et « Résultats PDF »).
 3. Rubrique **Événement**, « Terminer la compétition ».
 
 ## Profil : Directeur
@@ -386,7 +386,7 @@ Le secrétariat dispose des onglets Vue d'ensemble, Préparation, Récompenses, 
 ### Officiels et documents
 
 - Rubrique **Officiels** : fiche de présentation des officiels (nom, parcours). Elle ne donne aucun droit de connexion.
-- Rubrique **Documents** : impressions (Inscriptions, Programme, Mesures, Bulletins vierges…) et export « Résultats CSV ». Vérifiez la catégorie et la manche choisies avant d'imprimer.
+- Rubrique **Documents** : impressions (Inscriptions, Programme, Mesures, Bulletins vierges…) et exports « Résultats CSV », « Résultats XLSX » (tableur) et « Résultats PDF » (mise en page simple, une catégorie par page). Vérifiez la catégorie et la manche choisies avant d'imprimer.
 
 ### Récompenses
 

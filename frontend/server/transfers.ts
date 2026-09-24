@@ -3,6 +3,7 @@ import { uid } from "./util";
 import type { Store, Conn } from "./store";
 import type { User } from "./state";
 import { applyCommand } from "./commands";
+import { xlsxRead } from "./xlsx";
 
 // Portage de backend/fibda/transfers.py (partie imports) : contrôle borné, sans exécution,
 // d'un fichier d'inscriptions avant son import. Mêmes messages et même forme de réponse que
@@ -10,8 +11,9 @@ import { applyCommand } from "./commands";
 //
 // Différences assumées avec le Python :
 // - taille maximale 4 Mo (Vercel refuse un corps de requête au-delà de 4,5 Mo) au lieu de 20 Mo ;
-// - XLSX indisponible : les bibliothèques npm candidates (exceljs 4.4.0, xlsx 0.18.5) ont des
-//   vulnérabilités connues à l'audit (voir rapport de tâche), on répond 415 « convertir en CSV » ;
+// - XLSX lu par le lecteur maison xlsx.ts (première feuille, cellules en texte, dates ISO,
+//   formules rendues « =… » donc refusées ligne à ligne comme en CSV) : aucune bibliothèque npm
+//   retenue à l'audit (OPEN-QUESTIONS.md P10) ;
 // - la prévisualisation est conservée en base (table import_previews), pas en mémoire, car deux
 //   appels serverless peuvent tomber sur deux instances distinctes.
 
@@ -136,7 +138,7 @@ export function previewImport(data: Uint8Array, filename: string): ImportPreview
   const lower = filename.toLowerCase();
   let raw: unknown[][];
   if (lower.endsWith(".csv")) raw = parseCsv(decodeUtf8(data));
-  else if (lower.endsWith(".xlsx")) throw new Problem("Format XLSX indisponible : convertir en CSV", 415);
+  else if (lower.endsWith(".xlsx")) raw = xlsxRead(data);
   else throw new Problem("Formats acceptés : CSV UTF-8 et XLSX");
   const errors: ImportMessage[] = [];
   const warnings: ImportMessage[] = [];

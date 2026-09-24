@@ -4,10 +4,35 @@ import { randomUUID } from "node:crypto";
 import { createApp } from "./app";
 import { Store } from "./store";
 import { documentSections, renderPrint, exportDocument, escapeHtml } from "./printing";
+import { xlsxRead } from "./xlsx";
+import { extractText, buildPdf, Page, wrap, encodeText, textWidth } from "./pdf";
 
 // Portage des parties impression/export de backend/tests/test_operations.py et
 // backend/tests/test_http_operations.py, plus un parcours HTTP sur la démonstration.
-// Différences acceptées : pas d'export xlsx ni pdf (501), pas de WebSocket, jeton de configuration pour la démo.
+// Différences acceptées : xlsx et pdf produits par les écrivains maison (pas openpyxl/reportlab),
+// pas de WebSocket, jeton de configuration pour la démo.
+
+// Contrôle structurel d'un PDF : en-tête, chaque entrée de la xref pointe sur « n 0 obj », startxref
+// pointe sur la table, longueur des flux exacte. Aucun lecteur PDF n'est disponible sur la machine.
+function checkPdf(data: Uint8Array): { pages: number; mediaBoxes: string[] } {
+  const src = Buffer.from(data).toString("latin1");
+  assert.ok(src.startsWith("%PDF-1."));
+  assert.ok(src.endsWith("%%EOF\n"));
+  const startxref = Number(/startxref\n(\d+)\n%%EOF/.exec(src)![1]);
+  assert.ok(src.slice(startxref).startsWith("xref\n"), "startxref");
+  const count = Number(/xref\n0 (\d+)\n/.exec(src.slice(startxref))![1]);
+  const table = src.slice(startxref).split("\n").slice(2, 2 + count);
+  assert.equal(table[0], "0000000000 65535 f ");
+  for (let i = 1; i < count; i++) {
+    assert.equal(table[i].length, 19, "entrée xref de 20 octets");
+    const offset = Number(table[i].slice(0, 10));
+    assert.ok(src.slice(offset).startsWith(i + " 0 obj\n"), "objet " + i + " à " + offset);
+  }
+  const lengths = /<< \/Length (\d+) >>\nstream\n/g;
+  let m: RegExpExecArray | null;
+  while ((m = lengths.exec(src))) assert.ok(src.slice(m.index + m[0].length).slice(Number(m[1])).startsWith("\nendstream"), "longueur de flux");
+  return { pages: Number(/\/Count (\d+)/.exec(src)![1]), mediaBoxes: [...src.matchAll(/\/MediaBox \[([^\]]+)\]/g)].map((x) => x[1]) };
+}
 
 const json = (body: any, headers: Record<string, string> = {}) => ({ method: "POST", body: JSON.stringify(body), headers: { "content-type": "application/json", ...headers } });
 const cookieOf = (r: Response) => (r.headers.get("set-cookie") ?? "").split(";")[0];
@@ -61,6 +86,77 @@ test("neutralisation des formules et guillemets dans le csv", () => {
   const text = decode(exportDocument(event, "registrations", "csv").data);
   assert.ok(text.includes("'=formula"));
   assert.ok(text.includes('"\'=formula Dit ""Le Grand"", B"'));
+});
+
+test("export xlsx : une feuille, titre en gras, en-têtes, une ligne par inscription, formule neutralisée", () => {
+  const event = state();
+  event.people.push({ id: "p2", first_name: "=HYPERLINK(1)", last_name: "Aïcha <&> Kouamé" });
+  event.entries.push({ id: "e2", person_id: "p2", category_id: "c", bib: 8 });
+  const { data, mime, name } = exportDocument(event, "registrations", "xlsx");
+  assert.equal(mime, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+  assert.equal(name, "registrations.xlsx");
+  assert.deepEqual([...data.slice(0, 2)], [0x50, 0x4b], "archive ZIP");
+  const rows = xlsxRead(data);
+  assert.deepEqual(rows[0], ["Senior", null, null, null, null]);
+  assert.deepEqual(rows[1], ["Dossard", "Athlète", "Club", "Pays", "Confirmé"]);
+  assert.deepEqual(rows[2], ["7", "A B", null, null, "Non"]);
+  assert.deepEqual(rows[3], ["8", "'=HYPERLINK(1) Aïcha <&> Kouamé", null, null, "Non"]);
+  assert.deepEqual(rows[4], [null, null, null, null, null], "ligne vide après la section, comme openpyxl");
+  const sheet = Buffer.from(data).toString("latin1");
+  assert.ok(!sheet.includes("<&>"), "XML échappé à l'écriture");
+  // Le nom d'événement à script devient un titre de feuille inoffensif ; le titre de section neutralisé.
+  event.categories[0].name = "=cmd";
+  assert.equal(xlsxRead(exportDocument(event, "registrations", "xlsx").data)[0][0], "'=cmd");
+});
+
+test("export pdf : structure valide, texte relisible avec accents, une section par page, diplôme en paysage", () => {
+  const event = state();
+  event.name = "Coupe d'Abidjan – œuvre « été »";
+  event.people[0].first_name = "Aïcha";
+  event.people[0].last_name = "Kouamé (Côte d'Ivoire) \\";
+  const { data, mime, name } = exportDocument(event, "registrations", "pdf");
+  assert.equal(mime, "application/pdf");
+  assert.equal(name, "registrations.pdf");
+  let info = checkPdf(data);
+  assert.equal(info.pages, 1);
+  assert.equal(info.mediaBoxes[0], "0 0 595.28 841.89", "A4 portrait");
+  // Le texte replié dans une cellule est recollé pour la comparaison (repli aux espaces).
+  let text = extractText(data).replace(/\n/g, " ");
+  assert.ok(text.includes("Inscriptions - Coupe d'Abidjan – œuvre « été » - Senior"), text);
+  assert.ok(text.includes("Aïcha Kouamé (Côte d'Ivoire) \\"), text);
+  assert.ok(text.includes("Dossard") && text.includes("Athlète") && text.includes("Confirmé"));
+  assert.ok(text.includes("Version événement 2 - page 1") && text.includes("Nom et signature"));
+  // Deux catégories : deux pages ; le saut de page automatique rappelle le titre et les en-têtes.
+  event.categories.push({ id: "c2", name: "Master" });
+  for (let i = 0; i < 80; i++) {
+    event.people.push({ id: "m" + i, first_name: "Prénom" + i, last_name: "Nom" });
+    event.entries.push({ id: "me" + i, person_id: "m" + i, category_id: "c2", bib: 100 + i });
+  }
+  info = checkPdf(exportDocument(event, "registrations", "pdf").data);
+  assert.equal(info.pages, 3);
+  text = extractText(exportDocument(event, "registrations", "pdf").data).replace(/\n/g, " ");
+  assert.equal(text.split("Inscriptions - ").length - 1, 3, "titre rappelé sur la page de suite");
+  assert.ok(text.includes("Prénom79"));
+  // Diplôme : paysage, une page par lauréat, texte du diplôme.
+  const diploma = exportDocument(event, "diploma", "pdf");
+  info = checkPdf(diploma.data);
+  assert.equal(info.pages, 1);
+  assert.equal(info.mediaBoxes[0], "0 0 841.89 595.28", "A4 paysage");
+  text = extractText(diploma.data);
+  assert.ok(text.includes("DIPLÔME") && text.includes("Aïcha Kouamé") && text.includes("Senior - Classement 1") && text.includes("Dossard 7"));
+  // Aucune section : une page avec le message.
+  event.rounds[0].status = "open";
+  assert.ok(extractText(exportDocument(event, "diploma", "pdf").data).includes("Aucune donnée"));
+  assert.ok(extractText(exportDocument(event, "results", "pdf", { category_id: "zzz" }).data).includes("Aucune donnée"));
+  // Encodage WinAnsi : accents en un octet, caractère hors table remplacé par « ? » ; repli des mots longs.
+  assert.equal(encodeText("é€"), "<e980>");
+  assert.equal(encodeText("中"), "<3f>", "hors table : point d'interrogation");
+  assert.equal(encodeText("≤ 170"), "<3c3d20313730>", "≤ rendu <=");
+  const wrapped = wrap("un mot trop long à replier", 30, 8);
+  assert.ok(wrapped.length > 1 && wrapped.every((l) => textWidth(l, 8) <= 30));
+  assert.equal(wrapped.join(" "), "un mot trop long à replier");
+  assert.ok(wrap("abcdefghijklmnopqrstuvwxyz", 30, 8).length > 1);
+  checkPdf(buildPdf([new Page(100, 100)], "vide"));
 });
 
 test("diplôme sur résultat validé seulement, examens séparés du bulletin", () => {
@@ -200,16 +296,34 @@ test("parcours : bulletin vierge par catégorie, bulletin du juge, export csv, r
   assert.deepEqual([...bytes.slice(0, 3)], [0xef, 0xbb, 0xbf]);
   const lines = decode(bytes.slice(3)).split("\r\n").filter((l) => l && !l.startsWith("Dossard,"));
   assert.equal(lines.length, state.categories.length + state.entries.length);
-  // Le juge n'a pas accès aux documents de préparation ; xlsx et pdf ne sont pas disponibles.
-  r = await app.request("/api/v1/export/registrations?format=csv", { headers: { cookie: mine } });
-  assert.equal(r.status, 403);
-  for (const format of ["xlsx", "pdf"]) {
-    r = await app.request("/api/v1/export/registrations?format=" + format, { headers: { cookie: chief } });
-    assert.equal(r.status, 501);
-    assert.equal((await body(r)).detail, "Format non disponible sur cette version : utiliser csv ou l'impression HTML.");
+  // Le juge n'a pas accès aux documents de préparation, quel que soit le format.
+  for (const format of ["csv", "xlsx", "pdf"]) {
+    r = await app.request("/api/v1/export/registrations?format=" + format, { headers: { cookie: mine } });
+    assert.equal(r.status, 403);
   }
+  // xlsx : pièce jointe, relisible, une ligne par inscription, script et formule neutralisés.
+  r = await app.request("/api/v1/export/registrations?format=xlsx", { headers: { cookie: chief } });
+  assert.equal(r.status, 200);
+  assert.equal(r.headers.get("content-type"), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+  assert.equal(r.headers.get("content-disposition"), 'attachment; filename="registrations.xlsx"');
+  const sheet = xlsxRead(new Uint8Array(await r.arrayBuffer()));
+  assert.equal(sheet.filter((row) => row[0] !== null && row[0] !== "Dossard").length, state.categories.length + state.entries.length);
+  assert.ok(sheet.some((row) => row[1] === "<script>alert(1)</script> =CMD()"), "xlsx : valeur brute, la formule n'est pas en tête de cellule");
+  // pdf : pièce jointe, texte relisible avec le titre et un athlète.
+  r = await app.request("/api/v1/export/registrations?format=pdf", { headers: { cookie: chief } });
+  assert.equal(r.status, 200);
+  assert.equal(r.headers.get("content-type"), "application/pdf");
+  assert.equal(r.headers.get("content-disposition"), 'attachment; filename="registrations.pdf"');
+  const pdf = new Uint8Array(await r.arrayBuffer());
+  checkPdf(pdf);
+  const pdfText = extractText(pdf).replace(/\n/g, " ");
+  // « ≤ » n'a pas de code WinAnsi : rendu « <= » dans le PDF.
+  assert.ok(pdfText.includes("Inscriptions - ") && pdfText.includes(category.name.replace(/≤/g, "<=")), pdfText);
+  const someone = people[others[0].person_id];
+  assert.ok(pdfText.includes(someone.first_name + " " + someone.last_name), someone.first_name);
   r = await app.request("/api/v1/export/registrations", { headers: { cookie: chief } });
-  assert.equal(r.status, 501, "format par défaut pdf, comme le Python");
+  assert.equal(r.status, 200, "format par défaut pdf, comme le Python");
+  assert.equal(r.headers.get("content-type"), "application/pdf");
   r = await app.request("/api/v1/export/registrations?format=txt", { headers: { cookie: chief } });
   assert.equal(r.status, 422);
   // Le nom porteur de script est échappé dans le HTML (bulletin vierge compris) et neutralisé dans le csv.

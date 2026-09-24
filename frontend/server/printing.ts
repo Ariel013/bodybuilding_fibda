@@ -1,10 +1,12 @@
 import { examReport } from "../domain/domain";
 import { Problem } from "./problem";
+import { xlsxWrite, type XlsxRow } from "./xlsx";
+import { renderTablePdf, renderDiplomaPdf, type DiplomaPage } from "./pdf";
 
 // Documents imprimables et téléchargeables : portage de backend/fibda/printing.py.
 // L'habilitation appartient à l'appelant (route dans app.ts), comme côté Python.
-// Pas de génération PDF ni XLSX ici (pas de reportlab/openpyxl en serverless) :
-// l'impression passe par la boîte de dialogue du navigateur sur le HTML.
+// XLSX et PDF sont produits par les écrivains maison xlsx.ts et pdf.ts (ni openpyxl ni reportlab
+// en serverless) ; l'impression passe aussi par la boîte de dialogue du navigateur sur le HTML.
 
 export const KINDS = new Set(["blank", "ballot", "recap", "registrations", "programme", "measures", "results", "rewards", "diploma", "exams", "officials"]);
 export const TITLES: Record<string, string> = {
@@ -212,9 +214,9 @@ function csvRow(cells: string[]): string {
 
 export type Exported = { data: Uint8Array<ArrayBuffer>; mime: string; name: string };
 
-// `export_document` (printing.py:140-152), format csv uniquement : UTF-8 avec BOM.
-// xlsx et pdf ne sont pas disponibles sur cette version (pas d'openpyxl ni de reportlab) :
-// la route répond 501 avant d'arriver ici.
+// `export_document` (printing.py:140-208) : csv (UTF-8 avec BOM), xlsx (une feuille, titre de
+// section en gras puis en-têtes puis lignes puis ligne vide, deux premières lignes figées) et pdf
+// (une section par page, diplôme en paysage). Les formules sont neutralisées dans les trois formats.
 export function exportDocument(state: any, kind: string, format: string, filters: Filters = {}): Exported {
   const sections = documentSections(state, kind, filters);
   if (format === "csv") {
@@ -229,6 +231,37 @@ export function exportDocument(state: any, kind: string, format: string, filters
     data.set([0xef, 0xbb, 0xbf]);
     data.set(body, 3);
     return { data, mime: "text/csv; charset=utf-8", name: kind + ".csv" };
+  }
+  if (format === "xlsx") {
+    const rows: XlsxRow[] = [];
+    for (const [title, headers, sectionRows] of sections) {
+      rows.push({ cells: [safeCell(title)], bold: true }, { cells: headers, bold: true });
+      // Les nombres restent des nombres (comme openpyxl) ; toute chaîne passe par safeCell.
+      for (const row of sectionRows) rows.push({ cells: row.map((c) => (typeof c === "number" ? c : safeCell(c))) });
+      rows.push({ cells: [] });
+    }
+    return { data: xlsxWrite(TITLES[kind], rows), mime: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", name: kind + ".xlsx" };
+  }
+  if (format === "pdf") {
+    const footerLeft = "Date : __________ Nom et signature : ____________________";
+    const footerRight = "Version événement " + text(state.version ?? "") + " - page";
+    let data: Uint8Array<ArrayBuffer>;
+    if (kind === "diploma") {
+      const diplomas: DiplomaPage[] = sections.map(([title, , rows]) => {
+        const row = rows[0];
+        return { name: title.replace(/^Diplôme - /, ""), competition: text(row[0]), category: text(row[1]), rank: text(row[2]), bib: text(row[3]) };
+      });
+      data = renderDiplomaPdf(diplomas, TITLES[kind], footerLeft, footerRight);
+    } else {
+      data = renderTablePdf({
+        title: TITLES[kind],
+        sections: sections.map(([title, headers, rows]) => ({ heading: TITLES[kind] + " - " + text(state.name ?? "") + " - " + title, headers, rows })),
+        footerLeft,
+        footerRight,
+        empty: "Aucune donnée correspondant à cette sélection.",
+      });
+    }
+    return { data, mime: "application/pdf", name: kind + ".pdf" };
   }
   throw new Problem("Format attendu csv, xlsx ou pdf");
 }

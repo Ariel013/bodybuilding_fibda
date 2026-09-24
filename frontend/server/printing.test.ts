@@ -568,8 +568,8 @@ test("fiche d'inscription : partie athlète puis partie juges, 9 champs, lignes 
   assert.ok(html.includes('<div class="juges">'));
   assert.ok(html.includes("<th>Nom</th><td>KONÉ</td>") && html.includes("<th>Prénoms</th><td>Awa</td>") && html.includes("<th>Nationalité</th><td>CI, FR</td>"));
   assert.ok(html.includes("<th>Taille cm</th><td>165</td>") && html.includes("<th>Catégorie</th><td>Senior</td>"));
-  assert.ok(html.includes("<th>Téléphone</th><td>+225 07 00 00 00 &lt;script&gt;</td>"));
-  assert.ok(html.includes("<th>Téléphone</th><td>" + BLANK_LINE + "</td>") && html.includes("<th>Poids kg</th><td>" + BLANK_LINE + "</td>"));
+  assert.ok(html.includes("<th>Téléphone (WhatsApp)</th><td>+225 07 00 00 00 &lt;script&gt;</td>"));
+  assert.ok(html.includes("<th>Téléphone (WhatsApp)</th><td>" + BLANK_LINE + "</td>") && html.includes("<th>Poids kg</th><td>" + BLANK_LINE + "</td>"));
   for (const zone of ["Athlète", "Juge", "Date"]) assert.ok(html.includes("<div>" + zone + "</div>"), zone);
   for (const absent of ["Responsable", "Chef des juges", "portrait", "/api/v1/photos/", "Dossard", "Statut approuvé", "Dérogation", "Sexe", "Pays", "Section"]) assert.ok(!html.includes(absent), absent);
   assert.ok(!html.includes("<script>") && !html.includes("<b>Abidjan</b>") && html.includes("Club &lt;b&gt;Abidjan&lt;/b&gt;"));
@@ -580,7 +580,7 @@ test("fiche d'inscription : partie athlète puis partie juges, 9 champs, lignes 
   // commençant par « + » est neutralisé comme toute formule tableur (apostrophe de tête, safeCell).
   const csv = decode(exportDocument(event, "fiche", "csv").data.slice(3)).split("\r\n");
   assert.equal(csv[0], "Fiches d'inscription");
-  assert.equal(csv[1], "Nom,Prénoms,Date de naissance,Téléphone,Club,Nationalité,Taille cm,Poids kg,Catégorie");
+  assert.equal(csv[1], "Nom,Prénoms,Date de naissance,Téléphone (WhatsApp),Club,Nationalité,Taille cm,Poids kg,Catégorie");
   assert.equal(csv[2], "KONÉ,Awa,1995-06-15,'+225 07 00 00 00 <script>,Club <b>Abidjan</b>,\"CI, FR\",165,58.0,Senior");
   assert.equal(csv[3], "TRAORÉ,Bakary,2010-01-02,,,CI,170,,Junior");
   assert.equal(csv.filter(Boolean).length, 4);

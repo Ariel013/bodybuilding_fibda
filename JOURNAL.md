@@ -21,7 +21,7 @@ Carte des documents :
 
 ## 📍 État actuel & prochaine action
 
-*(Mis à jour le 2026-09-24, 14 h.)*
+*(Mis à jour le 2026-09-25, 1 h.)*
 
 - **Version en prod** : https://fibda-bodybuilding.vercel.app (Vercel, base Turso Irlande),
   déployée le 23/09 au soir depuis la CLI, **vérifiée au curl** : santé, jeton de configuration
@@ -38,6 +38,9 @@ Carte des documents :
 - **Décisions du PO** : overall **par discipline et par sexe** (24/09, définitif : 3 dames,
   4 hommes ; la finale toutes disciplines du 23/09 est retirée de l'interface), codes admin
   8 caractères, 4G prévu, Railway en suspens.
+- **Soir 24/09** : « Revenir en préparation » (event.reset), audit indépendant des 29 demandes
+  (aucune non faite, écarts corrigés), bouton de démonstration avec jeton, démo remise à neuf,
+  test lent identifié et corrigé.
 - **Après-midi 24/09** : espace juge recentré (Mon jugement, Documents, Examens, Aide) avec écran
   d'attente ; régie guidée par catégorie, pays masqué en national ; fiche de notation papier par
   manche ; officiels + jury ; logos de club ; durcissements (motifs ≤ 500, motifs d'absence
@@ -103,6 +106,14 @@ Carte des documents :
 - Ouvert : photos (P9), XLSX/PDF (P10), test téléphone réel par le PO, H1 (overall par sexe ?).
 
 ## 🎓 Leçons apprises
+
+### Une assertion fausse peut « échouer lentement » : la barrière se pose sur le code de retour (2026-09-25)
+La suite serveur est passée de 30 s à 25 minutes sans échec visible ; un déploiement est parti.
+Cause : un libellé renommé (« Téléphone (WhatsApp) ») a rendu fausse une assertion d'un test ;
+Node met alors des minutes à composer le message d'erreur sur le fichier TypeScript transpilé
+en une seule ligne, et ma barrière lisait la sortie filtrée au lieu du code de retour.
+Règle : la barrière avant commit est `npm run check` **avec son code de retour**, sous
+`timeout` ; une suite qui ralentit brutalement est un échec à traiter, pas une attente.
 
 ### On ne déploie pas pendant qu'un agent écrit dans les fichiers du serveur (2026-09-24)
 Un déploiement lancé pour deux correctifs d'interface a embarqué des fichiers serveur en cours

@@ -8,6 +8,123 @@ Ce mode d'emploi décrit ce que l'application fait réellement, profil par profi
 
 **Connexion interrompue.** Si l'application affiche « Connexion interrompue » ou « Reconnexion… », gardez la page ouverte, vérifiez le réseau mobile ou le Wi-Fi du téléphone, puis attendez le retour de « Connecté au serveur ». L'état se rafraîchit automatiquement toutes les quelques secondes. Ce que vous aviez saisi reste un brouillon sur votre appareil ; rien n'est envoyé sans votre action explicite.
 
+## Profil : Déroulé complet d'une compétition
+Rôles : chief, responsable
+
+Cette section suit une compétition du début à la fin, dans l'ordre que le serveur impose. Chaque étape indique où agir (onglet, rubrique, panneau, bouton), ce que l'action fait réellement, pourquoi elle est exigée, et le message affiché si elle a été oubliée. Les profils détaillés plus bas reprennent chaque écran ; ici, seul l'enchaînement compte. Faites une sauvegarde après chaque étape clé (étape 14).
+
+### 1. Créer les accès de l'équipe
+
+- Où : onglet **Préparation**, rubrique **Jury**, panneau « Inviter un membre », bouton « Créer l'accès ». Puis panneau « Accès et approbations », bouton « Approuver » sur chaque compte (chef uniquement).
+- Ce que cela fait : chaque personne reçoit un code personnel et des rôles. Un code compte de 4 à 128 caractères ; pour un chef, un responsable ou un directeur, le serveur refuse moins de 8 caractères avec « Le code d'un accès de direction doit contenir au moins 8 caractères. ». Seul le chef peut créer un accès de direction.
+- Pourquoi : un compte non approuvé ne peut rien faire, et un juge ne peut être placé dans le jury (étape 7) que s'il est approuvé. Créez et approuvez tous les juges avant de composer le jury.
+- Si oublié : le juge voit « Aucune manche affectée » et le jury ne peut pas être enregistré avec lui.
+
+### 2. Renseigner l'événement et sa liste de contrôle
+
+- Où : **Préparation**, rubrique **Événement** : nom, date, lieu, mode, puis « Enregistrer l'événement ».
+- Le mode : « National · classement officiel ivoirien » réserve le classement officiel (titres, récompenses, toutes catégories) aux athlètes de nationalité CI ; « International · délégations approuvées » le réserve aux athlètes dont la délégation et l'organisation ont été approuvées sur la fiche. La date et le mode sont figés au démarrage (« Date et mode figés après démarrage. »).
+- Le « Critère collectif publié de départage » est un texte libre : la règle, annoncée avant la compétition, qui départage deux clubs ou deux pays à égalité dans les classements collectifs (onglet Collectifs). Le serveur l'exige avant le démarrage et le fige ensuite (« Le critère collectif est figé dès le démarrage. »), pour qu'aucun départage ne soit inventé après coup.
+- Les trois cases « Le référentiel applicable et ses réserves ont été vérifiés par l'organisation », « Réseau local et accès des appareils contrôlés » et « Sauvegarde de départ réalisée et contrôlée » sont une liste de vérification signée par la direction : cocher ne déclenche rien, mais atteste que le contrôle a été fait.
+- Si oublié : « Démarrer la compétition » répond « Validez le règlement, le réseau, la sauvegarde et le critère collectif avant ouverture. » tant qu'une case ou le critère manque.
+
+### 3. Créer les catégories
+
+- Où : **Préparation**, rubrique **Catégories**, panneau « Catégorie et référentiel » : « Règle du catalogue », « Nom affiché », « Section » (Amateur ou Professionnel), « Première phase », « Places en finale », « Quota éliminatoire », puis « Enregistrer la catégorie ».
+- Ce que cela fait : la règle du catalogue fixe la discipline, le sexe, la division (senior, junior ou masters avec ses bornes d'âge) et la tranche de taille ou de poids. Le nom d'une règle se lit ainsi : « Bikini senior > 162 à ≤ 164 » accepte une taille strictement supérieure à 162 cm et jusqu'à 164 cm inclus ; « Bodybuilding senior ≤ 65 » accepte jusqu'à 65 kg inclus ; « Bodybuilding senior > 100 » commence strictement au-dessus de 100 kg. Une athlète mesurant exactement 162,0 cm relève donc de la tranche « > 160 à ≤ 162 ».
+- « Première phase » laissée sur « Automatique selon l'effectif » laisse le serveur décider (étape 8). « Places en finale » (6 par défaut) est le nombre de qualifiés à l'issue d'une demi-finale ; « Quota éliminatoire » (15 par défaut) le nombre de qualifiés à l'issue d'une éliminatoire.
+- Pourquoi : chaque inscription est contrôlée contre les bornes de sa règle (étape 4). Une catégorie inscrite ne peut plus changer de règle ni de section.
+- Si oublié : aucune inscription n'est possible sans catégorie. Après les dossards, les catégories sont figées (« Catégories figées après attribution des dossards. »).
+
+### 4. Enregistrer les athlètes et contrôler les inscriptions
+
+- Où : **Préparation**, rubrique **Personnes** : identité, date de naissance, sexe, nationalités, pays, club, section, cases de contrôle, puis « Enregistrer ». « Vérifier les catégories proposées » affiche « Propositions et motifs du référentiel ».
+- Nationalités : en mode national, seuls les athlètes dont les nationalités contiennent CI entrent dans le classement officiel, quel que soit le pays représenté. Les autres sont jugés et classés dans le classement commun, sans titre.
+- Les cases « Statut approuvé », « Licence contrôlée », « Paiement reçu » sont exigées pour confirmer une inscription ; « Autorisation du mineur » l'est pour un athlète de moins de 18 ans ; « Délégation approuvée » et « Organisation approuvée » le sont en mode international.
+- L'âge retenu est l'année de l'événement moins l'année de naissance, sans tenir compte du jour. Il sert aux divisions junior et masters et au contrôle des mineurs.
+- « Inscription à contrôler : Âge ou mesures hors catégorie. » : la fiche (âge, taille, poids) ne correspond à aucune borne de la règle de la catégorie choisie. Corrigez la fiche, choisissez une autre catégorie, ou (chef uniquement) saisissez un « Motif de dérogation, réservé au chef (facultatif) » avant de confirmer : la dérogation est signée du chef et conservée avec ses motifs.
+- « Inscription à contrôler : Crossover Junior/Masters vers Senior à autoriser par le chef. » : l'athlète a l'âge d'une division junior ou masters de cette discipline mais s'inscrit en senior. Seul le chef peut cocher « Crossover Junior/Masters vers Senior autorisé par le chef » sur la fiche.
+- « Inscription à contrôler : Contrôle requis : … » : une case de contrôle manque ; « measurements_confirmed » désigne la confirmation des mesures (étape 5).
+
+### 5. Saisir et confirmer les mesures, confirmer les inscriptions
+
+- Où : **Préparation**, rubrique **Mesures** : taille en cm et poids en kg, puis « Confirmer » sur la ligne après contrôle physique. Le serveur accepte une décimale (« Mesure positive au dixième requise. ») et refuse une mesure qui sortirait une inscription déjà confirmée de sa catégorie (« Mesures incompatibles avec une inscription confirmée. »).
+- Puis rubrique **Personnes**, sous la fiche : « Confirmer cette nouvelle inscription (contrôles et mesures requis) » ou « Confirmer l'inscription » sur une inscription existante.
+- Pourquoi : seules les inscriptions confirmées reçoivent un dossard et entrent dans les manches. Une inscription confirmée refuse ensuite toute modification incompatible de taille ou de poids (« Modification incompatible avec une inscription confirmée ; déconfirmer avant correction. »).
+- Le compteur « Mesures confirmées » de la Vue d'ensemble suit l'avancement.
+- Si oublié : au démarrage, le serveur recontrôle chaque inscription confirmée et refuse d'ouvrir avec « Inscriptions confirmées à recontrôler : … ».
+
+### 6. Ordonner le programme et attribuer les dossards
+
+- Où : **Préparation**, rubrique **Programme**, panneau « Ordre de passage » : flèches ↑ et ↓ pour ordonner les catégories, puis « Attribuer les dossards ».
+- Ce que cela fait : le serveur numérote de 1 à N toutes les inscriptions confirmées, catégorie par catégorie dans l'ordre de passage. Le dossard appartient à l'inscription, pas à la personne.
+- Pourquoi une action unique : après les dossards, les catégories, les fusions et les inscriptions ordinaires sont figées, pour qu'aucun numéro ne change une fois les feuilles imprimées. Le bouton se grise ; une seconde tentative répond « Dossards déjà attribués. ». Une arrivée tardive passe par « Inscription tardive (motif obligatoire) » et reçoit le numéro suivant.
+- Si oublié : « Générer les manches » répond « Attribuez les dossards avant de préparer les tours. ». Sans aucune inscription confirmée : « Aucune inscription confirmée : attribution des dossards impossible. ».
+
+### 7. Composer le jury
+
+- Où : **Préparation**, rubrique **Jury**, panneau « Composition du jury » : « Juges officiels », « Stagiaires, hors calcul des résultats », « Ordre de retrait des juges », puis « Enregistrer le jury ».
+- Ce que cela fait : le jury doit compter 5, 7, 9 ou 11 juges officiels distincts, chef inclus ; un directeur ne vote jamais. Les stagiaires reçoivent un bulletin mais n'entrent pas dans le calcul. Chaque manche générée ensuite (étape 8) reçoit une copie de ce jury.
+- L'ordre de retrait : si un juge officiel manque pendant une manche (malaise, absence), le chef pourra le retirer avec « Appliquer le retrait motivé » dans **Compétition**, mais uniquement dans cet ordre, du premier au suivant, et le nombre restant doit rester 5, 7, 9 ou 11 (on retire donc deux juges à la fois pour passer de 7 à 5). Le chef ne figure jamais dans l'ordre de retrait. Décider cet ordre à froid évite de choisir sous pression qui sort.
+- Si oublié ou incorrect : « Jury distinct de 5, 7, 9 ou 11 requis. » apparaît à l'enregistrement, à « Générer les manches » et à « Démarrer la compétition ». Après le démarrage, le jury général est figé (« Le jury général est figé ; configurez un tour non ouvert. ») : seule la « Configuration de cette manche » d'une manche non ouverte reste modifiable.
+
+### 8. Générer les manches
+
+- Où : **Préparation**, rubrique **Programme**, panneau « Ordre de passage », bouton « Générer les manches ». Le résultat apparaît dans « Manches prévues ». Ce bouton n'existe pas dans l'onglet Compétition.
+- Ce que cela fait : pour chaque catégorie ayant au moins une inscription confirmée, le serveur crée la suite de manches selon l'effectif, sauf si « Première phase » a été fixée à la main : jusqu'à 6 inscrits, une finale directe ; de 7 à 15 inscrits, une demi-finale puis une finale ; à partir de 16 inscrits, une éliminatoire, puis une demi-finale, puis une finale. La demi-finale qualifie « Places en finale » athlètes ; l'éliminatoire en qualifie « Quota éliminatoire », ramenés à l'effectif réel. Chaque manche est créée « en attente » avec le jury de l'étape 7.
+- Pourquoi : les manches suivantes ne connaissent leurs participants qu'après validation de la précédente ; le programme complet doit donc exister avant l'ouverture.
+- Si le jury change après cette étape, régénérez les manches : c'est possible tant qu'aucune manche n'est ouverte (« Un programme engagé ne peut être régénéré. »).
+- Si oublié : « Démarrer la compétition » répond « Préparez les tours avant ouverture. ».
+
+### 9. Démarrer la compétition
+
+- Où : **Préparation**, rubrique **Événement**, bouton « Démarrer la compétition ».
+- Ce que cela fait, dans l'ordre : contrôle des trois cases et du critère collectif, présence des manches, recontrôle de toutes les inscriptions confirmées, contrôle du jury ; puis le référentiel (catalogue des règles) est figé dans une copie, le mode et la date sont verrouillés, l'état passe à « En cours » et **la première manche du programme s'ouvre d'elle-même** : les juges affectés voient aussitôt leur bulletin.
+- Pourquoi : à partir de là, aucune règle ne change en cours de compétition ; ce qui est calculé le soir l'est avec le référentiel du matin.
+- Faites une sauvegarde juste après (étape 14).
+
+### 10. Conduire une manche
+
+1. Où : onglet **Compétition**, panneau « Programme sportif », bouton « Ouvrir le dossier » de la manche. La manche active est déjà ouverte ; pour une autre, « Ouvrir cette manche » (une seule manche ouverte à la fois, dans l'ordre du programme : sinon « Ce tour attend les bulletins, qualifications ou étapes précédentes. »).
+2. Le dossier affiche « Juges officiels reçus », « Stagiaires reçus » et, par juge, « Reçu », « En attente » ou « Délai expiré ». Côté juge, le bulletin est envoyé par « Confirmer et transmettre » et reçu quand son téléphone affiche « Bulletin reçu et verrouillé par le serveur. » ; il devient alors non modifiable.
+3. Après le dernier bulletin officiel, le serveur attend au plus 60 secondes les stagiaires, puis les marque « Délai expiré » sans inventer de note, et la manche passe en attente de validation. La manche suivante ne s'ouvre pas encore.
+4. Le calcul : pour une finale ou une demi-finale, chaque athlète reçoit un rang par juge ; le serveur retire son meilleur et son pire rang, additionne les rangs restants, et classe du plus petit total au plus grand ; à total égal, l'athlète placé devant par la majorité des juges passe devant. Pour une éliminatoire, chaque juge sélectionne exactement le quota d'athlètes ; les plus sélectionnés se qualifient. Le résultat calculé apparaît dans le dossier avec le détail « Calculs, versions et classements ».
+5. « Valider les résultats sportifs » (chef uniquement) fige ce calcul comme résultat officiel et prépare les récompenses d'une finale. Si des ex æquo se trouvent à la frontière du quota d'une éliminatoire, le serveur répond « Le chef doit résoudre les ex æquo à la frontière du quota. » : cochez les athlètes dans « Qualification explicite si un arbitrage est requis », avec un motif si le quota est respecté au lieu d'admettre tous les ex æquo.
+6. Calculé, validé, diffusé : calculé signifie que le serveur a fait la somme ; validé que le chef l'a arrêtée ; diffusé que la régie l'a mise sur un écran public. Rien ne s'affiche en salle sans les deux dernières étapes.
+7. Une fois la manche validée, la manche suivante prête s'ouvre d'elle-même ; « Passer à la manche suivante » force ce passage et répond « Des bulletins officiels ou stagiaires sont encore attendus. » s'il est trop tôt.
+8. Incident : « Suspendre et consigner » bloque la manche avec un motif ; « Résoudre l'incident » la rouvre. Réseau tombé : « Saisie papier et correction contrôlée » (chef uniquement) saisit une feuille signée à la place du bulletin d'un juge, avec « Signature de la feuille papier » et « Motif de saisie ou correction ». Erreur après validation : « Soumettre la correction » recalcule aussitôt si le résultat n'a pas été diffusé ; s'il l'a été, elle attend « Signer la correction en attente » par un directeur, et les écrans publics repassent à l'accueil avec « Résultat en cours de mise à jour ».
+
+### 11. Diffuser sur l'écran public
+
+- Où : onglet **Régie & écrans**, panneau « Préparer la scène » : « Écran cible », « Contenu », puis « Diffuser sur … » après contrôle de « Aperçu du contenu préparé ».
+- Les contenus : « Accueil » (page neutre), « Catégorie / mosaïque » (athlètes appelés sur le plateau), « Qualifiés » (après une éliminatoire ou une demi-finale validée), « Révélation progressive », « Podium », « Classement » (finales et toutes catégories validés), « Un officiel », « Mosaïque des officiels ».
+- Le serveur refuse toute scène de résultat sur une manche non validée (« Résultat non validé : diffusion interdite. »).
+- « Révélation progressive » annonce les athlètes un par un, du dernier au premier, avec « Nombre de places révélées » qui augmente d'une unité à chaque diffusion (« Annoncez les athlètes un par un du dernier au premier. »). « Podium » et « Classement » restent refusés tant que tous les athlètes de la manche n'ont pas été annoncés sur cet écran (« Terminez les annonces avant le podium et le classement complet. ») : le suspense de la cérémonie est garanti par le serveur, pas par la prudence de la régie.
+- Les photos non approuvées sont remplacées par l'emblème sur tous les écrans.
+
+### 12. Terminer une discipline : récompenses et toutes catégories
+
+1. Le programme se déroule discipline par discipline, dans l'ordre de passage des catégories. Quand toutes les finales d'une discipline sont validées, onglet **Récompenses** : cochez « Récompense préparée » puis « Récompense remise » sur chaque carte, et « Enregistrer la remise ».
+2. Panneau « Clôture des cycles de remise » : choisissez la discipline, puis « Confirmer les remises des catégories ». Le serveur refuse tant qu'une finale de la discipline n'est pas validée (« Validez les résultats avant la fin des récompenses. »).
+3. Onglet **Compétition**, panneau « Toutes catégories et cycle des récompenses » : choisissez la discipline et la section, puis « Créer le toutes catégories ». Le serveur réunit les vainqueurs de chaque catégorie de cette discipline et de cette section (classement officiel), un toutes catégories par discipline et par sexe. Sans les remises confirmées : « Terminez les récompenses des catégories avant l'overall. ».
+4. À deux vainqueurs ou plus, le toutes catégories s'ouvre comme une manche ordinaire et se juge de la même façon (étape 10). Un seul vainqueur : la manche ne s'ouvre pas (« Un champion seul exige la confirmation du chef. ») ; ouvrez son dossier et touchez « Confirmer le toutes catégories » (chef uniquement), qui le déclare champion sans bulletin.
+5. Remettez la récompense du champion dans **Récompenses**, puis « Confirmer les remises toutes catégories ». Le serveur exige un toutes catégories par section inscrite dans la discipline (« Constituez chaque overall avant de terminer ses récompenses. »).
+6. « Terminer cette discipline » (ou « Clôturer le cycle et avancer » dans Compétition) : la discipline est marquée terminée et la première manche de la discipline suivante s'ouvre d'elle-même. Tant que les deux confirmations manquent : « Terminez les deux étapes de récompenses et l'overall. ».
+
+### 13. Clôturer la compétition
+
+- Où : **Préparation**, rubrique **Événement**, bouton « Terminer la compétition ».
+- Ce que cela fait : l'événement passe à « Terminé » ; toute modification de préparation est ensuite refusée (« Événement terminé. »).
+- Le serveur refuse tant qu'une discipline n'a pas été terminée à l'étape 12 : « Toutes les disciplines et récompenses doivent être terminées. ».
+- Avant de toucher le bouton : téléchargez la sauvegarde finale (étape 14) et les documents de l'onglet **Documents** (Résultats, Récompenses, Diplôme, Récapitulatif jury, export « Résultats CSV »).
+
+### 14. Sauvegarder à chaque étape clé
+
+- Où : onglet **Documents** (ou rubrique **Documents** de Préparation), panneau « Sauvegarde et restauration », bouton « Télécharger une sauvegarde complète ».
+- Quand : après les dossards et les manches (fin de l'étape 8), juste après « Démarrer la compétition », après chaque discipline terminée, avant et après « Terminer la compétition ».
+- Quoi : un fichier JSON contenant l'événement complet et les comptes. Copiez-le hors du téléphone ou de l'ordinateur, sur un support contrôlé.
+- Sensibilité : le fichier contient l'identité des athlètes (dont des mineurs), les photos et les codes hachés. Ne le partagez jamais par messagerie et supprimez-le après la compétition. La restauration remplace l'événement en ligne et déconnecte tous les appareils : ne l'utilisez qu'après avoir prévenu tout le monde et arrêté le jugement.
+
 ## Profil : Chef de jury et responsable
 Rôles : chief, responsable
 

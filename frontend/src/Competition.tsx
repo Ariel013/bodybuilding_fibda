@@ -35,16 +35,6 @@ export function Competition({ s, command }: { s: State; command: Command }) {
     [section, setSection] = useState("amateur"),
     [overallExams, setOverallExams] = useState<string[]>([]);
   const examCandidates = overallExamCandidates(s.users, s.jury?.trainees || []);
-  // Overall final toutes disciplines : possible seulement quand chaque discipline est terminée.
-  const disciplines = Array.from(
-    new Set(s.categories.filter((c) => !c.archived).map((c) => c.discipline)),
-  );
-  const allDisciplinesDone =
-    disciplines.length > 0 &&
-    disciplines.every((d) => s.discipline_progress?.[d]?.completed);
-  const sections = ["amateur", "pro"].filter((sec) =>
-    s.categories.some((c) => !c.archived && c.section === sec),
-  );
   return (
     <>
       <div className="page-title">
@@ -147,33 +137,8 @@ export function Competition({ s, command }: { s: State; command: Command }) {
           </AsyncButton>
         </div>
       </Panel>
-      {s.status === "running" &&
-        allDisciplinesDone &&
-        canCommand(s.me.roles, "overall.final") && (
-          <Panel title="Overall final toutes disciplines">
-            <p className="muted">
-              Toutes les disciplines sont terminées. Les champions overall de
-              chaque discipline s’affrontent pour le titre définitif de la
-              section. Le tour s’ouvre aussitôt s’il y a au moins deux
-              champions ; avec un seul champion, confirmez-le depuis son
-              dossier.
-            </p>
-            <div className="actions">
-              {sections.map((sec) => (
-                <AsyncButton
-                  key={sec}
-                  allowed={canCommand(s.me.roles, "overall.final")}
-                  disabled={s.rounds.some(
-                    (round) => round.grand_final && round.section === sec,
-                  )}
-                  action={() => command("overall.final", { section: sec })}
-                >
-                  Lancer l’overall final {labels[sec]}
-                </AsyncButton>
-              ))}
-            </div>
-          </Panel>
-        )}
+      {/* Décision PO du 24/09/2026 : un overall par discipline et par sexe, pas de finale toutes
+          disciplines. La commande overall.final existe côté serveur mais n'est pas exposée. */}
     </>
   );
 }

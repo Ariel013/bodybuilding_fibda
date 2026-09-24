@@ -26,13 +26,11 @@ la zone du projet concernée ne doit pas être commencée.
    - **Pas encore répondu** : nombre concret de catégories et d'athlètes ; Wi-Fi/routeur du
      lieu (dépend de Q0quater).
 
-0ter. **[RÉPONDU LE 23/09]** Overall : « tous les premiers de chaque discipline s'affrontent
-   pour un champion définitif ». Implémenté côté TypeScript : commande `overall.final`
-   {section} disponible quand toutes les disciplines sont terminées ; participants = champions
-   des overalls de discipline (dédupliqués par personne), tour jugé par le panel comme un
-   overall ordinaire, récompense « Champion overall toutes disciplines ».
-   **Hypothèse H1 à confirmer** : un seul overall final, hommes et femmes confondus, par
-   section. Si la fédération veut un champion par sexe, dire-le : c'est une ligne à changer.
+0ter. **[RÉPONDU LE 24/09, définitif]** Overall : **un par discipline et par sexe**, pas de finale
+   entre disciplines. Dames : bikini, wellness, bodyfitness (3 overalls) ; hommes : 4 disciplines.
+   C'est le fonctionnement natif du moteur (`overall.create` par discipline). La commande
+   `overall.final` (toutes disciplines) écrite le 23/09 sur une première lecture reste côté
+   serveur, testée, **non exposée dans l'interface ni dans le mode d'emploi**.
 
 0quater. **[REMPLACÉ LE 23/09 par ADR 0002]** Réécriture du backend en TypeScript serverless
    (Vercel + Turso), frontend et contrat d'API conservés, Python sur Railway en plan B. Voir

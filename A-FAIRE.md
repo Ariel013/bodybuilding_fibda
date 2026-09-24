@@ -32,7 +32,7 @@ Cocher quand c'est fait, avec la date.
 - [ ] (23/09) Suivre `docs/DEPLOIEMENT-INTERNET.md` jusqu'au test sur un vrai
       téléphone, **au plus tard jeudi 24/09 soir**.
 - [x] (23/09) Codes admin : 8 caractères, décidé et implémenté.
-- [x] (23/09) Q0ter répondue : overall final toutes disciplines. Reste H1 (par sexe ou non).
+- [x] (24/09) Q0ter définitive : un overall par discipline et par sexe, pas de finale entre disciplines. Bouton retiré.
 - [ ] (23/09) Plan papier de secours : imprimer feuilles de jugement vierges par
       catégorie ; désigner qui les distribue si le réseau tombe.
 

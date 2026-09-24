@@ -35,8 +35,9 @@ Carte des documents :
   import CSV, mode d'emploi par profil dans l'onglet « Aide » (source
   `frontend/src/aide/MODE-D-EMPLOI.md`, règle de mise à jour dans `CLAUDE.md`), restauration
   depuis l'écran réparée, aide de connexion réécrite pour la version en ligne.
-- **Décisions du PO (23/09 soir)** : overall final toutes disciplines (H1 : sexes confondus, à
-  confirmer), codes admin 8 caractères, 4G prévu, Railway en suspens.
+- **Décisions du PO** : overall **par discipline et par sexe** (24/09, définitif : 3 dames,
+  4 hommes ; la finale toutes disciplines du 23/09 est retirée de l'interface), codes admin
+  8 caractères, 4G prévu, Railway en suspens.
 - **Photos** portées le 24/09 (Turso, réduction navigateur, relues : conforme), envoi réel
   vérifié sur la démo. **Hors périmètre** : import ZIP de photos, XLSX/PDF, WebSocket.
 - **Retour du PO en production (24/09)** : « Erreur serveur » sur la composition du jury →

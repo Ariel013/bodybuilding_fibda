@@ -91,11 +91,10 @@ Le chef de jury et le responsable disposent des onglets Vue d'ensemble, Prépara
 2. Onglet **Compétition**, panneau « Toutes catégories et cycle des récompenses » : choisissez la discipline et la section, puis « Créer le toutes catégories ». Le tour réunit les vainqueurs de catégorie. Après réception des bulletins, « Confirmer le toutes catégories » (chef uniquement).
 3. Dans **Récompenses**, « Confirmer les remises des catégories », « Confirmer les remises toutes catégories », puis « Terminer cette discipline » (ou « Clôturer le cycle et avancer » dans Compétition).
 
-### Overall final toutes disciplines
+### Overall : un par discipline et par sexe
 
-- Quand toutes les disciplines sont terminées, le panneau « Overall final toutes disciplines » apparaît dans **Compétition**.
-- Touchez « Lancer l'overall final Amateur » ou « Lancer l'overall final Professionnel ». Le tour s'ouvre aussitôt s'il y a au moins deux champions ; avec un seul champion, confirmez-le depuis son dossier.
-- Ce tour se juge, se valide et se confirme comme un toutes catégories.
+- Décision de la fédération pour cette compétition : chaque discipline a son propre toutes catégories (3 chez les dames : bikini, wellness, bodyfitness ; 4 chez les hommes). Il n'y a pas de finale entre disciplines.
+- Le toutes catégories d'une discipline réunit les vainqueurs de chacune de ses catégories (étape précédente). Une discipline à une seule catégorie donne un champion unique, à confirmer depuis son dossier.
 
 ### Sauvegarder
 

@@ -212,6 +212,80 @@ function Attendance({
     </Panel>
   );
 }
+/**
+ * Ordre de passage sur scène (PO 24/09/2026) : tiré au sort par le serveur à l'ouverture du tour
+ * parmi les athlètes encore en lice ; le chef ou le responsable peut le retirer tant qu'aucun
+ * bulletin n'est reçu. Il ne pèse jamais sur le résultat sportif.
+ */
+function PassageOrder({
+  r,
+  s,
+  command,
+}: {
+  r: Round;
+  s: State;
+  command: Command;
+}) {
+  const order: string[] = Array.isArray(r.passage_order) ? r.passage_order : [];
+  const frozen = Object.keys(r.ballots || {}).length > 0;
+  const canDraw =
+    (r.status === "pending" || r.status === "open") &&
+    !frozen &&
+    r.participant_ids.length > 0;
+  const draws: any[] = Array.isArray(r.draws) ? r.draws : [];
+  const last = draws[draws.length - 1];
+  const drawnBy = last
+    ? last.by
+      ? s.users.find((u) => u.id === last.by)?.name || last.by
+      : "tirage automatique à l’ouverture"
+    : "";
+  return (
+    <Panel
+      title="Ordre de passage"
+      actions={
+        <div className="actions">
+          <AsyncButton
+            allowed={canCommand(s.me.roles, "round.draw")}
+            disabled={!canDraw}
+            action={() => command("round.draw", { round_id: r.id })}
+          >
+            Tirer l’ordre de passage
+          </AsyncButton>
+          <a
+            href={"/api/v1/print/programme?round_id=" + r.id}
+            target="_blank"
+            rel="noreferrer"
+            className="button ghost"
+          >
+            Imprimer
+          </a>
+        </div>
+      }
+    >
+      {order.length === 0 ? (
+        <Notice>
+          Ordre de passage non encore tiré pour ce tour. Il est tiré au sort à
+          l’ouverture parmi les athlètes encore en lice.
+        </Notice>
+      ) : (
+        <>
+          <p className="muted">
+            {order.length} athlète(s)
+            {last
+              ? ` · ${drawnBy} · ${new Date(Number(last.at) * 1000).toLocaleString("fr-FR")}`
+              : ""}
+            {frozen ? " · figé : un bulletin a été reçu" : ""}
+          </p>
+          <ol>
+            {order.map((id) => (
+              <li key={id}>{entryLabel(s, id)}</li>
+            ))}
+          </ol>
+        </>
+      )}
+    </Panel>
+  );
+}
 function RoundControl({
   r,
   s,
@@ -323,6 +397,7 @@ function RoundControl({
             />
           </>
         )}
+        <PassageOrder r={r} s={s} command={command} />
         {(r.status === "pending" || r.status === "open") &&
           !Object.keys(r.ballots || {}).length && (
             <Attendance r={r} s={s} command={command} />

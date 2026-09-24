@@ -239,3 +239,119 @@ test("last participant cannot be declared absent; a single participant stays jud
   f.validate();
   assert.deepEqual(f.r.result.official.map((x: any) => x.entry_id), ["c"]);
 });
+
+// --- Ordre de passage (PO 24/09/2026 : tiré au sort à chaque tour parmi les athlètes en lice) ---
+
+const isPermutation = (order: string[], ids: string[]) => order.length === ids.length && new Set(order).size === order.length && ids.every((i) => order.includes(i));
+
+test("ouverture : l'ordre de passage est une permutation des participants, tracée comme tirage automatique", () => {
+  const f = new Fixture();
+  Object.assign(f.r, { status: "pending", opened_at: null });
+  f.s.active_round_id = null;
+  assert.equal(f.r.passage_order, undefined);
+  applySport(f.s, f.chief, "round.open", { round_id: f.r.id }, f.users, 10);
+  assert.equal(f.r.status, "open");
+  assert.ok(isPermutation(f.r.passage_order, ["a", "b", "c"]), JSON.stringify(f.r.passage_order));
+  assert.deepEqual(f.r.draws, [{ at: 10, by: null, automatic: true }]);
+});
+
+test("round.draw : nouvelle permutation sur un tour en attente, variabilité, conservée à l'ouverture", () => {
+  const f = new Fixture();
+  const ids = ["a", "b", "c", "d", "e", "g"];
+  f.s.people.push(...["d", "e", "g"].map((x) => ({ id: x, first_name: x, last_name: "Test", nationalities: ["CI"], country: "CI", club: "Club" })));
+  f.s.entries.push(...["d", "e", "g"].map((x, i) => ({ id: x, person_id: x, category_id: "cat", bib: 4 + i, confirmed: true })));
+  Object.assign(f.r, { status: "pending", opened_at: null, participant_ids: [...ids] });
+  f.s.active_round_id = null;
+  const seen = new Set<string>();
+  for (let i = 0; i < 20; i++) {
+    const out = applySport(f.s, f.chief, "round.draw", { round_id: f.r.id }, f.users, 20 + i);
+    assert.ok(isPermutation(out.passage_order, ids), JSON.stringify(out.passage_order));
+    assert.deepEqual(out.passage_order, f.r.passage_order);
+    seen.add(out.passage_order.join(","));
+  }
+  // 720 permutations possibles : 20 tirages identiques seraient un signe d'aléa cassé.
+  assert.ok(seen.size >= 2, "au moins deux ordres distincts sur 20 tirages");
+  assert.equal(f.r.draws.length, 20);
+  assert.equal(f.r.draws[19].by, "0");
+  assert.equal(f.r.draws[19].automatic, false);
+  // Un tirage manuel fait sur le même effectif est conservé à l'ouverture (pas de second tirage).
+  const before = [...f.r.passage_order];
+  applySport(f.s, f.chief, "round.open", { round_id: f.r.id }, f.users, 50);
+  assert.deepEqual(f.r.passage_order, before);
+  assert.equal(f.r.draws.length, 20);
+  // Le responsable peut tirer ; un juge et le directeur non.
+  const responsable: User = { id: "resp", name: "resp", roles: ["responsable"], approved: true, active: true };
+  applySport(f.s, responsable, "round.draw", { round_id: f.r.id }, [...f.users, responsable], 51);
+  assert.equal(f.r.draws.length, 21);
+  throwsProblem(() => applySport(f.s, f.users[1], "round.draw", { round_id: f.r.id }, f.users, 52));
+  throwsProblem(() => applySport(f.s, f.users.find((u) => u.id === "d")!, "round.draw", { round_id: f.r.id }, f.users, 52));
+});
+
+test("round.draw refusé dès qu'un bulletin est reçu, et sur un tour dont les participants sont inconnus", () => {
+  const f = new Fixture();
+  f.submit("1", null, 100);
+  assert.throws(() => applySport(f.s, f.chief, "round.draw", { round_id: f.r.id }, f.users, 101), (e: any) => e instanceof Problem && e.status === 409 && e.message === "Un bulletin a déjà été reçu : l’ordre de passage est figé.");
+  // Finale dépendante d'une demi non close : participants inconnus.
+  const following = makeRound(f.s, f.cat, "final", [], null, f.r.id);
+  f.s.rounds.push(following);
+  assert.throws(() => applySport(f.s, f.chief, "round.draw", { round_id: following.id }, f.users, 102), (e: any) => e instanceof Problem && /participants/.test(e.message));
+  // Tour validé : plus de tirage.
+  for (const j of ["0", "2", "3", "4"]) f.submit(j, null, 110 + Number(j));
+  f.submit("t", null, 105);
+  f.validate();
+  throwsProblem(() => applySport(f.s, f.chief, "round.draw", { round_id: f.r.id }, f.users, 300));
+});
+
+test("round.draw sur une finale en attente dont la demi est close prend les qualifiés moins les absents", () => {
+  const f = new Fixture();
+  Object.assign(f.r, { phase: "semi", quota: 2 });
+  const following = makeRound(f.s, f.cat, "final", [], null, f.r.id);
+  f.s.rounds.push(following);
+  for (let i = 0; i < 5; i++) f.submit(String(i), ["a", "b", "c"], 100 + i);
+  f.submit("t", null, 105);
+  f.validate();
+  // La finale s'est ouverte d'elle-même avec un tirage sur les deux qualifiés.
+  assert.equal(following.status, "open");
+  assert.ok(isPermutation(following.passage_order, ["a", "b"]));
+  // Nouveau tirage manuel sur le tour ouvert, sans bulletin : permutation des mêmes qualifiés.
+  applySport(f.s, f.chief, "round.draw", { round_id: following.id }, f.users, 300);
+  assert.ok(isPermutation(following.passage_order, ["a", "b"]));
+});
+
+test("absence : l'athlète sort de l'ordre de passage sans déplacer les autres ; retour en dernière position", () => {
+  const f = new Fixture();
+  f.r.passage_order = ["c", "a", "b"];
+  f.r.draws = [{ at: 0, by: null, automatic: true }];
+  applySport(f.s, f.chief, "round.absent", { round_id: f.r.id, entry_id: "a", reason: "Forfait" }, f.users, 50);
+  assert.deepEqual(f.r.passage_order, ["c", "b"]);
+  assert.deepEqual(f.r.participant_ids, ["b", "c"]);
+  applySport(f.s, f.chief, "round.present", { round_id: f.r.id, entry_id: "a" }, f.users, 51);
+  assert.deepEqual(f.r.passage_order, ["c", "b", "a"]);
+  assert.deepEqual(f.r.participant_ids, ["a", "b", "c"]);
+  // Une absence sur une demi retire aussi l'athlète d'un éventuel ordre déjà tiré de la finale dépendante.
+  Object.assign(f.r, { phase: "semi", quota: 2 });
+  const following = makeRound(f.s, f.cat, "final", ["a", "b"], null, f.r.id);
+  following.passage_order = ["b", "a"];
+  f.s.rounds.push(following);
+  applySport(f.s, f.chief, "round.absent", { round_id: f.r.id, entry_id: "b", reason: "Blessure" }, f.users, 52);
+  assert.deepEqual(following.passage_order, ["a"]);
+});
+
+test("le résultat sportif ne dépend pas de l'ordre de passage", () => {
+  const results: any[] = [];
+  for (const order of [["a", "b", "c"], ["c", "b", "a"], undefined]) {
+    const f = new Fixture();
+    if (order) f.r.passage_order = order;
+    f.submit("0", ["b", "a", "c"], 100);
+    f.submit("1", ["a", "b", "c"], 101);
+    f.submit("2", ["b", "c", "a"], 102);
+    f.submit("3", ["c", "a", "b"], 103);
+    f.submit("4", ["b", "a", "c"], 104);
+    f.submit("t", ["a", "b", "c"], 105);
+    f.validate();
+    results.push({ common: f.r.result.common, official: f.r.result.official, qualified: f.r.result.qualified });
+  }
+  assert.deepEqual(results[0], results[1]);
+  assert.deepEqual(results[0], results[2]);
+  assert.deepEqual(results[0].official.map((x: any) => x.entry_id), ["b", "a", "c"]);
+});

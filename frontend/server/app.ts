@@ -330,13 +330,15 @@ export function createApp(opts: AppOptions) {
   // Les documents privés (blank, ballot, recap, results) : direction sans restriction ; un juge ou
   // stagiaire ne voit que ses propres bulletins (judge_id forcé à lui-même, tours où il siège), jamais
   // les résultats. Les examens : direction ou commission ; sinon rapport personnel uniquement.
-  // Tout le reste (inscriptions, programme, mesures, récompenses, diplômes, officiels) : préparation, régie, speaker.
+  // Les fiches d'inscription (identité, date de naissance, contrôles administratifs de personnes
+  // potentiellement mineures) : préparation seulement (chef, responsable, directeur, secrétariat).
+  // Tout le reste (inscriptions, ordre de passage, mesures, récompenses, diplômes, officiels) : préparation, régie, speaker.
   async function printable(c: Context, kind: string): Promise<[any, Filters]> {
     const u = await actor(c);
     const s = await store.read();
     const roles = new Set(u.roles);
     let judgeId: string | null = c.req.query("judge_id") || null;
-    const filters: Filters = { category_id: c.req.query("category_id") || null, round_id: c.req.query("round_id") || null, judge_id: judgeId };
+    const filters: Filters = { category_id: c.req.query("category_id") || null, round_id: c.req.query("round_id") || null, judge_id: judgeId, person_id: c.req.query("person_id") || null };
     const isPrivate = ["blank", "ballot", "recap", "results"].includes(kind);
     if (isPrivate) {
       if (!intersects(roles, ADMIN)) {
@@ -352,7 +354,8 @@ export function createApp(opts: AppOptions) {
         if (judgeId && judgeId !== u.id) throw new Problem("Rapport personnel uniquement.", 403); // app.py:346
         judgeId = u.id; // app.py:347
       }
-    } else require(u, union(PREPARATION, ["regie", "speaker"])); // app.py:348
+    } else if (kind === "fiche") require(u, PREPARATION);
+    else require(u, union(PREPARATION, ["regie", "speaker"])); // app.py:348
     // Les droits sont vérifiés avant de reconnaître le document : un juge n'apprend pas quels noms existent.
     if (!KINDS.has(kind)) throw new Problem("Document inconnu");
     // app.py:349 : noms des comptes pour libeller les juges, rapports d'examen filtrés, horodatage.

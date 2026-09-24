@@ -1,6 +1,7 @@
 // Transitions sportives ; toutes les mutations s'exécutent dans une transaction serveur.
 // Port à l'identique de `backend/fibda/workflow.py` : mêmes contrôles dans le même ordre,
 // mêmes messages, mêmes codes, mêmes mutations, même forme de retour.
+import { randomInt } from "node:crypto";
 import { Problem } from "./problem";
 import { require as requireRole, SPORT } from "./auth";
 import { uid, deepcopy, find } from "./util";
@@ -59,6 +60,44 @@ export function currentDiscipline(state: any): string | null {
 const quotaValid = (r: any): boolean => Number.isInteger(r.quota) && 1 <= r.quota && r.quota <= r.participant_ids.length;
 const CLOSED = new Set(["validated", "published"]);
 
+// --- Ordre de passage sur scène -------------------------------------------------------------
+// Demande PO du 24/09/2026 : l'ordre de passage est tiré au sort à chaque tour, parmi les athlètes
+// encore en lice de ce tour (après qualification et absences). Il ne sert qu'à l'appel sur scène :
+// aucun calcul sportif ne le lit.
+
+// Mélange de Fisher-Yates avec l'aléa cryptographique de Node (jamais `Math.random`).
+export function drawPassageOrder(ids: string[]): string[] {
+  const out = [...ids];
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = randomInt(0, i + 1);
+    [out[i], out[j]] = [out[j], out[i]];
+  }
+  return out;
+}
+
+// Un tirage n'est valable que s'il est une permutation exacte des participants du moment.
+export function passageOrderValid(r: any): boolean {
+  const order: string[] = r.passage_order ?? [];
+  const ids: string[] = r.participant_ids ?? [];
+  return order.length > 0 && order.length === ids.length && new Set(order).size === order.length && order.every((i) => ids.includes(i));
+}
+
+function recordDraw(r: any, now: Now, by: string | null): void {
+  r.passage_order = drawPassageOrder(r.participant_ids);
+  (r.draws ??= []).push({ at: now, by, automatic: by === null });
+}
+
+// Participants d'un tour dépendant : les qualifiés du tour précédent clos, moins les absents déclarés.
+// Un athlète déclaré absent (round.absent) ne revient pas par la qualification du tour précédent.
+function refreshParticipants(state: any, r: any): boolean {
+  if (!r.dependency_id) return true;
+  const before = find(state.rounds, r.dependency_id, "Tour précédent");
+  if (!CLOSED.has(before.status)) return false;
+  const absent = new Set<string>(r.absent_ids ?? []);
+  r.participant_ids = before.result.qualified.filter((i: string) => !absent.has(i));
+  return true;
+}
+
 export function ready(state: any, r: any): boolean {
   if (state.status !== "running" || state.active_round_id || r.status !== "pending") return false;
   // Overall final (toutes disciplines) : prêt dès que toutes les disciplines sont terminées.
@@ -66,13 +105,7 @@ export function ready(state: any, r: any): boolean {
   if (r.discipline !== currentDiscipline(state)) return false;
   const group = state.rounds.filter((x: any) => x.discipline === r.discipline);
   if (group.some((x: any) => PHASES[x.phase] < PHASES[r.phase] && !CLOSED.has(x.status))) return false;
-  if (r.dependency_id) {
-    const before = find(state.rounds, r.dependency_id, "Tour précédent");
-    if (!CLOSED.has(before.status)) return false;
-    // Un athlète déclaré absent (round.absent) ne revient pas par la qualification du tour précédent.
-    const absent = new Set<string>(r.absent_ids ?? []);
-    r.participant_ids = before.result.qualified.filter((i: string) => !absent.has(i));
-  }
+  if (!refreshParticipants(state, r)) return false;
   if (r.phase === "overall" && !state.discipline_progress[r.discipline]?.category_rewards_done) return false;
   if ((r.phase === "semi" || r.phase === "elimination") && !quotaValid(r)) return false;
   return r.participant_ids.length > 0;
@@ -87,6 +120,9 @@ export function openRound(state: any, r: any, users: User[], now: Now): void {
   if (r.phase === "overall" && r.participant_ids.length < 2) throw new Problem("Un champion seul exige la confirmation du chef.");
   r.status = "open";
   r.opened_at = now;
+  // Tirage automatique de l'ordre de passage sur les participants du moment ; un tirage manuel
+  // (round.draw) fait avant l'ouverture sur le même effectif est conservé.
+  if (!passageOrderValid(r)) recordDraw(r, now, null);
   r.version += 1;
   state.active_round_id = r.id;
 }
@@ -305,6 +341,18 @@ function applySportInner(state: any, actor: User, kind: string, p: any, users: U
     openRound(state, find(state.rounds, p.round_id, "Tour"), users, now);
     return {};
   }
+  if (kind === "round.draw") {
+    // Tirage manuel de l'ordre de passage : tour en attente (participants connus) ou ouvert sans
+    // aucun bulletin ; ensuite l'ordre est figé, les juges ayant voté sur cet ordre d'appel.
+    const r = find(state.rounds, p.round_id, "Tour");
+    if (r.status !== "pending" && r.status !== "open") throw new Problem("Ce tour n’est plus en attente ni à l’appel.", 409);
+    if (Object.keys(r.ballots).length) throw new Problem("Un bulletin a déjà été reçu : l’ordre de passage est figé.", 409);
+    if (r.status === "pending") refreshParticipants(state, r);
+    if (!r.participant_ids.length) throw new Problem("Les participants de ce tour ne sont pas encore connus.", 409);
+    recordDraw(r, now, actor.id);
+    r.version += 1;
+    return { passage_order: [...r.passage_order] };
+  }
   if (kind === "round.next") {
     const active = state.rounds.find((r: any) => r.id === state.active_round_id);
     if (active && (!officialsComplete(active) || (active.trainees.some((j: string) => !(j in active.ballots)) && (active.trainee_deadline === null || now < active.trainee_deadline)))) {
@@ -356,6 +404,8 @@ function applySportInner(state: any, actor: User, kind: string, p: any, users: U
       if (!r.participant_ids.includes(entryId)) throw new Problem("Cette inscription ne participe pas à ce tour.");
       if (r.participant_ids.length <= 1) throw new Problem("Le dernier participant ne peut pas être déclaré absent : suspendez la manche par un incident.");
       r.participant_ids = r.participant_ids.filter((i: string) => i !== entryId);
+      // L'absent sort de l'ordre de passage ; les autres gardent leur rang relatif.
+      if (r.passage_order) r.passage_order = r.passage_order.filter((i: string) => i !== entryId);
       r.absent_ids.push(entryId);
       r.absences.push({ entry_id: entryId, reason: p.reason, at: now, by: actor.id });
       shrinkQuota(r);
@@ -365,6 +415,7 @@ function applySportInner(state: any, actor: User, kind: string, p: any, users: U
         if (!x.absent_ids.includes(entryId)) x.absent_ids.push(entryId);
         if (x.participant_ids.includes(entryId)) {
           x.participant_ids = x.participant_ids.filter((i: string) => i !== entryId);
+          if (x.passage_order) x.passage_order = x.passage_order.filter((i: string) => i !== entryId);
           shrinkQuota(x);
           x.version += 1;
         }
@@ -380,6 +431,9 @@ function applySportInner(state: any, actor: User, kind: string, p: any, users: U
     const base: string[] = before?.result?.qualified ?? state.entries.map((e: any) => e.id);
     const present = new Set<string>([...r.participant_ids, entryId]);
     r.participant_ids = [...base.filter((i) => present.has(i)), ...r.participant_ids.filter((i: string) => !base.includes(i))];
+    // Retour dans l'ordre de passage en dernière position : les autres gardent leur numéro ;
+    // le chef peut retirer l'ordre (round.draw) tant qu'aucun bulletin n'est reçu.
+    if (r.passage_order && !r.passage_order.includes(entryId)) r.passage_order.push(entryId);
     restoreQuota(r);
     r.version += 1;
     for (const x of dependents(state, r)) {

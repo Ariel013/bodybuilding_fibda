@@ -8,7 +8,7 @@
     "build": "tsc -b && vite build && npm run build:api",
     "typecheck": "tsc --noEmit",
     "typecheck:domain": "tsc --noEmit -p domain/tsconfig.json",
-    "test": "node --import tsx --test src/ranking.test.ts src/aide.test.ts src/pays.test.ts",
+    "test": "node --import tsx --test src/ranking.test.ts src/aide.test.ts src/pays.test.ts src/categorieAuto.test.ts",
     "test:domain": "node --import tsx --test domain/*.test.ts",
     "test:server": "node --import tsx --test server/*.test.ts",
     "typecheck:server": "tsc --noEmit -p tsconfig.server.json",

@@ -1,5 +1,15 @@
 import { drapeau, paysAvecDrapeau } from "./pays";
 import { canCommand } from "./permissions";
+import {
+  choisirCategorie,
+  confirmationPossible,
+  ficheComplete,
+  fusionCompatible,
+  inscriptionTardiveRequise,
+  nomFusionParDefaut,
+  type Choix,
+  type Proposition,
+} from "./categorieAuto";
 import { useEffect, useState, type FormEvent } from "react";
 import { api, post, download } from "./api";
 import {
@@ -247,48 +257,155 @@ const personDefault = (): Entity => ({
   private_contact: "",
   pronunciation: "",
 });
+// Une seule fiche athlète : identité, contrôles, taille et poids, puis catégorie proposée
+// automatiquement par le référentiel à l'enregistrement (module pur categorieAuto.ts).
+// Les règles d'admission restent celles du serveur (preparation.ts) : les messages serveur
+// sont affichés tels quels.
+type MessageFiche = { kind: "success" | "warning" | "error"; text: string };
+const CONTROLES_CONFIRMATION =
+  "« Statut approuvé », « Licence contrôlée », « Paiement reçu » et « Mesures confirmées »";
 function People({ s, command, refresh }: Props) {
   const [person, setPerson] = useState<Entity>(personDefault);
   const [category, setCategory] = useState("");
   const [search, setSearch] = useState("");
-  const [eligibility, setEligibility] = useState<any>();
-  const [late, setLate] = useState(false);
-  const [entryConfirmed, setEntryConfirmed] = useState(false);
+  const [choix, setChoix] = useState<Choix>();
   const [derogation, setDerogation] = useState("");
-  const [reason, setReason] = useState("");
+  const [reason, setReason] = useState("Inscription tardive");
+  const [message, setMessage] = useState<MessageFiche>();
   const update = (k: string, v: any) => setPerson({ ...person, [k]: v });
   const existing = s.people.some((p) => p.id === person.id);
+  const chief = s.me.roles.includes("chief");
+  const tardif = inscriptionTardiveRequise(s);
+  const peutInscrireTardif = canCommand(s.me.roles, "entry.late");
+  const peutCreerCategorie = canCommand(s.me.roles, "category.save") && !s.bibs_distributed;
+  const inscriptions = s.entries.filter((e) => e.person_id === person.id);
+  const nomCategorie = (id: string) =>
+    s.categories.find((c) => c.id === id)?.name ?? "la catégorie choisie";
+  const categoriesActives = s.categories.filter((c) => !c.archived);
+
+  function ouvrir(p: Entity) {
+    setPerson({ ...personDefault(), ...p });
+    setChoix(undefined);
+    setCategory("");
+    setMessage(undefined);
+  }
+
+  /** Crée la catégorie de l'événement pour une règle du référentiel et renvoie son identifiant. */
+  async function creerCategorie(ruleId: string): Promise<string> {
+    const r = await command("category.save", {
+      category: { id: uid(), rule_id: ruleId, section: person.section },
+    });
+    return r.result?.id ?? "";
+  }
+
+  async function propositionsServeur(personId: string): Promise<Proposition[]> {
+    const r = await api("/eligibility/" + personId);
+    return Array.isArray(r.proposals) ? r.proposals : [];
+  }
+
+  /**
+   * Crée ou déplace l'inscription de la fiche enregistrée dans la catégorie cible.
+   * Avant les dossards : `entry.save`, confirmée si les contrôles sont cochés, sinon brouillon.
+   * Après les dossards ou compétition démarrée : `entry.late` (chef et responsable).
+   */
+  async function inscrire(saved: Entity, cible: string): Promise<void> {
+    const miennes = s.entries.filter((e) => e.person_id === saved.id);
+    if (miennes.some((e) => e.category_id === cible)) {
+      setMessage({ kind: "success", text: "Fiche enregistrée. Inscription déjà présente dans " + nomCategorie(cible) + "." });
+      return;
+    }
+    const derog = chief && derogation.trim() ? { reason: derogation.trim() } : undefined;
+    if (tardif) {
+      if (!peutInscrireTardif) {
+        setMessage({
+          kind: "warning",
+          text: "Fiche enregistrée. Les dossards sont attribués : l'inscription tardive dans " + nomCategorie(cible) + " est réservée au chef et au responsable.",
+        });
+        return;
+      }
+      const r = await command("entry.late", { person: saved, category_id: cible, reason, derogation: derog });
+      setMessage({
+        kind: "success",
+        text: "Inscription tardive enregistrée dans " + nomCategorie(cible) + (r.result?.bib ? ", dossard n° " + r.result.bib : "") + ".",
+      });
+      return;
+    }
+    const sansDossard = miennes.find((e) => !e.bib);
+    const confirmee = confirmationPossible(saved, s.mode);
+    const base = sansDossard
+      ? { ...sansDossard, category_id: cible, confirmed: confirmee, derogation: derog ?? sansDossard.derogation ?? null }
+      : { id: uid(), person_id: saved.id, category_id: cible, confirmed: confirmee, bib: null, derogation: derog ?? null };
+    const brouillon = "Inscription en brouillon dans " + nomCategorie(cible) + " : cochez " + CONTROLES_CONFIRMATION + " puis touchez « Confirmer l'inscription ».";
+    try {
+      await command("entry.save", { entry: base });
+      setMessage(
+        confirmee
+          ? { kind: "success", text: "Inscription confirmée dans " + nomCategorie(cible) + "." }
+          : { kind: "warning", text: brouillon },
+      );
+    } catch (e) {
+      if (!confirmee) throw e;
+      // Le serveur refuse la confirmation (motif affiché) : l'inscription reste en brouillon.
+      await command("entry.save", { entry: { ...base, confirmed: false, derogation: null } });
+      setMessage({ kind: "warning", text: brouillon + " Refus de confirmation par le serveur : " + (e as Error).message });
+    }
+  }
+
+  async function enregistrer() {
+    setMessage(undefined);
+    const saved: Entity = { ...person, ...((await command("person.save", { person })).result ?? {}) };
+    // Le serveur remet « mesures confirmées » à faux quand la taille ou le poids d'une fiche
+    // existante change : la confirmation cochée passe alors par measurement.save.
+    if (person.measurements_confirmed && person.height_cm && person.weight_kg && !saved.measurements_confirmed) {
+      const r = await command("measurement.save", { person_id: saved.id, height_cm: person.height_cm, weight_kg: person.weight_kg });
+      Object.assign(saved, r.result ?? { measurements_confirmed: true });
+    }
+    setPerson({ ...personDefault(), ...saved });
+    let cible = category;
+    if (!cible && ficheComplete(saved)) {
+      const proposition = choisirCategorie(await propositionsServeur(saved.id), s.categories, saved.section);
+      setChoix(proposition);
+      if (proposition.category_id) cible = proposition.category_id;
+      else if (proposition.rule_id) {
+        if (peutCreerCategorie) cible = await creerCategorie(proposition.rule_id);
+        else {
+          setMessage({
+            kind: "warning",
+            text: "Fiche enregistrée. " + proposition.message + " Aucune catégorie n'a été créée : " + (s.bibs_distributed ? "les catégories sont figées après attribution des dossards" : "la création est réservée au chef et au responsable") + ". Choisissez une catégorie existante dans « Sélectionner une catégorie » puis touchez « Enregistrer ».",
+          });
+          return;
+        }
+      } else {
+        setMessage({ kind: "warning", text: "Fiche enregistrée. " + proposition.message });
+        return;
+      }
+      setCategory(cible);
+    }
+    if (!cible) {
+      setMessage({
+        kind: "warning",
+        text: "Fiche enregistrée sans inscription : renseignez sexe, date de naissance, taille et poids pour une catégorie automatique, ou choisissez une catégorie dans « Sélectionner une catégorie » puis touchez « Enregistrer ».",
+      });
+      return;
+    }
+    await inscrire(saved, cible);
+  }
+
   return (
     <>
       <div className="split">
-        <Panel title={existing ? "Modifier une personne" : "Nouvelle personne"}>
+        <Panel title={existing ? "Modifier une fiche athlète" : "Nouvelle fiche athlète"}>
+          {tardif && (
+            <Notice kind="warning">
+              {s.bibs_distributed ? "Dossards attribués" : "Compétition démarrée"} : chaque
+              nouvelle inscription est enregistrée comme inscription tardive (chef et
+              responsable), avec un nouveau dossard, tant que la catégorie n'a pas commencé.
+            </Notice>
+          )}
           <form
-            onSubmit={async (e) => {
+            onSubmit={(e) => {
               e.preventDefault();
-              try {
-                if (late)
-                  await command("entry.late", {
-                    person,
-                    category_id: category,
-                    reason,
-                  });
-                else {
-                  await command("person.save", { person });
-                  if (category)
-                    await command("entry.save", {
-                      entry: {
-                        id: uid(),
-                        person_id: person.id,
-                        category_id: category,
-                        confirmed: entryConfirmed,
-                        bib: null,
-                      },
-                    });
-                }
-                setPerson(personDefault());
-                setCategory("");
-                setEligibility(undefined);
-              } catch {}
+              enregistrer().catch((err) => setMessage({ kind: "error", text: (err as Error).message }));
             }}
           >
             <div className="form-grid">
@@ -349,12 +466,27 @@ function People({ s, command, refresh }: Props) {
                   <option value="pro">Professionnel</option>
                 </select>
               </Field>
+              <Field label="Taille (cm)" hint="Une décimale au plus, ex. 172.5">
+                <input
+                  inputMode="decimal"
+                  value={person.height_cm || ""}
+                  onChange={(e) => update("height_cm", e.target.value)}
+                />
+              </Field>
+              <Field label="Poids (kg) — pesée" hint="Une décimale au plus, ex. 69.5">
+                <input
+                  inputMode="decimal"
+                  value={person.weight_kg || ""}
+                  onChange={(e) => update("weight_kg", e.target.value)}
+                />
+              </Field>
             </div>
             <div className="checks">
               {[
                 ["status_approved", "Statut approuvé"],
                 ["licence_ok", "Licence contrôlée"],
                 ["payment_ok", "Paiement reçu"],
+                ["measurements_confirmed", "Mesures confirmées (taille et poids contrôlés)"],
                 ["minor_authorization", "Autorisation du mineur"],
                 [
                   "crossover_approved",
@@ -371,53 +503,48 @@ function People({ s, command, refresh }: Props) {
                 />
               ))}
             </div>
-            <Field label="Sélectionner une catégorie">
+            <Field
+              label="Sélectionner une catégorie"
+              hint="Laissez « Catégorie proposée automatiquement » : à l'enregistrement, le référentiel propose la catégorie d'après sexe, âge, taille et poids, et la crée si elle n'existe pas. Choisissez-en une pour l'imposer ; une inscription sans dossard est déplacée."
+            >
               <select
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
               >
-                <option value="">Choisir une catégorie</option>
-                {s.categories
-                  .filter((c) => !c.archived)
-                  .map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name} · {labels[c.section]}
-                    </option>
-                  ))}
+                <option value="">Catégorie proposée automatiquement</option>
+                {categoriesActives.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name} · {labels[c.section]}
+                  </option>
+                ))}
               </select>
             </Field>
-            <Check
-              label="Confirmer cette nouvelle inscription (contrôles et mesures requis)"
-              value={entryConfirmed}
-              onChange={setEntryConfirmed}
-            />
-            {s.bibs_distributed && canCommand(s.me.roles, "entry.late") && (
-              <>
-                <Check
-                  label="Inscription tardive (motif obligatoire)"
-                  value={late}
-                  onChange={setLate}
+            {chief && (
+              <Field
+                label="Motif de dérogation, réservé au chef (facultatif)"
+                hint="Nécessaire pour confirmer une inscription hors critères (âge ou mesures hors catégorie, contrôle manquant). Signée du chef et conservée avec ses motifs."
+              >
+                <input
+                  value={derogation}
+                  onChange={(e) => setDerogation(e.target.value)}
                 />
-                {late && (
-                  <Field label="Motif">
-                    <input
-                      required
-                      value={reason}
-                      onChange={(e) => setReason(e.target.value)}
-                    />
-                  </Field>
-                )}
-              </>
+              </Field>
+            )}
+            {tardif && peutInscrireTardif && (
+              <Field label="Motif d'inscription tardive">
+                <input
+                  required
+                  value={reason}
+                  onChange={(e) => setReason(e.target.value)}
+                />
+              </Field>
             )}
             <div className="actions">
               <button>Enregistrer</button>
               <button
                 type="button"
                 className="ghost"
-                onClick={() => {
-                  setPerson(personDefault());
-                  setEligibility(undefined);
-                }}
+                onClick={() => ouvrir(personDefault())}
               >
                 Nouvelle fiche
               </button>
@@ -426,9 +553,12 @@ function People({ s, command, refresh }: Props) {
                   type="button"
                   className="ghost"
                   onClick={() =>
-                    api("/eligibility/" + person.id)
-                      .then(setEligibility)
-                      .catch((e) => setEligibility({ erreur: e.message }))
+                    propositionsServeur(person.id)
+                      .then((props) => {
+                        setChoix(choisirCategorie(props, s.categories, person.section));
+                        setMessage(undefined);
+                      })
+                      .catch((e) => setMessage({ kind: "error", text: e.message }))
                   }
                 >
                   Vérifier les catégories proposées
@@ -436,64 +566,96 @@ function People({ s, command, refresh }: Props) {
               )}
             </div>
           </form>
-          {eligibility && (
-            <JsonDetails
-              label="Propositions et motifs du référentiel"
-              data={eligibility}
-            />
-          )}{" "}
+          {message && <Notice kind={message.kind}>{message.text}</Notice>}
+          {choix && (
+            <section className="propositions">
+              <h3>Catégories proposées par le référentiel</h3>
+              <p className="muted">{choix.message}</p>
+              {choix.alternatives.map((a) => (
+                <div className="entry-row" key={a.rule_id}>
+                  <strong>{a.nom}</strong>
+                  <small>
+                    {a.category_id ? "Catégorie existante" : "Catégorie à créer"}
+                    {a.motifs.length > 0 ? " · " + a.motifs.join(" ") : ""}
+                  </small>
+                  {existing && a.category_id && (
+                    <AsyncButton
+                      className="ghost"
+                      allowed={canCommand(s.me.roles, tardif ? "entry.late" : "entry.save")}
+                      action={async () => {
+                        setCategory(a.category_id!);
+                        await inscrire(person, a.category_id!).catch((e) => setMessage({ kind: "error", text: e.message }));
+                      }}
+                    >
+                      Inscrire dans {nomCategorie(a.category_id)}
+                    </AsyncButton>
+                  )}
+                  {existing && !a.category_id && (
+                    <AsyncButton
+                      className="ghost"
+                      allowed={canCommand(s.me.roles, "category.save")}
+                      disabled={s.bibs_distributed}
+                      action={async () => {
+                        try {
+                          const id = await creerCategorie(a.rule_id);
+                          setCategory(id);
+                          await inscrire(person, id);
+                        } catch (e) {
+                          setMessage({ kind: "error", text: (e as Error).message });
+                        }
+                      }}
+                    >
+                      Créer la catégorie {a.nom}
+                    </AsyncButton>
+                  )}
+                </div>
+              ))}
+              {s.bibs_distributed && choix.alternatives.some((a) => !a.category_id) && (
+                <small className="muted">Catégories figées après attribution des dossards : seules les catégories existantes peuvent recevoir une inscription.</small>
+              )}
+            </section>
+          )}
           {existing && (
             <>
               <h3>Inscriptions de cette personne</h3>
               <p className="muted">
                 Confirmez après les contrôles et les mesures. Déconfirmez avant
-                une correction incompatible.
+                une correction incompatible. Pour changer de catégorie avant les
+                dossards : choisissez-la dans « Sélectionner une catégorie » puis
+                « Enregistrer ».
               </p>
-              {s.me.roles.includes("chief") && (
-                <Field label="Motif de dérogation, réservé au chef (facultatif)">
-                  <input
-                    value={derogation}
-                    onChange={(e) => setDerogation(e.target.value)}
-                  />
-                </Field>
-              )}
-              {s.entries
-                .filter((e) => e.person_id === person.id)
-                .map((entry) => (
-                  <div className="entry-row" key={entry.id}>
-                    <strong>
-                      {
-                        s.categories.find((c) => c.id === entry.category_id)
-                          ?.name
-                      }
-                    </strong>
-                    <small>
-                      {entry.bib ? "N° " + entry.bib : "Sans dossard"} ·{" "}
-                      {entry.confirmed
-                        ? "Inscription confirmée"
-                        : "À contrôler"}
-                    </small>
-                    <AsyncButton
-                      allowed={canCommand(s.me.roles, "entry.save")}
-                      className="ghost"
-                      action={() =>
-                        command("entry.save", {
-                          entry: {
-                            ...entry,
-                            confirmed: !entry.confirmed,
-                            derogation: derogation
-                              ? { reason: derogation }
-                              : entry.derogation,
-                          },
-                        })
-                      }
-                    >
-                      {entry.confirmed
-                        ? "Déconfirmer"
-                        : "Confirmer l’inscription"}
-                    </AsyncButton>
-                  </div>
-                ))}
+              {inscriptions.map((entry) => (
+                <div className="entry-row" key={entry.id}>
+                  <strong>{nomCategorie(entry.category_id)}</strong>
+                  <small>
+                    {entry.bib ? "N° " + entry.bib : "Sans dossard"} ·{" "}
+                    {entry.confirmed
+                      ? "Inscription confirmée"
+                      : "À contrôler"}
+                    {entry.late_reason ? " · tardive : " + entry.late_reason : ""}
+                  </small>
+                  <AsyncButton
+                    allowed={canCommand(s.me.roles, "entry.save")}
+                    className="ghost"
+                    action={() =>
+                      command("entry.save", {
+                        entry: {
+                          ...entry,
+                          confirmed: !entry.confirmed,
+                          derogation: derogation
+                            ? { reason: derogation }
+                            : entry.derogation,
+                        },
+                      })
+                    }
+                  >
+                    {entry.confirmed
+                      ? "Déconfirmer"
+                      : "Confirmer l'inscription"}
+                  </AsyncButton>
+                </div>
+              ))}
+              {inscriptions.length === 0 && <p className="muted">Sans inscription.</p>}
             </>
           )}{" "}
           {existing && (
@@ -520,11 +682,7 @@ function People({ s, command, refresh }: Props) {
                 <button
                   key={p.id}
                   className="person-row ghost"
-                  onClick={() => {
-                    setPerson({ ...personDefault(), ...p });
-                    setEligibility(undefined);
-                    setCategory("");
-                  }}
+                  onClick={() => ouvrir(p)}
                 >
                   <span className="avatar">
                     {p.photo_portrait ? (
@@ -538,6 +696,9 @@ function People({ s, command, refresh }: Props) {
                     <small>
                       {p.club || "Sans club"} · {paysAvecDrapeau(p.country)} ·{" "}
                       {labels[p.section]}
+                      {p.height_cm || p.weight_kg
+                        ? ` · ${p.height_cm || "?"} cm / ${p.weight_kg || "?"} kg${p.measurements_confirmed ? "" : " (à confirmer)"}`
+                        : " · mesures absentes"}
                     </small>
                     <small>
                       {s.entries
@@ -780,27 +941,75 @@ function Categories({ s, command }: Props) {
               </button>,
             ])}
         />
-        <Multi
-          title="Fusion avant attribution des dossards"
-          items={s.categories.filter((c) => !c.archived)}
-          value={merge}
-          onChange={setMerge}
-        />
-        <Field label="Nom de la catégorie fusionnée">
-          <input
-            value={mergeName}
-            onChange={(e) => setMergeName(e.target.value)}
-          />
-        </Field>
-        <AsyncButton
-          allowed={canCommand(s.me.roles, "category.fuse")}
-          disabled={s.bibs_distributed || merge.length < 2 || !mergeName}
-          action={() =>
-            command("category.fuse", { category_ids: merge, name: mergeName })
-          }
-        >
-          Fusionner les catégories sélectionnées
-        </AsyncButton>
+        {canCommand(s.me.roles, "category.fuse") && (
+          <section className="fusion">
+            <h3>Fusion de catégories (chef, avant attribution des dossards)</h3>
+            <p className="muted">
+              Réunit plusieurs catégories de même discipline, sexe, section et
+              groupe d'âge (par exemple deux tranches de poids trop peu
+              fournies) en une seule ; les inscriptions sont réaffectées, les
+              catégories d'origine archivées. Règle serveur : « Fusion
+              incompatible : discipline, sexe, section et groupe d'âge doivent
+              correspondre. » et « Fusion interdite après attribution des
+              dossards. »
+            </p>
+            {s.bibs_distributed ? (
+              <Notice kind="warning">Fusion interdite après attribution des dossards.</Notice>
+            ) : (
+              <>
+                <fieldset>
+                  <legend>Catégories à fusionner (au moins deux)</legend>
+                  <div className="checks">
+                    {s.categories
+                      .filter((c) => !c.archived)
+                      .map((c) => (
+                        <Check
+                          key={c.id}
+                          label={`${c.name} · ${c.sex === "F" ? "Femmes" : "Hommes"} · ${labels[c.section]} · ${c.division}${c.age_min !== null && c.age_min !== undefined ? " " + c.age_min : ""}${c.age_max !== null && c.age_max !== undefined ? "–" + c.age_max : ""} · ${s.entries.filter((e) => e.category_id === c.id).length} inscrit(s)`}
+                          value={merge.includes(c.id)}
+                          onChange={(v) =>
+                            setMerge(v ? [...merge, c.id] : merge.filter((id) => id !== c.id))
+                          }
+                        />
+                      ))}
+                  </div>
+                </fieldset>
+                {merge.length >= 2 && !fusionCompatible(s.categories.filter((c) => merge.includes(c.id))) && (
+                  <Notice kind="error">
+                    Fusion incompatible : discipline, sexe, section et groupe d'âge doivent correspondre.
+                  </Notice>
+                )}
+                <Field
+                  label="Nom de la catégorie fusionnée"
+                  hint="Laissé vide, le serveur enchaîne les noms d'origine."
+                >
+                  <input
+                    value={mergeName}
+                    placeholder={nomFusionParDefaut(s.categories.filter((c) => merge.includes(c.id)))}
+                    onChange={(e) => setMergeName(e.target.value)}
+                  />
+                </Field>
+                <AsyncButton
+                  allowed={canCommand(s.me.roles, "category.fuse")}
+                  disabled={
+                    merge.length < 2 ||
+                    !fusionCompatible(s.categories.filter((c) => merge.includes(c.id)))
+                  }
+                  action={async () => {
+                    await command("category.fuse", {
+                      category_ids: merge,
+                      ...(mergeName.trim() ? { name: mergeName.trim() } : {}),
+                    });
+                    setMerge([]);
+                    setMergeName("");
+                  }}
+                >
+                  Fusionner les catégories sélectionnées
+                </AsyncButton>
+              </>
+            )}
+          </section>
+        )}
       </Panel>
     </div>
   );
@@ -1504,7 +1713,8 @@ export function Documents({ s, refresh }: Props) {
     ballot: "Bulletin individuel",
     recap: "Récapitulatif jury",
     registrations: "Inscriptions",
-    programme: "Programme",
+    fiche: "Fiches d’inscription",
+    programme: "Ordre de passage",
     measures: "Mesures",
     results: "Résultats",
     rewards: "Récompenses",

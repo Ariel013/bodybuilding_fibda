@@ -39,7 +39,7 @@ export function publicState(state: any, screen: string): any {
   const officialIds = new Set<string>([...(scene.official_ids ?? []), scene.official_id]);
   const rounds: any[] = [];
   if (r) {
-    const pr: any = Object.fromEntries(["id", "category_id", "discipline", "section", "phase", "participant_ids"].map((k) => [k, deepcopy(r[k] ?? null)]));
+    const pr: any = Object.fromEntries(["id", "category_id", "discipline", "section", "phase", "participant_ids", "passage_order"].map((k) => [k, deepcopy(r[k] ?? null)]));
     if (["qualifiers", "reveal", "podium", "ranking"].includes(scene.kind) && r.result && ["validated", "published"].includes(r.status)) {
       let rows: any[] = r.result.official;
       const kind = scene.kind;

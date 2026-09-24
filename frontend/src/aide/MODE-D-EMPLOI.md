@@ -15,7 +15,7 @@ Rôles : chief, responsable
 
 1. Créez et approuvez les accès de l'équipe dans **Préparation**, rubrique **Jury** (voir « 1. Créer les accès de l'équipe »).
 2. Renseignez l'événement, le critère collectif et les trois cases de contrôle dans la rubrique **Événement**, puis « Enregistrer l'événement » (voir « 2. Renseigner l'événement et sa liste de contrôle »).
-3. Créez les catégories, enregistrez les athlètes, saisissez et confirmez les mesures, puis confirmez les inscriptions (rubriques **Catégories**, **Athlètes** et **Mesures** ; voir les étapes 3 à 5).
+3. Enregistrez chaque athlète sur une seule fiche (identité, contrôles, taille et poids, « Mesures confirmées ») dans la rubrique **Athlètes** : à « Enregistrer », la catégorie est proposée par le référentiel, créée si elle manque, et l'inscription créée (confirmée si les contrôles sont cochés, sinon en brouillon). Changez-la si besoin dans « Sélectionner une catégorie », puis fusionnez les catégories trop peu fournies dans **Catégories** (voir les étapes 3 à 5).
 4. Ordonnez le programme et touchez « Attribuer les dossards », composez le jury et « Enregistrer le jury », puis « Générer les manches » (rubriques **Programme** et **Jury** ; voir les étapes 6 à 8).
 5. Touchez « Démarrer la compétition » dans la rubrique **Événement**, puis « Télécharger une sauvegarde complète » dans **Documents** (voir « 9. Démarrer la compétition »).
 6. Pour chaque manche, dans **Compétition** : « Ouvrir le dossier », attendez « Reçu » pour chaque juge officiel, puis « Valider les résultats sportifs » (voir « 10. Conduire une manche »).
@@ -39,28 +39,34 @@ Cette section suit une compétition du début à la fin, dans l'ordre que le ser
 - Les trois cases « Le référentiel applicable et ses réserves ont été vérifiés par l'organisation », « Réseau local et accès des appareils contrôlés » et « Sauvegarde de départ réalisée et contrôlée » sont une liste de vérification signée par la direction : cocher ne déclenche rien, mais atteste que le contrôle a été fait.
 - Si oublié : « Démarrer la compétition » répond « Validez le règlement, le réseau, la sauvegarde et le critère collectif avant ouverture. » tant qu'une case ou le critère manque.
 
-### 3. Créer les catégories
+### 3. Les catégories : créées automatiquement, ajustables, fusionnables
 
-- Où : **Préparation**, rubrique **Catégories**, panneau « Catégorie et référentiel » : « Règle du catalogue », « Nom affiché », « Section » (Amateur ou Professionnel), « Première phase », « Places en finale », « Quota éliminatoire », puis « Enregistrer la catégorie ».
+- Il n'est plus nécessaire de créer les catégories à l'avance : à l'enregistrement d'une fiche athlète complète (étape 4), le serveur propose la catégorie du référentiel correspondant au sexe, à l'âge, à la taille et au poids, et l'application la crée dans la section de l'athlète si elle n'existe pas encore (« Catégorie proposée : … (créée automatiquement). »). Une catégorie déjà créée pour l'une des règles proposées est toujours préférée à une création.
+- Pour créer ou ajuster une catégorie à la main : **Préparation**, rubrique **Catégories**, panneau « Catégorie et référentiel » : « Règle du catalogue », « Nom affiché », « Section » (Amateur ou Professionnel), « Première phase », « Places en finale », « Quota éliminatoire », puis « Enregistrer la catégorie ». « Modifier » dans « Catégories engagées » ouvre une catégorie existante (par exemple pour changer son nom affiché ou sa première phase).
+- Fusionner (chef uniquement, avant les dossards) : panneau « Catégories engagées », bloc « Fusion de catégories (chef, avant attribution des dossards) » : cochez au moins deux catégories de même discipline, sexe, section et groupe d'âge (chaque ligne rappelle ces critères et le nombre d'inscrits), donnez éventuellement un « Nom de la catégorie fusionnée » (sinon les noms sont enchaînés, « A / B »), puis « Fusionner les catégories sélectionnées ». Les inscriptions sont réaffectées à la catégorie fusionnée et les catégories d'origine archivées. Refus du serveur : « Fusion incompatible : discipline, sexe, section et groupe d'âge doivent correspondre. », « Fusion interdite après attribution des dossards. », « Fusion refusée : une personne figurerait deux fois. ».
 - Ce que cela fait : la règle du catalogue fixe la discipline, le sexe, la division (senior, junior ou masters avec ses bornes d'âge) et la tranche de taille ou de poids. Le nom d'une règle se lit ainsi : « Bikini senior > 162 à ≤ 164 » accepte une taille strictement supérieure à 162 cm et jusqu'à 164 cm inclus ; « Bodybuilding senior ≤ 65 » accepte jusqu'à 65 kg inclus ; « Bodybuilding senior > 100 » commence strictement au-dessus de 100 kg. Une athlète mesurant exactement 162,0 cm relève donc de la tranche « > 160 à ≤ 162 ».
 - « Première phase » laissée sur « Automatique selon l'effectif » laisse le serveur décider (étape 8). « Places en finale » (6 par défaut) est le nombre de qualifiés à l'issue d'une demi-finale ; « Quota éliminatoire » (15 par défaut) le nombre de qualifiés à l'issue d'une éliminatoire.
 - Pourquoi : chaque inscription est contrôlée contre les bornes de sa règle (étape 4). Une catégorie inscrite ne peut plus changer de règle ni de section.
-- Si oublié : aucune inscription n'est possible sans catégorie. Après les dossards, les catégories sont figées (« Catégories figées après attribution des dossards. »).
+- Après les dossards, les catégories sont figées (« Catégories figées après attribution des dossards. ») : plus de création, même automatique ; une inscription tardive va dans une catégorie existante.
 
-### 4. Enregistrer les athlètes et contrôler les inscriptions
+### 4. Enregistrer les athlètes : une seule fiche, catégorie proposée automatiquement
 
-- Où : **Préparation**, rubrique **Athlètes** : identité, date de naissance, sexe, nationalités, pays, club, section, cases de contrôle, puis « Enregistrer ». « Vérifier les catégories proposées » affiche « Propositions et motifs du référentiel ».
+- Où : **Préparation**, rubrique **Athlètes**, panneau « Nouvelle fiche athlète » : identité, date de naissance, sexe, nationalités, pays, club, section, « Taille (cm) », « Poids (kg) — pesée », cases de contrôle dont « Mesures confirmées (taille et poids contrôlés) », puis « Enregistrer ».
+- Ce que fait « Enregistrer » : la fiche est enregistrée ; si sexe, date de naissance, taille et poids sont renseignés et que « Sélectionner une catégorie » est resté sur « Catégorie proposée automatiquement », l'application interroge le référentiel, présélectionne la catégorie proposée (créée si elle manque, voir l'étape 3) et crée l'inscription : « Inscription confirmée dans … » si « Statut approuvé », « Licence contrôlée », « Paiement reçu » et « Mesures confirmées » sont cochés, sinon « Inscription en brouillon dans … : cochez … puis touchez « Confirmer l'inscription » ». Si le serveur refuse la confirmation, l'inscription reste en brouillon et son motif est affiché tel quel. La fiche reste ouverte : « Nouvelle fiche » vide le formulaire pour l'athlète suivant.
+- Changer de catégorie : « Sélectionner une catégorie » propose toutes les catégories de l'événement ; choisissez-en une avant « Enregistrer » pour l'imposer, ou après : l'inscription sans dossard est déplacée. « Vérifier les catégories proposées » (fiche déjà enregistrée) affiche la liste « Catégories proposées par le référentiel » avec leurs motifs ; chaque ligne offre « Inscrire dans … » (catégorie existante) ou « Créer la catégorie … » (autre règle compatible, par exemple Men's Physique plutôt que Bodybuilding). Plusieurs propositions (bodybuilding et classic, par exemple) : la première est retenue, les autres sont listées (« Autres catégories possibles : … »).
+- Aucune proposition : « Aucune catégorie du référentiel ne correspond à cette fiche … » ; choisissez une catégorie dans la liste, le serveur demandera alors la dérogation du chef.
 - Nationalités : en mode national, seuls les athlètes dont les nationalités contiennent CI entrent dans le classement officiel, quel que soit le pays représenté. Les autres sont jugés et classés dans le classement commun, sans titre.
 - Les cases « Statut approuvé », « Licence contrôlée », « Paiement reçu » sont exigées pour confirmer une inscription ; « Autorisation du mineur » l'est pour un athlète de moins de 18 ans ; « Délégation approuvée » et « Organisation approuvée » le sont en mode international.
 - L'âge retenu est l'année de l'événement moins l'année de naissance, sans tenir compte du jour. Il sert aux divisions junior et masters et au contrôle des mineurs.
 - « Inscription à contrôler : Âge ou mesures hors catégorie. » : la fiche (âge, taille, poids) ne correspond à aucune borne de la règle de la catégorie choisie. Corrigez la fiche, choisissez une autre catégorie, ou (chef uniquement) saisissez un « Motif de dérogation, réservé au chef (facultatif) » avant de confirmer : la dérogation est signée du chef et conservée avec ses motifs.
 - « Inscription à contrôler : Crossover Junior/Masters vers Senior à autoriser par le chef. » : l'athlète a l'âge d'une division junior ou masters de cette discipline mais s'inscrit en senior. Seul le chef peut cocher « Crossover Junior/Masters vers Senior autorisé par le chef » sur la fiche.
-- « Inscription à contrôler : Contrôle requis : … » : une case de contrôle manque ; « measurements_confirmed » désigne la confirmation des mesures (étape 5).
+- « Inscription à contrôler : Contrôle requis : … » : une case de contrôle manque ; « measurements_confirmed » désigne « Mesures confirmées ».
+- Inscription tardive : dès que les dossards sont attribués ou la compétition démarrée, un bandeau l'annonce dans la rubrique et « Enregistrer » crée automatiquement une inscription tardive (chef et responsable), confirmée, avec un nouveau dossard ; le « Motif d'inscription tardive » est pré-rempli « Inscription tardive » et modifiable. Limite serveur : avant le premier tour de la catégorie (« La catégorie a déjà commencé. ») et dans une catégorie existante (« Catégories figées après attribution des dossards. »). Le secrétariat enregistre la fiche ; l'inscription tardive lui est signalée comme réservée au chef et au responsable.
 
-### 5. Saisir et confirmer les mesures, confirmer les inscriptions
+### 5. Mesures et confirmation des inscriptions
 
-- Où : **Préparation**, rubrique **Mesures** : taille en cm et poids en kg, puis « Confirmer » sur la ligne après contrôle physique. Le serveur accepte une décimale (« Mesure positive au dixième requise. ») et refuse une mesure qui sortirait une inscription déjà confirmée de sa catégorie (« Mesures incompatibles avec une inscription confirmée. »).
-- Puis rubrique **Athlètes**, sous la fiche : « Confirmer cette nouvelle inscription (contrôles et mesures requis) » ou « Confirmer l'inscription » sur une inscription existante.
+- Où : sur la fiche athlète (rubrique **Athlètes**) : « Taille (cm) », « Poids (kg) — pesée » et la case « Mesures confirmées (taille et poids contrôlés) », puis « Enregistrer ». La rubrique **Mesures** reste disponible pour la vue d'ensemble et le contrôle ligne par ligne (« Confirmer »). Le serveur accepte une décimale (« Mesure positive au dixième requise. ») ; modifier la taille ou le poids d'une fiche existante annule la confirmation des mesures, sauf si la case est cochée lors de l'enregistrement ; une mesure qui sortirait une inscription déjà confirmée de sa catégorie est refusée (« Mesures incompatibles avec une inscription confirmée. »).
+- Puis, si l'inscription a été créée en brouillon : rubrique **Athlètes**, « Inscriptions de cette personne », « Confirmer l'inscription ».
 - Pourquoi : seules les inscriptions confirmées reçoivent un dossard et entrent dans les manches. Une inscription confirmée refuse ensuite toute modification incompatible de taille ou de poids (« Modification incompatible avec une inscription confirmée ; déconfirmer avant correction. »).
 - Le compteur « Mesures confirmées » de la Vue d'ensemble suit l'avancement.
 - Si oublié : au démarrage, le serveur recontrôle chaque inscription confirmée et refuse d'ouvrir avec « Inscriptions confirmées à recontrôler : … ».
@@ -143,7 +149,7 @@ Rôles : chief, responsable
 ### En bref : ce que vous avez à faire
 
 1. Créez les accès dans **Préparation**, rubrique **Jury**, puis « Approuver » chaque compte (voir « Créer les accès de l'équipe »).
-2. Renseignez l'événement, enregistrez les athlètes, leurs inscriptions, leurs photos et leurs mesures, puis préparez les catégories (rubriques **Événement**, **Athlètes**, **Mesures** et **Catégories**).
+2. Renseignez l'événement, puis enregistrez chaque athlète sur une seule fiche (identité, contrôles, taille, poids, « Mesures confirmées ») : la catégorie est proposée et créée automatiquement, l'inscription aussi ; ajustez ou fusionnez les catégories ensuite (rubriques **Événement**, **Athlètes**, **Catégories** ; **Mesures** pour la vue d'ensemble).
 3. Ordonnez le programme, « Attribuer les dossards », composez le jury, puis « Générer les manches » (rubriques **Programme** et **Jury** ; voir « Dossards et programme » et « Composer le jury »).
 4. Touchez « Démarrer la compétition » dans la rubrique **Événement**, puis « Télécharger une sauvegarde complète » dans **Documents** (voir « Sauvegarder »).
 5. Dans **Compétition**, ouvrez le dossier de chaque manche et attendez « Reçu » pour chaque juge officiel (voir « Ouvrir une manche et suivre les bulletins »).
@@ -168,10 +174,9 @@ Le chef de jury et le responsable disposent des onglets Vue d'ensemble, Prépara
 
 ### Enregistrer les athlètes
 
-1. Rubrique **Athlètes** : identité, date de naissance, sexe, nationalités, pays, club et section (Amateur ou Professionnel), puis « Enregistrer ».
-2. Sous la fiche, « Sélectionner une catégorie » propose toutes les catégories de l'événement : choisissez-en une pour créer l'inscription. Le drapeau affiché à côté des nationalités vient du code pays saisi (CI pour la Côte d'Ivoire).
-2. Sous la fiche, ajoutez une inscription dans une catégorie. Cochez « Confirmer cette nouvelle inscription » seulement après contrôle des documents et des mesures. Une inscription tardive exige un motif.
-3. « Propositions et motifs du référentiel » affiche les catégories admissibles calculées par le serveur. Une dérogation du chef se note avec son motif.
+1. Rubrique **Athlètes**, panneau « Nouvelle fiche athlète » : identité, date de naissance, sexe, nationalités, pays, club, section (Amateur ou Professionnel), « Taille (cm) », « Poids (kg) — pesée », cases de contrôle et « Mesures confirmées (taille et poids contrôlés) », puis « Enregistrer ». Le drapeau affiché à côté des nationalités vient du code pays saisi (CI pour la Côte d'Ivoire).
+2. À l'enregistrement, la catégorie est proposée par le référentiel (créée si elle manque) et l'inscription créée : « Inscription confirmée dans … » quand « Statut approuvé », « Licence contrôlée », « Paiement reçu » et « Mesures confirmées » sont cochés, sinon « Inscription en brouillon dans … ». Pour imposer une autre catégorie, choisissez-la dans « Sélectionner une catégorie » (avant ou après : l'inscription sans dossard est déplacée). « Vérifier les catégories proposées » liste les catégories admissibles avec « Inscrire dans … » ou « Créer la catégorie … ».
+3. Une catégorie hors critères exige le « Motif de dérogation, réservé au chef (facultatif) » : la dérogation est signée du chef et conservée avec ses motifs. Après les dossards ou une fois la compétition démarrée, « Enregistrer » crée automatiquement une inscription tardive (motif pré-rempli « Inscription tardive », modifiable), avec un nouveau dossard, dans une catégorie existante et tant qu'elle n'a pas commencé.
 4. Un fichier CSV (UTF-8) ou XLSX (première feuille du classeur, sans formule) peut être importé depuis « Importer des inscriptions » : lisez la prévisualisation, corrigez les erreurs, puis confirmez.
 
 ### Photographies
@@ -183,13 +188,13 @@ Le chef de jury et le responsable disposent des onglets Vue d'ensemble, Prépara
 
 ### Contrôler les mesures
 
-- Rubrique **Mesures** : saisissez la taille et le poids réellement mesurés, puis touchez « Confirmer » sur chaque ligne après contrôle physique.
+- Sur la fiche athlète (rubrique **Athlètes**) : « Taille (cm) », « Poids (kg) — pesée » et « Mesures confirmées (taille et poids contrôlés) », puis « Enregistrer ». La rubrique **Mesures** donne la vue d'ensemble et permet aussi de saisir et « Confirmer » ligne par ligne.
 - Le compteur « Mesures confirmées » de la Vue d'ensemble suit l'avancement.
 
 ### Préparer les catégories
 
-- Rubrique **Catégories** : choisissez une règle du catalogue, le nom affiché, la section, la première phase, les places en finale et le quota éliminatoire, puis « Enregistrer la catégorie ».
-- « Fusion avant attribution des dossards » (chef uniquement) réunit des catégories compatibles sous un nom commun. La fusion n'est plus possible après les dossards.
+- Les catégories sont créées automatiquement à l'enregistrement des athlètes. Rubrique **Catégories** pour en créer ou ajuster une à la main : règle du catalogue, nom affiché, section, première phase, places en finale et quota éliminatoire, puis « Enregistrer la catégorie ».
+- « Fusion de catégories (chef, avant attribution des dossards) » : cochez au moins deux catégories de même discipline, sexe, section et groupe d'âge, nommez éventuellement la catégorie fusionnée, puis « Fusionner les catégories sélectionnées ». Refus du serveur : « Fusion incompatible : discipline, sexe, section et groupe d'âge doivent correspondre. », « Fusion interdite après attribution des dossards. ».
 
 ### Dossards et programme
 
@@ -215,6 +220,8 @@ Le chef de jury et le responsable disposent des onglets Vue d'ensemble, Prépara
 4. Après le dernier bulletin officiel, le serveur attend au plus 60 secondes les stagiaires, puis les marque hors délai sans inventer de note.
 5. Athlète absent à l'appel : avant le premier bulletin, panneau « Présence à l'appel » du dossier, motif puis « Déclarer absent » ; l'athlète est retiré de la manche et des manches suivantes de la catégorie et ne rapporte aucun point à son club. « Rétablir » annule tant qu'aucun bulletin n'est reçu.
 6. Après un bulletin reçu, une absence ne se déclare plus ici : suspendez la manche par « Suspendre et consigner » et traitez-la comme un incident.
+
+- **Ordre de passage tiré au sort** : à l'ouverture de chaque manche, l'application tire au sort l'ordre de passage des athlètes encore en lice (après une éliminatoire ou une demi-finale, seuls les qualifiés sont tirés). Le dossier de la manche l'affiche ; « Tirer l'ordre de passage » le retire tant qu'aucun bulletin n'est reçu ; « Imprimer » l'édite pour la scène et le speaker. L'ordre de passage n'influence jamais le classement.
 
 ### Valider les résultats
 
@@ -362,9 +369,9 @@ Rôles : secretariat
 ### En bref : ce que vous avez à faire
 
 1. Saisissez votre code personnel, touchez « Accéder à la compétition », puis ouvrez **Préparation**, rubrique **Athlètes**.
-2. Enregistrez chaque athlète et son inscription ; cochez « Confirmer cette nouvelle inscription » seulement après contrôle des documents, de la licence et du paiement (voir « Inscrire les athlètes »).
+2. Enregistrez chaque athlète sur une seule fiche (identité, contrôles, taille, poids) : la catégorie et l'inscription sont créées automatiquement ; cochez « Statut approuvé », « Licence contrôlée », « Paiement reçu » et « Mesures confirmées » seulement après contrôle réel, l'inscription est alors confirmée (voir « Inscrire les athlètes »).
 3. Importez les photos une par une et touchez « Autoriser la diffusion publique » seulement avec le consentement en main (voir « Photographies »).
-4. Saisissez la taille et le poids dans la rubrique **Mesures**, puis « Confirmer » après contrôle physique (voir « Saisir les mesures »).
+4. La taille et le poids se saisissent sur la fiche athlète ; la rubrique **Mesures** sert de vue d'ensemble (voir « Saisir les mesures »).
 5. Renseignez les officiels (rubrique **Officiels**) et imprimez les documents, dont les « Bulletins vierges », depuis la rubrique **Documents** (voir « Officiels et documents »).
 6. Pendant la cérémonie, dans **Récompenses** : « Récompense préparée », « Récompense remise », puis « Enregistrer la remise » (voir « Récompenses »).
 
@@ -372,9 +379,10 @@ Le secrétariat dispose des onglets Vue d'ensemble, Préparation, Récompenses, 
 
 ### Inscrire les athlètes
 
-1. **Préparation**, rubrique **Athlètes** : saisissez identité, date de naissance, sexe, nationalités, pays, club et section, puis « Enregistrer ».
-2. Ajoutez l'inscription dans la catégorie voulue. Cochez « Confirmer cette nouvelle inscription » seulement après contrôle des documents, de la licence et du paiement. Une inscription tardive exige un motif.
-3. Le champ « Rechercher » retrouve une personne déjà saisie.
+1. **Préparation**, rubrique **Athlètes**, panneau « Nouvelle fiche athlète » : identité, date de naissance, sexe, nationalités, pays, club, section, « Taille (cm) », « Poids (kg) — pesée », cases de contrôle et « Mesures confirmées (taille et poids contrôlés) », puis « Enregistrer ».
+2. À l'enregistrement, la catégorie est proposée par le référentiel et l'inscription créée : « Inscription confirmée dans … » si « Statut approuvé », « Licence contrôlée », « Paiement reçu » et « Mesures confirmées » sont cochés, sinon « Inscription en brouillon dans … » ; cochez ces cases seulement après contrôle réel, puis « Confirmer l'inscription » sous la fiche. Pour imposer une autre catégorie, choisissez-la dans « Sélectionner une catégorie ». Si la catégorie proposée n'existe pas encore, sa création est réservée au chef et au responsable : le message l'indique, choisissez une catégorie existante ou demandez-la.
+3. Après les dossards ou une fois la compétition démarrée, la fiche est enregistrée mais l'inscription tardive est réservée au chef et au responsable : le message l'indique.
+4. Le champ « Rechercher » retrouve une personne déjà saisie.
 
 ### Photographies
 
@@ -385,12 +393,14 @@ Le secrétariat dispose des onglets Vue d'ensemble, Préparation, Récompenses, 
 
 ### Saisir les mesures
 
-- Rubrique **Mesures** : saisissez la taille (cm) et le poids (kg) réellement mesurés, puis « Confirmer » après contrôle physique.
+- Sur la fiche athlète (rubrique **Athlètes**) : « Taille (cm) », « Poids (kg) — pesée » et « Mesures confirmées (taille et poids contrôlés) » après contrôle physique, puis « Enregistrer ». La rubrique **Mesures** donne la vue d'ensemble et permet aussi de « Confirmer » ligne par ligne.
 
 ### Officiels et documents
 
 - Rubrique **Officiels** : fiche de présentation des officiels (nom, parcours). Elle ne donne aucun droit de connexion.
-- Rubrique **Documents** : impressions (Inscriptions, Programme, Mesures, Bulletins vierges…) et exports « Résultats CSV », « Résultats XLSX » (tableur) et « Résultats PDF » (mise en page simple, une catégorie par page). Vérifiez la catégorie et la manche choisies avant d'imprimer.
+- Rubrique **Documents** : impressions (Fiches d'inscription, Ordre de passage, Inscriptions, Mesures, Bulletins vierges…) et exports « Résultats CSV », « Résultats XLSX » (tableur) et « Résultats PDF » (mise en page simple, une catégorie par page). Vérifiez la catégorie et la manche choisies avant d'imprimer.
+- « Fiches d'inscription » : une page par athlète (identité, photo, nationalités, club, catégories et dossards, mesures, contrôles à cocher, dérogation, zones de signature), pour toute la compétition, une catégorie ou un athlète. Réservée à la préparation : elle contient des données personnelles.
+- « Ordre de passage » : sans filtre, l'ordre général de toutes les catégories ; avec une catégorie ou une manche, l'ordre détaillé des athlètes encore en lice, dans l'ordre tiré au sort.
 
 ### Récompenses
 

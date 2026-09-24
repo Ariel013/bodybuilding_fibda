@@ -13,6 +13,8 @@ Rôles : chief, responsable
 
 ### En bref : ce que vous avez à faire
 
+Avant tout, ouvrez l'onglet **Parcours** (onglet d'arrivée après connexion) : il présente ces étapes dans l'ordre, marque celle à faire maintenant, explique ce qui bloque, et porte le bouton de chaque étape et ses documents à imprimer (voir « Suivre le parcours »).
+
 1. Créez et approuvez les accès de l'équipe dans **Préparation**, rubrique **Jury** (voir « 1. Créer les accès de l'équipe »).
 2. Renseignez l'événement, le critère collectif et les trois cases de contrôle dans la rubrique **Événement**, puis « Enregistrer l'événement » (voir « 2. Renseigner l'événement et sa liste de contrôle »).
 3. Enregistrez chaque athlète sur une seule fiche (identité, contrôles, taille et poids, « Mesures confirmées ») dans la rubrique **Athlètes** : à « Enregistrer », la catégorie est proposée par le référentiel, créée si elle manque, et l'inscription créée (confirmée si les contrôles sont cochés, sinon en brouillon). Changez-la si besoin dans « Sélectionner une catégorie », puis fusionnez les catégories trop peu fournies dans **Catégories** (voir les étapes 3 à 5).
@@ -23,6 +25,15 @@ Rôles : chief, responsable
 8. Téléchargez la sauvegarde finale et les documents dans **Documents**, puis « Terminer la compétition » dans la rubrique **Événement** (voir « 13. Clôturer la compétition »).
 
 Cette section suit une compétition du début à la fin, dans l'ordre que le serveur impose. Chaque étape indique où agir (onglet, rubrique, panneau, bouton), ce que l'action fait réellement, pourquoi elle est exigée, et le message affiché si elle a été oubliée. Les profils détaillés plus bas reprennent chaque écran ; ici, seul l'enchaînement compte. Faites une sauvegarde après chaque étape clé (étape 14).
+
+### Suivre le parcours
+
+- Où : onglet **Parcours**, premier onglet, ouvert d'office après connexion pour le chef, le responsable, le directeur et le secrétariat (les juges et stagiaires ne le voient pas).
+- Ce que cela montre : les onze étapes ci-dessous, de « Créer les accès de l'équipe » à « Clôturer la compétition », dans l'ordre imposé par le serveur. Chaque étape porte un état : **Fait** (coche verte), **À faire maintenant** (une seule à la fois : la première non faite dont les conditions sont remplies), **Bloqué** (grisé, avec la raison en une phrase : « 2 juges approuvés sur 5 requis », « aucune inscription confirmée », « dossards non attribués », « 1 finale de bodybuilding reste à valider »…), **À venir**. Les étapes de compétition restent « À venir » tant que la compétition n'est pas démarrée.
+- Le bouton de l'étape : quand l'action est une commande simple, le bouton agit sur place (« Attribuer les dossards », « Générer les manches », « Démarrer la compétition », « Valider les résultats sportifs », « Passer à la manche suivante », « Confirmer les remises des catégories », « Créer le toutes catégories Amateur », « Terminer cette discipline », « Terminer la compétition »). Quand il faut saisir (comptes, événement, athlètes, catégories, jury), le bouton ouvre l'onglet **Préparation** et nomme la rubrique à choisir (« Ouvrir Préparation › Athlètes »). Un bouton réservé à un autre rôle est remplacé par la mention du rôle. Si le serveur refuse malgré tout, son message s'affiche tel quel sous le bouton.
+- Les documents de l'étape : fiches d'inscription et fiches vierges dès les athlètes, ordre de passage après les manches, fiches de notation après le démarrage (et celles de la manche en cours), résultats, récompenses, diplômes, récapitulatif jury et exports à la clôture. La sauvegarde complète est proposée après les manches, après le démarrage, à chaque fin de discipline et à la clôture (chef et directeur).
+- Pendant la compétition : l'étape « Conduire la manche en cours » affiche la manche active (catégorie, phase, bulletins officiels et stagiaires reçus, absents déclarés), « Ouvrir le dossier (Compétition) », « Valider les résultats sportifs » quand tous les bulletins sont reçus, « Passer à la manche suivante », ou « Confirmer le toutes catégories » pour un champion seul. L'étape « Terminer la discipline » liste ses quatre gestes dans l'ordre du serveur, chacun coché quand il est fait.
+- Le parcours ne remplace pas les rubriques : tous les onglets restent accessibles pour sortir du couloir prévu (décision du PO, 24/09/2026).
 
 ### 1. Créer les accès de l'équipe
 
@@ -148,6 +159,8 @@ Rôles : chief, responsable
 
 ### En bref : ce que vous avez à faire
 
+Suivez l'onglet **Parcours** : il indique l'étape à faire maintenant, ce qui bloque, et porte le bouton de chaque étape ; les rubriques ci-dessous restent accessibles à tout moment (voir « Suivre le parcours » dans le déroulé complet).
+
 1. Créez les accès dans **Préparation**, rubrique **Jury**, puis « Approuver » chaque compte (voir « Créer les accès de l'équipe »).
 2. Renseignez l'événement, puis enregistrez chaque athlète sur une seule fiche (identité, contrôles, taille, poids, « Mesures confirmées ») : la catégorie est proposée et créée automatiquement, l'inscription aussi ; ajustez ou fusionnez les catégories ensuite (rubriques **Événement**, **Athlètes**, **Catégories** ; **Mesures** pour la vue d'ensemble).
 3. Ordonnez le programme, « Attribuer les dossards », composez le jury, puis « Générer les manches » (rubriques **Programme** et **Jury** ; voir « Dossards et programme » et « Composer le jury »).
@@ -157,7 +170,7 @@ Rôles : chief, responsable
 7. Après les finales d'une discipline : remises dans **Récompenses**, « Créer le toutes catégories » dans **Compétition**, puis « Terminer cette discipline » (voir « Récompenses et toutes catégories »).
 8. Téléchargez la sauvegarde finale et les documents dans **Documents**, puis « Terminer la compétition » dans la rubrique **Événement** (voir « Clôturer la compétition »).
 
-Le chef de jury et le responsable disposent des onglets Vue d'ensemble, Préparation, Mon jugement, Compétition, Régie & écrans, Récompenses, Collectifs, Examens, Documents et Aide. Le chef voit aussi Traçabilité. Certaines actions sont réservées au seul chef : approuver un accès, fusionner des catégories, valider une manche, saisir un bulletin papier, corriger, confirmer un toutes catégories, réduire un jury, résoudre un incident.
+Le chef de jury et le responsable disposent des onglets Parcours, Vue d'ensemble, Préparation, Mon jugement, Compétition, Régie & écrans, Récompenses, Collectifs, Examens, Documents et Aide. Le chef voit aussi Traçabilité. Certaines actions sont réservées au seul chef : approuver un accès, fusionner des catégories, valider une manche, saisir un bulletin papier, corriger, confirmer un toutes catégories, réduire un jury, résoudre un incident.
 
 ### Créer les accès de l'équipe
 

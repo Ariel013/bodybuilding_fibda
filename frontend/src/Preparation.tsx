@@ -42,8 +42,25 @@ const sections = [
   "Jury",
   "Documents",
 ];
+// Rubrique désignée par l'adresse : #preparation/athletes ouvre « Athlètes » (liens du Parcours).
+const RUBRIQUE_PAR_SLUG: Record<string, string> = {
+  evenement: "Événement", athletes: "Athlètes", mesures: "Mesures", categories: "Catégories",
+  programme: "Programme", officiels: "Officiels", jury: "Jury", documents: "Documents",
+};
+function rubriqueDepuisAdresse(): string | null {
+  const slug = location.hash.split("/")[1];
+  return slug ? (RUBRIQUE_PAR_SLUG[slug] ?? null) : null;
+}
 export function Preparation(p: Props) {
-  const [tab, setTab] = useState("Événement");
+  const [tab, setTab] = useState(() => rubriqueDepuisAdresse() ?? "Événement");
+  useEffect(() => {
+    const suivre = () => {
+      const r = rubriqueDepuisAdresse();
+      if (r) setTab(r);
+    };
+    window.addEventListener("hashchange", suivre);
+    return () => window.removeEventListener("hashchange", suivre);
+  }, []);
   return (
     <>
       <div className="page-title">

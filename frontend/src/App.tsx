@@ -9,8 +9,15 @@ import { Judge } from "./Judge";
 import { Competition, Exams, Collective } from "./Competition";
 import { Regie, PublicScreen, Rewards } from "./Regie";
 import { Aide } from "./Aide";
+import { Parcours } from "./Parcours";
 import { Panel, Notice, Field, Status, DataTable, JsonDetails } from "./ui";
 const navigation = [
+  {
+    id: "parcours",
+    label: "Parcours",
+    icon: "➔",
+    roles: ["chief", "responsable", "director", "secretariat"],
+  },
   { id: "home", label: "Vue d’ensemble", icon: "◈", roles: [] },
   {
     id: "preparation",
@@ -87,6 +94,15 @@ const navigation = [
 function judgeOnlyProfile(roles: string[]): boolean {
   return landingTab(roles) === "judge";
 }
+/**
+ * Onglet d'arrivée après connexion : bulletin pour un juge ou stagiaire seul, Parcours pour
+ * la direction et le secrétariat (demande du PO, 24/09/2026), Vue d'ensemble sinon.
+ */
+function arrivalTab(roles: string[]): string {
+  const base = landingTab(roles);
+  if (base === "judge") return base;
+  return navigation[0].roles.some((r) => roles.includes(r)) ? "parcours" : base;
+}
 export default function App() {
   const screen = location.pathname.match(
     /^\/screen\/(main|secondary|backstage|speaker)\/?$/,
@@ -101,7 +117,7 @@ function Workspace() {
     [error, setError] = useState(""),
     [notice, setNotice] = useState(""),
     [connection, setConnection] = useState("Connexion…"),
-    [tab, setTab] = useState(location.hash.slice(1)),
+    [tab, setTab] = useState(location.hash.slice(1).split("/")[0]),
     [pending, setPending] = useState(false);
   const current = useRef<State | undefined>(undefined);
   const commandQueue = useRef(false);
@@ -145,7 +161,7 @@ function Workspace() {
     boot();
   }, [refresh]);
   useEffect(() => {
-    const change = () => setTab(location.hash.slice(1));
+    const change = () => setTab(location.hash.slice(1).split("/")[0]);
     window.addEventListener("hashchange", change);
     return () => window.removeEventListener("hashchange", change);
   }, []);
@@ -250,7 +266,7 @@ function Workspace() {
   );
   const active = available.some((n) => n.id === tab)
     ? tab
-    : landingTab(user?.roles || []);
+    : arrivalTab(user?.roles || []);
   if (loading)
     return (
       <div className="loading">
@@ -268,7 +284,7 @@ function Workspace() {
           setError("");
           setHealth(await api("/health"));
           await refresh();
-          const destination = landingTab(current.current?.me.roles || []);
+          const destination = arrivalTab(current.current?.me.roles || []);
           setTab(destination);
           location.hash = destination;
         }}
@@ -412,6 +428,8 @@ function Workspace() {
           )}
           {active === "home" ? (
             <Home s={s} />
+          ) : active === "parcours" ? (
+            <Parcours s={s} command={command} />
           ) : active === "preparation" ? (
             <Preparation s={s} command={command} refresh={refresh} />
           ) : active === "judge" ? (

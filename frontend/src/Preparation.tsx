@@ -1167,7 +1167,7 @@ async function reducePhoto(
         const el = new Image();
         el.onload = () => resolve(el);
         el.onerror = () =>
-          reject(new Error("Image illisible par le navigateur (JPEG, PNG ou WEBP attendu)."));
+          reject(new Error(`Image illisible par le navigateur : type « ${file.type || "inconnu"} », ${Math.round(file.size / 1024)} Ko. Choisissez une photo JPEG, PNG ou WEBP (sur Android, une photo HEIC doit être convertie ; sur iPhone, réglez l’appareil sur « Le plus compatible »).`));
         el.src = url;
       });
       return { naturalWidth: img.naturalWidth, naturalHeight: img.naturalHeight, source: img };
@@ -1349,6 +1349,11 @@ function PhotoUpload({
         La photo est réduite dans le navigateur avant l’envoi (1200 px de côté
         au plus, 1 Mo maximum).
       </small>
+      {file && !uploaded && (
+        <Notice kind="warning">
+          Photo sélectionnée mais pas encore enregistrée : touchez « Importer la photo » ci-dessous.
+        </Notice>
+      )}
       <AsyncButton
         disabled={
           !file ||

@@ -2153,3 +2153,15 @@ dialog.athlete-card::backdrop {
     padding: 14px 16px;
   }
 }
+
+/* Erreur d'action : bandeau fixé en bas de l'écran, visible où que l'on soit dans la page
+   (retour du PO du 24/09 : l'erreur en haut de page passait inaperçue sur téléphone). */
+.notice.error.toast-error {
+  position: fixed;
+  left: 12px;
+  right: 12px;
+  bottom: 12px;
+  z-index: 60;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+  font-size: 15px;
+}

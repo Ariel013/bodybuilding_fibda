@@ -20,13 +20,15 @@ export function Field({
 export function Notice({
   children,
   kind = "info",
+  className = "",
 }: {
   children: ReactNode;
   kind?: string;
+  className?: string;
 }) {
   return (
     <div
-      className={"notice " + kind}
+      className={"notice " + kind + (className ? " " + className : "")}
       role={kind === "error" ? "alert" : "status"}
     >
       {children}

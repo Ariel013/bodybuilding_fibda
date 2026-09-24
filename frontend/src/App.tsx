@@ -362,7 +362,7 @@ function Workspace() {
             </Notice>
           )}
           {error && (
-            <Notice kind="error">
+            <Notice kind="error" className="toast-error">
               <div className="panel-head">
                 <span>{error}</span>
                 <button

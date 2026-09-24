@@ -579,11 +579,19 @@ function Login({
               disabled={busy}
               className="ghost"
               onClick={async () => {
+                // Version en ligne : le peuplement exige le jeton de configuration du serveur
+                // (variable FIBDA_SETUP_TOKEN), remis à l'organisateur avec les codes.
+                const jeton = window.prompt("Jeton de configuration du serveur de démonstration :");
+                if (jeton === null) return;
                 setBusy(true);
                 try {
-                  const r = await post("/demo", {});
-                  setCodes(r.codes);
-                  setError("");
+                  const r = await api("/demo", { method: "POST", body: "{}", headers: { "x-setup-token": jeton.trim() } });
+                  if (r.codes && Object.keys(r.codes).length === 0) {
+                    setError("La démonstration est déjà peuplée : connectez-vous avec les codes remis lors du premier peuplement (ou, pour repartir de zéro, utilisez « Revenir en préparation » depuis le compte chef).");
+                  } else {
+                    setCodes(r.codes);
+                    setError("");
+                  }
                 } catch (e) {
                   setError((e as Error).message);
                 } finally {

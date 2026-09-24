@@ -21,15 +21,15 @@ Carte des documents :
 
 ## 📍 État actuel & prochaine action
 
-*(Mis à jour le 2026-09-24, 10 h.)*
+*(Mis à jour le 2026-09-24, 14 h.)*
 
 - **Version en prod** : https://fibda-bodybuilding.vercel.app (Vercel, base Turso Irlande),
   déployée le 23/09 au soir depuis la CLI, **vérifiée au curl** : santé, jeton de configuration
   exigé, chef créé, connexion, état, écran public, en-têtes de sécurité, contrôle d'origine.
   Démonstration séparée : https://fibda-bodybuilding-demo.vercel.app (base `fibda-demo`,
   24 athlètes fictifs, 9 comptes). **Aucun test sur téléphone réel encore.** Secrets hors dépôt : `~/fibda-secrets-2026-09-23.txt`.
-- **Code** : `main` poussé sur `origin` (voir `git log`). `npm run check` = 150 tests verts
-  (29 interface dont 6 sur le manuel, 17 moteur, 104 serveur). Déploiement : toujours
+- **Code** : `main` poussé sur `origin` (voir `git log`). `npm run check` = 173 tests verts
+  (44 interface, 17 moteur, 112 serveur). Déploiement : toujours
   `vercel build` puis `vercel deploy --prebuilt` (`docs/DEPLOIEMENT-VERCEL.md` §2).
 - **Livré le 23/09 au soir** : impressions HTML (bulletin vierge = plan papier), export CSV,
   import CSV, mode d'emploi par profil dans l'onglet « Aide » (source
@@ -38,6 +38,12 @@ Carte des documents :
 - **Décisions du PO** : overall **par discipline et par sexe** (24/09, définitif : 3 dames,
   4 hommes ; la finale toutes disciplines du 23/09 est retirée de l'interface), codes admin
   8 caractères, 4G prévu, Railway en suspens.
+- **Après-midi 24/09** : espace juge recentré (Mon jugement, Documents, Examens, Aide) avec écran
+  d'attente ; régie guidée par catégorie, pays masqué en national ; fiche de notation papier par
+  manche ; officiels + jury ; logos de club ; durcissements (motifs ≤ 500, motifs d'absence
+  réservés direction/secrétariat) ; glisser-déposer tactile réparé (touch-action) ; onglet
+  **Parcours** étape par étape, page d'arrivée de la direction, rubriques adressables par
+  l'adresse. Tout déployé, 173 tests.
 - **Fiche d'inscription modèle PO (24/09, 10 h)** : deux parties (athlète / juges), lignes à
   compléter, fiches vierges en série, téléphone WhatsApp sur la fiche athlète.
 - **Fiche unique, fiches d'inscription, ordre tiré au sort (24/09, 9 h)** : catégorie proposée et

@@ -624,6 +624,21 @@ function compareCodePoints(a: string, b: string): number {
   }
 }
 
+/**
+ * Classement collectif (meilleur club / meilleur pays).
+ *
+ * Décision FIBDA du 24/09/2026 (PO), qui REMPLACE la règle 10/6/4/3/2/1 « meilleur rang par
+ * personne » encore implémentée dans `backend/fibda/domain.py` (plan B Python, non modifié —
+ * voir OPEN-QUESTIONS.md P11) :
+ * - barème par place : 1er 15, 2e 10, 3e 5, 4e 4, 5e 3, 6e et au-delà 1 point ;
+ * - chaque ligne de résultat rapporte : finales de catégorie ET overalls (phase `overall`),
+ *   sans déduplication par personne (deux inscriptions = deux places comptées) ;
+ * - une ligne « participation » (rang au-delà de la finale, par ex. 99) rapporte 1 point ;
+ * - départage : points, puis nombre de 1res places, de 2es… jusqu'aux « 6e et au-delà »
+ *   (`counts[5]`), puis critère personnalisé hors calcul ; égalité persistante = même rang.
+ * `eligibleIds` filtre toujours les hors concours ; un athlète sans club/pays ne compte pour
+ * aucun collectif. `people` liste les personnes ayant rapporté des points (sans doublon).
+ */
 export function collectiveResults(
   results: ResultRow[],
   entries: EntryRef[],
@@ -636,31 +651,23 @@ export function collectiveResults(
   const emap = new Map(entries.map((e) => [e.id, e]));
   const pmap = new Map(people.map((p) => [p.id, p]));
   const allowed = eligibleIds === null ? null : new Set(eligibleIds);
-  const best = new Map<string, ResultRow>();
+  const groups = new Map<string, CollectiveRow>();
   for (const row of results) {
     const eid = row.entry_id;
-    if (row.phase === 'overall' || (allowed !== null && !allowed.has(eid))) continue;
+    if (allowed !== null && !allowed.has(eid)) continue;
     const pid = lookup(emap, eid).person_id;
-    const current = best.get(pid);
-    if (current === undefined || row.rank < current.rank) best.set(pid, row);
-  }
-  const groups = new Map<string, CollectiveRow>();
-  const points = [10, 6, 4, 3, 2, 1];
-  for (const [pid, row] of best) {
     const name = lookup(pmap, pid)[kind] as string | null | undefined;
     if (!truthy(name)) continue;
     const key = name as string;
     if (!groups.has(key)) groups.set(key, { name: key, points: 0, counts: [0, 0, 0, 0, 0, 0], people: [], rank: 0 });
     const group = groups.get(key) as CollectiveRow;
-    const rank = row.rank;
-    if (1 <= rank && rank <= 6) {
-      group.points += points[rank - 1];
-      group.counts[rank - 1] += 1;
-    }
-    group.people.push(pid);
+    if (!(row.rank >= 1)) throw new DomainError('Rang collectif invalide.');
+    group.points += collectivePoints(row.rank);
+    group.counts[Math.min(row.rank, 6) - 1] += 1;
+    if (!group.people.includes(pid)) group.people.push(pid);
   }
   const useCounts = true; // Départage sportif obligatoire avant tout critère personnalisé.
-  // Clé Python : (-points, tuple(-counts) si use_counts, name) ; tri stable.
+  // Clé : (-points, -counts…, name) ; tri stable.
   const compareKey = (g: CollectiveRow, h: CollectiveRow): number => {
     if (g.points !== h.points) return h.points - g.points;
     if (useCounts) {
@@ -678,4 +685,10 @@ export function collectiveResults(
     previous = key;
   });
   return rows;
+}
+
+/** Barème collectif FIBDA du 24/09/2026 : 15/10/5/4/3 puis 1 point à partir de la 6e place. */
+export function collectivePoints(rank: number): number {
+  const table = [15, 10, 5, 4, 3];
+  return rank >= 1 && rank <= 5 ? table[rank - 1] : 1;
 }

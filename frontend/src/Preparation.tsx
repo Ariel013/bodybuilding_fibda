@@ -1,3 +1,4 @@
+import { drapeau, paysAvecDrapeau } from "./pays";
 import { canCommand } from "./permissions";
 import { useEffect, useState, type FormEvent } from "react";
 import { api, post, download } from "./api";
@@ -23,7 +24,7 @@ import {
 type Props = { s: State; command: Command; refresh: () => Promise<void> };
 const sections = [
   "Événement",
-  "Personnes",
+  "Athlètes",
   "Mesures",
   "Catégories",
   "Programme",
@@ -55,7 +56,7 @@ export function Preparation(p: Props) {
       </nav>
       {tab === "Événement" ? (
         <EventForm {...p} />
-      ) : tab === "Personnes" ? (
+      ) : tab === "Athlètes" ? (
         <People {...p} />
       ) : tab === "Mesures" ? (
         <Measures {...p} />
@@ -314,6 +315,9 @@ function People({ s, command, refresh }: Props) {
                 </Field>
               ))}
               <Field label="Nationalités (codes séparés par virgule)">
+                <span className="drapeaux" aria-hidden="true">
+                  {(person.nationalities ?? []).map((c: string) => drapeau(c)).join(" ")}
+                </span>
                 <input
                   value={person.nationalities?.join(", ")}
                   onChange={(e) =>
@@ -367,12 +371,12 @@ function People({ s, command, refresh }: Props) {
                 />
               ))}
             </div>
-            <Field label="Ajouter une inscription">
+            <Field label="Sélectionner une catégorie">
               <select
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
               >
-                <option value="">Aucune nouvelle inscription</option>
+                <option value="">Choisir une catégorie</option>
                 {s.categories
                   .filter((c) => !c.archived)
                   .map((c) => (
@@ -532,7 +536,7 @@ function People({ s, command, refresh }: Props) {
                   <span>
                     <strong>{personName(p)}</strong>
                     <small>
-                      {p.club || "Sans club"} · {p.country} ·{" "}
+                      {p.club || "Sans club"} · {paysAvecDrapeau(p.country)} ·{" "}
                       {labels[p.section]}
                     </small>
                     <small>

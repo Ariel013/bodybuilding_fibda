@@ -68,6 +68,8 @@ test('test_elimination_boundary_is_unresolved', () => {
 });
 
 test('test_overall_dedup_and_collective', () => {
+  // Décision FIBDA du 24/09/2026 : barème 15/10/5/4/3 puis 1, chaque inscription compte,
+  // overall inclus. L'overall reste dédupliqué par personne ; le collectif ne l'est plus.
   const entries = [
     { id: 'a', person_id: 'p' },
     { id: 'b', person_id: 'p' },
@@ -83,8 +85,50 @@ test('test_overall_dedup_and_collective', () => {
     { id: 'p', club: 'A' },
     { id: 'q', club: 'A' },
   ]);
-  assert.equal(groups[0].points, 16);
-  assert.deepEqual(groups[0].counts, [1, 1, 0, 0, 0, 0]);
+  // p : deux inscriptions, deux 1res places = 15 + 15 ; q : 2e place = 10.
+  assert.equal(groups[0].points, 40);
+  assert.deepEqual(groups[0].counts, [2, 1, 0, 0, 0, 0]);
+  assert.deepEqual(groups[0].people, ['p', 'q']);
+});
+
+test('test_collective_scale_finale_overall_and_participation', () => {
+  // Une finale à 7 (ranks 1–7), un éliminé en demi (rang 99, participation) et un overall gagné par a.
+  const ids = chars('abcdefgh');
+  const entries = ids.map((x) => ({ id: x, person_id: x }));
+  const people = ids.map((x) => ({ id: x, club: 'A' }));
+  const rows = [
+    ...ids.slice(0, 7).map((x, i) => ({ entry_id: x, rank: i + 1, phase: 'final' })),
+    { entry_id: 'h', rank: 99, phase: 'final', participation: true },
+    { entry_id: 'a', rank: 1, phase: 'overall' },
+  ];
+  const [group] = collectiveResults(rows, entries, people);
+  // 15 + 10 + 5 + 4 + 3 + 1 (6e) + 1 (7e) + 1 (participation h) + 15 (overall a) = 55.
+  assert.equal(group.points, 55);
+  assert.deepEqual(group.counts, [2, 1, 1, 1, 1, 3]);
+  // Un athlète sans club ne compte pour personne ; un non éligible non plus.
+  assert.deepEqual(collectiveResults(rows, entries, ids.map((x) => ({ id: x, club: null }))), []);
+  assert.equal(collectiveResults(rows, entries, people, 'club', ['a'])[0].points, 30);
+});
+
+test('test_collective_tiebreak_by_places_then_persistent_tie', () => {
+  const entries = chars('abcdef').map((x) => ({ id: x, person_id: x }));
+  const people = [
+    { id: 'a', club: 'A' }, { id: 'b', club: 'A' }, { id: 'c', club: 'A' },
+    { id: 'd', club: 'B' }, { id: 'e', club: 'B' }, { id: 'f', club: 'B' },
+  ];
+  // A : 15 + 5 + 5 = 25 ; B : 10 + 10 + 5 = 25 ; A a une 1re place, B aucune → A devant.
+  let groups = collectiveResults(
+    [
+      { entry_id: 'a', rank: 1 }, { entry_id: 'b', rank: 3 }, { entry_id: 'c', rank: 3 },
+      { entry_id: 'd', rank: 2 }, { entry_id: 'e', rank: 2 }, { entry_id: 'f', rank: 3 },
+    ],
+    entries,
+    people,
+  );
+  assert.deepEqual(groups.map((g) => [g.name, g.points, g.rank]), [['A', 25, 1], ['B', 25, 2]]);
+  // Égalité persistante (mêmes points, mêmes places) : même rang, l'ordre alphabétique n'attribue rien.
+  groups = collectiveResults([{ entry_id: 'd', rank: 1 }, { entry_id: 'a', rank: 1 }], entries, people);
+  assert.deepEqual(groups.map((g) => [g.name, g.rank]), [['A', 1], ['B', 1]]);
 });
 
 test('test_exam_original_exact_mean_and_requirements', () => {

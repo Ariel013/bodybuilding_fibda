@@ -1,3 +1,4 @@
+import { paysAvecDrapeau } from "./pays";
 import { canCommand } from "./permissions";
 import { useEffect, useState, useRef } from "react";
 import {
@@ -341,7 +342,7 @@ export function PublicScreen({ name }: { name: string }) {
                   e.bib,
                   personName(p),
                   p?.pronunciation || "—",
-                  `${p?.club || ""} / ${p?.country || ""}`,
+                  `${p?.club || ""} / ${paysAvecDrapeau(p?.country)}`,
                 ];
               })}
           />
@@ -435,7 +436,7 @@ export function ScreenContent({
             <h2>{personName(o)}</h2>
             <p>{o.post}</p>
             <small>
-              {o.organization} · {o.country}
+              {o.organization} · {paysAvecDrapeau(o.country)}
             </small>
             <p>{o.pedigree}</p>
           </article>
@@ -505,7 +506,7 @@ export function ScreenContent({
                   </strong>
                   <h2>{personName(p)}</h2>
                   <p>
-                    {p?.club} · {p?.country}
+                    {p?.club} · {paysAvecDrapeau(p?.country)}
                   </p>
                   {scene.called_entry_id === id && (
                     <span className="badge">Appelé sur le plateau</span>

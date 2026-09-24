@@ -15,7 +15,7 @@ Rôles : chief, responsable
 
 1. Créez et approuvez les accès de l'équipe dans **Préparation**, rubrique **Jury** (voir « 1. Créer les accès de l'équipe »).
 2. Renseignez l'événement, le critère collectif et les trois cases de contrôle dans la rubrique **Événement**, puis « Enregistrer l'événement » (voir « 2. Renseigner l'événement et sa liste de contrôle »).
-3. Créez les catégories, enregistrez les athlètes, saisissez et confirmez les mesures, puis confirmez les inscriptions (rubriques **Catégories**, **Personnes** et **Mesures** ; voir les étapes 3 à 5).
+3. Créez les catégories, enregistrez les athlètes, saisissez et confirmez les mesures, puis confirmez les inscriptions (rubriques **Catégories**, **Athlètes** et **Mesures** ; voir les étapes 3 à 5).
 4. Ordonnez le programme et touchez « Attribuer les dossards », composez le jury et « Enregistrer le jury », puis « Générer les manches » (rubriques **Programme** et **Jury** ; voir les étapes 6 à 8).
 5. Touchez « Démarrer la compétition » dans la rubrique **Événement**, puis « Télécharger une sauvegarde complète » dans **Documents** (voir « 9. Démarrer la compétition »).
 6. Pour chaque manche, dans **Compétition** : « Ouvrir le dossier », attendez « Reçu » pour chaque juge officiel, puis « Valider les résultats sportifs » (voir « 10. Conduire une manche »).
@@ -35,7 +35,7 @@ Cette section suit une compétition du début à la fin, dans l'ordre que le ser
 
 - Où : **Préparation**, rubrique **Événement** : nom, date, lieu, mode, puis « Enregistrer l'événement ».
 - Le mode : « National · classement officiel ivoirien » réserve le classement officiel (titres, récompenses, toutes catégories) aux athlètes de nationalité CI ; « International · délégations approuvées » le réserve aux athlètes dont la délégation et l'organisation ont été approuvées sur la fiche. La date et le mode sont figés au démarrage (« Date et mode figés après démarrage. »).
-- Le « Critère collectif publié de départage » est un texte libre : la règle, annoncée avant la compétition, qui départage deux clubs ou deux pays à égalité dans les classements collectifs (onglet Collectifs). Le serveur l'exige avant le démarrage et le fige ensuite (« Le critère collectif est figé dès le démarrage. »), pour qu'aucun départage ne soit inventé après coup.
+- Le « Critère collectif publié de départage » est un texte libre : la règle, annoncée avant la compétition, qui départage deux clubs ou deux pays à égalité de points et de places dans les classements collectifs (onglet Collectifs ; barème 15/10/5/4/3 puis 1 point par place de finale et de toutes catégories, 1 point par éliminé avant la finale, décision FIBDA du 24/09/2026). Le serveur l'exige avant le démarrage et le fige ensuite (« Le critère collectif est figé dès le démarrage. »), pour qu'aucun départage ne soit inventé après coup.
 - Les trois cases « Le référentiel applicable et ses réserves ont été vérifiés par l'organisation », « Réseau local et accès des appareils contrôlés » et « Sauvegarde de départ réalisée et contrôlée » sont une liste de vérification signée par la direction : cocher ne déclenche rien, mais atteste que le contrôle a été fait.
 - Si oublié : « Démarrer la compétition » répond « Validez le règlement, le réseau, la sauvegarde et le critère collectif avant ouverture. » tant qu'une case ou le critère manque.
 
@@ -49,7 +49,7 @@ Cette section suit une compétition du début à la fin, dans l'ordre que le ser
 
 ### 4. Enregistrer les athlètes et contrôler les inscriptions
 
-- Où : **Préparation**, rubrique **Personnes** : identité, date de naissance, sexe, nationalités, pays, club, section, cases de contrôle, puis « Enregistrer ». « Vérifier les catégories proposées » affiche « Propositions et motifs du référentiel ».
+- Où : **Préparation**, rubrique **Athlètes** : identité, date de naissance, sexe, nationalités, pays, club, section, cases de contrôle, puis « Enregistrer ». « Vérifier les catégories proposées » affiche « Propositions et motifs du référentiel ».
 - Nationalités : en mode national, seuls les athlètes dont les nationalités contiennent CI entrent dans le classement officiel, quel que soit le pays représenté. Les autres sont jugés et classés dans le classement commun, sans titre.
 - Les cases « Statut approuvé », « Licence contrôlée », « Paiement reçu » sont exigées pour confirmer une inscription ; « Autorisation du mineur » l'est pour un athlète de moins de 18 ans ; « Délégation approuvée » et « Organisation approuvée » le sont en mode international.
 - L'âge retenu est l'année de l'événement moins l'année de naissance, sans tenir compte du jour. Il sert aux divisions junior et masters et au contrôle des mineurs.
@@ -60,7 +60,7 @@ Cette section suit une compétition du début à la fin, dans l'ordre que le ser
 ### 5. Saisir et confirmer les mesures, confirmer les inscriptions
 
 - Où : **Préparation**, rubrique **Mesures** : taille en cm et poids en kg, puis « Confirmer » sur la ligne après contrôle physique. Le serveur accepte une décimale (« Mesure positive au dixième requise. ») et refuse une mesure qui sortirait une inscription déjà confirmée de sa catégorie (« Mesures incompatibles avec une inscription confirmée. »).
-- Puis rubrique **Personnes**, sous la fiche : « Confirmer cette nouvelle inscription (contrôles et mesures requis) » ou « Confirmer l'inscription » sur une inscription existante.
+- Puis rubrique **Athlètes**, sous la fiche : « Confirmer cette nouvelle inscription (contrôles et mesures requis) » ou « Confirmer l'inscription » sur une inscription existante.
 - Pourquoi : seules les inscriptions confirmées reçoivent un dossard et entrent dans les manches. Une inscription confirmée refuse ensuite toute modification incompatible de taille ou de poids (« Modification incompatible avec une inscription confirmée ; déconfirmer avant correction. »).
 - Le compteur « Mesures confirmées » de la Vue d'ensemble suit l'avancement.
 - Si oublié : au démarrage, le serveur recontrôle chaque inscription confirmée et refuse d'ouvrir avec « Inscriptions confirmées à recontrôler : … ».
@@ -142,7 +142,7 @@ Rôles : chief, responsable
 ### En bref : ce que vous avez à faire
 
 1. Créez les accès dans **Préparation**, rubrique **Jury**, puis « Approuver » chaque compte (voir « Créer les accès de l'équipe »).
-2. Renseignez l'événement, enregistrez les athlètes, leurs inscriptions, leurs photos et leurs mesures, puis préparez les catégories (rubriques **Événement**, **Personnes**, **Mesures** et **Catégories**).
+2. Renseignez l'événement, enregistrez les athlètes, leurs inscriptions, leurs photos et leurs mesures, puis préparez les catégories (rubriques **Événement**, **Athlètes**, **Mesures** et **Catégories**).
 3. Ordonnez le programme, « Attribuer les dossards », composez le jury, puis « Générer les manches » (rubriques **Programme** et **Jury** ; voir « Dossards et programme » et « Composer le jury »).
 4. Touchez « Démarrer la compétition » dans la rubrique **Événement**, puis « Télécharger une sauvegarde complète » dans **Documents** (voir « Sauvegarder »).
 5. Dans **Compétition**, ouvrez le dossier de chaque manche et attendez « Reçu » pour chaque juge officiel (voir « Ouvrir une manche et suivre les bulletins »).
@@ -167,14 +167,15 @@ Le chef de jury et le responsable disposent des onglets Vue d'ensemble, Prépara
 
 ### Enregistrer les athlètes
 
-1. Rubrique **Personnes** : identité, date de naissance, sexe, nationalités, pays, club et section (Amateur ou Professionnel), puis « Enregistrer ».
+1. Rubrique **Athlètes** : identité, date de naissance, sexe, nationalités, pays, club et section (Amateur ou Professionnel), puis « Enregistrer ».
+2. Sous la fiche, « Sélectionner une catégorie » propose toutes les catégories de l'événement : choisissez-en une pour créer l'inscription. Le drapeau affiché à côté des nationalités vient du code pays saisi (CI pour la Côte d'Ivoire).
 2. Sous la fiche, ajoutez une inscription dans une catégorie. Cochez « Confirmer cette nouvelle inscription » seulement après contrôle des documents et des mesures. Une inscription tardive exige un motif.
 3. « Propositions et motifs du référentiel » affiche les catégories admissibles calculées par le serveur. Une dérogation du chef se note avec son motif.
 4. Un fichier CSV (UTF-8) ou XLSX (première feuille du classeur, sans formule) peut être importé depuis « Importer des inscriptions » : lisez la prévisualisation, corrigez les erreurs, puis confirmez.
 
 ### Photographies
 
-1. Sur la fiche de la personne (rubrique **Personnes**) ou de l'officiel (rubrique **Officiels**), bloc « Photographie et droit de diffusion » : choisissez le type (Portrait ou Plein pied), le fichier JPEG, PNG ou WEBP, recadrez si besoin, puis « Importer la photo ». La photo est réduite par le navigateur avant l'envoi (1 Mo au maximum) ; une image que le navigateur ne sait pas lire est refusée.
+1. Sur la fiche de la personne (rubrique **Athlètes**) ou de l'officiel (rubrique **Officiels**), bloc « Photographie et droit de diffusion » : choisissez le type (Portrait ou Plein pied), le fichier JPEG, PNG ou WEBP, recadrez si besoin, puis « Importer la photo ». La photo est réduite par le navigateur avant l'envoi (1 Mo au maximum) ; une image que le navigateur ne sait pas lire est refusée.
 2. Une photo importée est **privée** : elle n'apparaît sur aucun écran public tant qu'elle n'est pas approuvée. Cochez « Consentement de diffusion recueilli et photo vérifiée » seulement si l'autorisation de la personne (ou de son représentant légal pour un mineur) est en votre possession, puis « Autoriser la diffusion publique ».
 3. Importer une nouvelle photo remplace la précédente et annule l'approbation : il faut approuver de nouveau.
 4. L'import par archive ZIP n'est pas disponible sur cette version : ajoutez les photos une par une.
@@ -357,7 +358,7 @@ Rôles : secretariat
 
 ### En bref : ce que vous avez à faire
 
-1. Saisissez votre code personnel, touchez « Accéder à la compétition », puis ouvrez **Préparation**, rubrique **Personnes**.
+1. Saisissez votre code personnel, touchez « Accéder à la compétition », puis ouvrez **Préparation**, rubrique **Athlètes**.
 2. Enregistrez chaque athlète et son inscription ; cochez « Confirmer cette nouvelle inscription » seulement après contrôle des documents, de la licence et du paiement (voir « Inscrire les athlètes »).
 3. Importez les photos une par une et touchez « Autoriser la diffusion publique » seulement avec le consentement en main (voir « Photographies »).
 4. Saisissez la taille et le poids dans la rubrique **Mesures**, puis « Confirmer » après contrôle physique (voir « Saisir les mesures »).
@@ -368,13 +369,13 @@ Le secrétariat dispose des onglets Vue d'ensemble, Préparation, Récompenses, 
 
 ### Inscrire les athlètes
 
-1. **Préparation**, rubrique **Personnes** : saisissez identité, date de naissance, sexe, nationalités, pays, club et section, puis « Enregistrer ».
+1. **Préparation**, rubrique **Athlètes** : saisissez identité, date de naissance, sexe, nationalités, pays, club et section, puis « Enregistrer ».
 2. Ajoutez l'inscription dans la catégorie voulue. Cochez « Confirmer cette nouvelle inscription » seulement après contrôle des documents, de la licence et du paiement. Une inscription tardive exige un motif.
 3. Le champ « Rechercher » retrouve une personne déjà saisie.
 
 ### Photographies
 
-1. Sur la fiche de la personne (rubrique **Personnes**) ou de l'officiel (rubrique **Officiels**), bloc « Photographie et droit de diffusion » : choisissez le type (Portrait ou Plein pied), le fichier JPEG, PNG ou WEBP, recadrez si besoin, puis « Importer la photo ». La photo est réduite par le navigateur avant l'envoi (1 Mo au maximum) ; une image que le navigateur ne sait pas lire est refusée.
+1. Sur la fiche de la personne (rubrique **Athlètes**) ou de l'officiel (rubrique **Officiels**), bloc « Photographie et droit de diffusion » : choisissez le type (Portrait ou Plein pied), le fichier JPEG, PNG ou WEBP, recadrez si besoin, puis « Importer la photo ». La photo est réduite par le navigateur avant l'envoi (1 Mo au maximum) ; une image que le navigateur ne sait pas lire est refusée.
 2. Une photo importée est **privée** : elle n'apparaît sur aucun écran public tant qu'elle n'est pas approuvée. Cochez « Consentement de diffusion recueilli et photo vérifiée » seulement si l'autorisation de la personne (ou de son représentant légal pour un mineur) est en votre possession, puis « Autoriser la diffusion publique ».
 3. Importer une nouvelle photo remplace la précédente et annule l'approbation : il faut approuver de nouveau.
 4. L'import par archive ZIP n'est pas disponible sur cette version : ajoutez les photos une par une.
@@ -461,6 +462,7 @@ La commission dispose des onglets Vue d'ensemble, Collectifs, Examens, Documents
 ### Classements collectifs
 
 - Onglet **Collectifs** : classements par club ou par pays calculés par le serveur, et « Départage documenté » pour consigner un départage avec motif (« Signer le départage » est réservé à la direction).
+- Barème du meilleur club (et du meilleur pays en mode international), décision FIBDA du 24/09/2026 : chaque place de finale de catégorie et chaque place de toutes catégories rapporte 15 points (1er), 10 (2e), 5 (3e), 4 (4e), 3 (5e) ou 1 (6e et au-delà) ; chaque inscription compte séparément, et un athlète éliminé avant la finale rapporte 1 point de participation. À égalité de points, le nombre de premières places départage, puis de deuxièmes, et ainsi de suite ; si l'égalité persiste, le critère collectif publié s'applique.
 
 ## Tous les profils
 Rôles : tous

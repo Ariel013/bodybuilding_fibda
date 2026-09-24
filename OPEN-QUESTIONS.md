@@ -149,3 +149,18 @@ P10. **Import XLSX indisponible** (23/09 soir). Audit mesuré : `exceljs` 4.4.0 
    en unitaire ; limites : mise en page PDF sommaire, caractères hors WinAnsi rendus « ? »
    (≤ ≥ → substitués), pas de lecteur PDF sur la machine de développement pour un contrôle
    visuel — à ouvrir dans un lecteur réel avant la compétition.
+
+P11. **Barème collectif : divergence TypeScript / Python** (24/09). Décision PO du 24/09/2026 pour
+   « Meilleur club » et « Meilleur pays » : 15/10/5/4/3 puis 1 point par place, finales de catégorie
+   et overalls par discipline comptés, chaque inscription compte (plus de déduplication par
+   personne), 1 point de participation pour un inscrit confirmé éliminé avant la finale, départage
+   inchangé. Implémentée et testée en unitaire dans `frontend/domain/domain.ts` et
+   `frontend/server/projections.ts` ; `backend/fibda/domain.py` (plan B Python) garde l'ancienne
+   règle 10/6/4/3/2/1 « meilleur rang par personne, sans overall » et n'est PAS modifié : en cas de
+   bascule sur le plan B, les classements collectifs différeraient. Points non tranchés par le PO,
+   choix provisoires à confirmer : (a) l'overall final toutes disciplines (`grand_final`, décision du
+   23/09) n'est **pas** compté ; (b) une inscription confirmée dans une catégorie dont aucun tour n'est
+   encore validé ne rapporte rien tant que la catégorie n'est pas engagée (le point de participation
+   apparaît dès le premier tour validé, de manière provisoire jusqu'à la finale) ; (c) un athlète
+   absent (forfait) d'une catégorie engagée compte comme participant à 1 point.
+

@@ -28,8 +28,8 @@ Carte des documents :
   exigé, chef créé, connexion, état, écran public, en-têtes de sécurité, contrôle d'origine.
   Démonstration séparée : https://fibda-bodybuilding-demo.vercel.app (base `fibda-demo`,
   24 athlètes fictifs, 9 comptes). **Aucun test sur téléphone réel encore.** Secrets hors dépôt : `~/fibda-secrets-2026-09-23.txt`.
-- **Code** : `main` poussé sur `origin` (voir `git log`). `npm run check` = 107 tests verts
-  (20 interface dont 6 sur le manuel, 15 moteur, 72 serveur). Déploiement : toujours
+- **Code** : `main` poussé sur `origin` (voir `git log`). `npm run check` = 114 tests verts
+  (20 interface dont 6 sur le manuel, 15 moteur, 79 serveur). Déploiement : toujours
   `vercel build` puis `vercel deploy --prebuilt` (`docs/DEPLOIEMENT-VERCEL.md` §2).
 - **Livré le 23/09 au soir** : impressions HTML (bulletin vierge = plan papier), export CSV,
   import CSV, mode d'emploi par profil dans l'onglet « Aide » (source
@@ -38,8 +38,12 @@ Carte des documents :
 - **Décisions du PO** : overall **par discipline et par sexe** (24/09, définitif : 3 dames,
   4 hommes ; la finale toutes disciplines du 23/09 est retirée de l'interface), codes admin
   8 caractères, 4G prévu, Railway en suspens.
+- **XLSX et PDF (24/09, 5 h)** : export XLSX/PDF et import XLSX écrits sans dépendance (audit :
+  pdf-lib sans publication depuis 2022, SheetJS via miroir tiers) ; relecture sécurité : un
+  bloquant (regex quadratiques, 73 à 190 s sur 2 Mo malformés) corrigé par un scanner
+  linéaire, test chronométré. Fichiers relus par pypdf et openpyxl, vérifiés sur la démo.
 - **Photos** portées le 24/09 (Turso, réduction navigateur, relues : conforme), envoi réel
-  vérifié sur la démo. **Hors périmètre** : import ZIP de photos, XLSX/PDF, WebSocket.
+  vérifié sur la démo. **Hors périmètre** : import ZIP de photos, WebSocket, plan B Railway.
 - **Retour du PO en production (24/09)** : « Erreur serveur » sur la composition du jury →
   les erreurs du moteur (DomainError) et de la préparation (PyValueError) n'étaient pas rendues
   en 422 ; corrigé, testé, déployé. Le PO a un chef et un juge ; il en faut 5 officiels.

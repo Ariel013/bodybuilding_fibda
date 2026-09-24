@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { createApp } from "./app";
 import { Store } from "./store";
-import { documentSections, renderPrint, exportDocument, escapeHtml, fiches, FICHE_COLUMNS, TITLES } from "./printing";
+import { documentSections, renderPrint, exportDocument, escapeHtml, fiches, parseBlank, FICHE_COLUMNS, BLANK_LINE, JUDGES_PART, TITLES } from "./printing";
 import { xlsxRead } from "./xlsx";
 import { extractText, buildPdf, Page, wrap, encodeText, textWidth } from "./pdf";
 
@@ -376,13 +376,14 @@ test("officiels imprimables par la préparation, récapitulatif et examens filtr
   }
 });
 
-// Deux athlètes, dont un mineur avec dérogation et photo, pour la fiche d'inscription.
+// Deux athlètes pour la fiche d'inscription : l'une complète (avec téléphone et balisage à
+// échapper), l'autre sans téléphone ni club.
 function ficheState(): any {
   const event = state();
   event.date = "2026-09-26";
   event.location = "Palais des sports";
-  Object.assign(event.people[0], { first_name: "Awa", last_name: "KONÉ", birth_date: "1995-06-15", sex: "F", nationalities: ["CI", "FR"], country: "CI", club: "Club <b>Abidjan</b>", section: "amateur", status_approved: true, licence_ok: true, payment_ok: false, height_cm: "165", weight_kg: "58.0", measurements_confirmed: true, photo_portrait: "ph1" });
-  event.people.push({ id: "q", first_name: "Bakary", last_name: "TRAORÉ", birth_date: "2010-01-02", sex: "M", nationalities: ["CI"], country: "CI", club: "Club Bouaké", section: "amateur", status_approved: false, licence_ok: false, payment_ok: true, minor_authorization: true, height_cm: "170", weight_kg: "70.0", measurements_confirmed: false });
+  Object.assign(event.people[0], { first_name: "Awa", last_name: "KONÉ", birth_date: "1995-06-15", sex: "F", nationalities: ["CI", "FR"], country: "CI", club: "Club <b>Abidjan</b>", private_contact: "+225 07 00 00 00 <script>", height_cm: "165", weight_kg: "58.0", measurements_confirmed: true, photo_portrait: "ph1", status_approved: true });
+  event.people.push({ id: "q", first_name: "Bakary", last_name: "TRAORÉ", birth_date: "2010-01-02", sex: "M", nationalities: ["CI"], country: "CI", height_cm: "170", weight_kg: "", measurements_confirmed: false });
   event.categories.push({ id: "c2", name: "Junior", order: 1 });
   event.categories[0].order = 0;
   event.entries.push({ id: "e2", person_id: "q", category_id: "c2", bib: 12, confirmed: true, derogation: { reason: "Mesures à confirmer sur place", signed_by: "chief-1", issues: [] } });
@@ -390,74 +391,106 @@ function ficheState(): any {
   return event;
 }
 
-test("fiche d'inscription : champs dans l'ordre, cases de contrôle, dérogation, une page par athlète, filtre person_id", () => {
+test("fiche d'inscription : partie athlète puis partie juges, 9 champs, lignes à compléter, une page par athlète, filtres", () => {
   const event = ficheState();
   const all = fiches(event);
   assert.deepEqual(all.map((f) => f.person_id), ["p", "q"], "ordre des catégories puis des dossards");
-  assert.equal(all[0].title, "Fiche d'inscription - KONÉ Awa - dossard 7");
-  assert.deepEqual(all[0].identity.map(([k]) => k), ["Nom", "Prénom", "Date de naissance", "Âge (année de l'événement)", "Sexe", "Nationalités", "Pays", "Club", "Section"]);
-  assert.deepEqual(all[0].identity.map(([, v]) => v), ["KONÉ", "Awa", "1995-06-15", "31", "Féminin", "CI, FR", "CI", "Club <b>Abidjan</b>", "Amateur"]);
-  assert.deepEqual(all[0].entries, [["Senior", "7"]]);
-  assert.deepEqual(all[0].measures, [["Taille cm", "165"], ["Poids kg", "58.0"], ["Mesures confirmées", "Oui"]]);
-  // Majeure en mode national : autorisation, délégation, organisateur sans objet.
-  assert.deepEqual(all[0].checks.map((c) => c.value), [true, true, false, null, null, null]);
-  assert.equal(all[0].derogation, "");
-  assert.equal(all[0].photo_id, "ph1");
-  // Mineur : autorisation du représentant légal contrôlée ; dérogation signée par le chef.
-  assert.equal(all[1].identity[3][1], "16");
-  assert.deepEqual(all[1].checks.slice(0, 4).map((c) => c.value), [false, false, true, true]);
-  assert.equal(all[1].derogation, "Junior : Mesures à confirmer sur place (signée par Chef Test)");
-  assert.equal(all[1].measures[2][1], "À contrôler");
-  // Une date de naissance absente ne donne aucun âge.
-  delete event.people[1].birth_date;
-  assert.equal(fiches(event)[1].identity[3][1], "");
-  assert.equal(fiches(event)[1].checks[3].value, null);
+  assert.equal(all[0].title, "Fiche d'inscription - KONÉ Awa");
+  // Partie athlète : six champs, dans l'ordre du modèle du PO ; le téléphone est le contact privé.
+  assert.deepEqual(all[0].athlete.map(([k]) => k), ["Nom", "Prénoms", "Date de naissance", "Téléphone", "Club", "Nationalité"]);
+  assert.deepEqual(all[0].athlete.map(([, v]) => v), ["KONÉ", "Awa", "1995-06-15", "+225 07 00 00 00 <script>", "Club <b>Abidjan</b>", "CI, FR"]);
+  // Partie juges : trois champs ; la catégorie vient des inscriptions.
+  assert.deepEqual(all[0].judges, [["Taille cm", "165"], ["Poids kg", "58.0"], ["Catégorie", "Senior"]]);
+  assert.equal(FICHE_COLUMNS.length, 9);
+  // Rien d'autre : ni photo, ni contrôles, ni dossard, ni dérogation dans le document.
+  assert.deepEqual(Object.keys(all[0]).sort(), ["athlete", "judges", "person_id", "rows", "title"]);
+  // Valeurs absentes : brutes vides dans la fiche, lignes à compléter dans les rangées imprimées.
+  assert.deepEqual(all[1].athlete.slice(3).map(([, v]) => v), ["", "", "CI"]);
+  assert.equal(all[1].judges[1][1], "");
+  const rows = all[1].rows();
+  assert.deepEqual(rows.map((r) => r[0]), ["Nom", "Prénoms", "Date de naissance", "Téléphone", "Club", "Nationalité", JUDGES_PART, "Taille cm", "Poids kg", "Catégorie"]);
+  assert.equal(rows[3][1], BLANK_LINE);
+  assert.equal(rows[4][1], BLANK_LINE);
+  assert.equal(rows[8][1], BLANK_LINE);
+  assert.equal(rows[0][1], "TRAORÉ");
   // Filtres.
   assert.deepEqual(fiches(event, { person_id: "q" }).map((f) => f.person_id), ["q"]);
   assert.deepEqual(fiches(event, { category_id: "c" }).map((f) => f.person_id), ["p"]);
   assert.deepEqual(fiches(event, { person_id: "inconnu" }), []);
-  // Un athlète sans inscription n'a de fiche que sur demande nominative.
+  // Un athlète sans inscription n'a de fiche que sur demande nominative ; sa catégorie reste à compléter.
   event.people.push({ id: "z", first_name: "Sans", last_name: "INSCRIPTION" });
   assert.equal(fiches(event).length, 2);
-  assert.deepEqual(fiches(event, { person_id: "z" })[0].entries, [["Catégorie", "Aucune inscription"]]);
+  assert.equal(fiches(event, { person_id: "z" })[0].judges[2][1], "");
+  assert.equal(fiches(event, { person_id: "z" })[0].rows()[9][1], BLANK_LINE);
 
-  // HTML : une section par athlète avec saut de page, en-tête, photo par URL, cases, signatures, échappement.
+  // HTML : une section par athlète avec saut de page, en-tête rappelé, partie athlète avant la partie
+  // juges, lignes à compléter, signatures Athlète / Juge / Date, échappement du téléphone et du club.
   const html = renderPrint(event, "fiche");
   assert.ok(html.includes("<title>Fiche d'inscription</title>") || html.includes("<title>Fiche d&#x27;inscription</title>"));
   assert.equal((html.match(/<section class="fiche">/g) ?? []).length, 2);
   assert.ok(html.includes("section{break-before:page}"));
-  assert.ok(html.includes("Palais des sports") && html.includes("2026-09-26"));
-  assert.ok(html.includes('<img class="portrait" src="/api/v1/photos/ph1"'));
-  assert.equal((html.match(/class="portrait"/g) ?? []).length, 1, "pas de photo sans identifiant");
-  assert.ok(html.includes("<th>Nom</th><td>KONÉ</td>") && html.includes("<td>Dossard 7</td>") && html.includes("<th>Senior</th>"));
-  assert.ok(html.includes("<th>Taille cm</th><td>165</td>"));
-  assert.ok(html.includes("&#9745; Statut approuvé") && html.includes("&#9744; Paiement"));
-  assert.ok(html.includes("&#9744; Autorisation du représentant légal (mineur) - sans objet"));
-  assert.ok(html.includes("Mesures à confirmer sur place (signée par Chef Test)"));
-  for (const zone of ["Athlète", "Responsable", "Chef des juges", "Date"]) assert.ok(html.includes("<div>" + zone + "</div>"), zone);
-  assert.ok(!html.includes("<script>") && html.includes("&lt;script&gt;"));
-  assert.ok(!html.includes("<b>Abidjan</b>") && html.includes("Club &lt;b&gt;Abidjan&lt;/b&gt;"));
+  assert.equal((html.match(/fibda-logo\.jpg/g) ?? []).length, 2, "logo sur chaque fiche, pas d'en-tête général");
+  assert.equal((html.match(/Palais des sports/g) ?? []).length, 2);
+  assert.ok(html.includes("2026-09-26"));
+  assert.ok(html.indexOf("Partie athlète") < html.indexOf(JUDGES_PART), "athlète en haut, juges en bas");
+  assert.ok(html.includes('<div class="juges">'));
+  assert.ok(html.includes("<th>Nom</th><td>KONÉ</td>") && html.includes("<th>Prénoms</th><td>Awa</td>") && html.includes("<th>Nationalité</th><td>CI, FR</td>"));
+  assert.ok(html.includes("<th>Taille cm</th><td>165</td>") && html.includes("<th>Catégorie</th><td>Senior</td>"));
+  assert.ok(html.includes("<th>Téléphone</th><td>+225 07 00 00 00 &lt;script&gt;</td>"));
+  assert.ok(html.includes("<th>Téléphone</th><td>" + BLANK_LINE + "</td>") && html.includes("<th>Poids kg</th><td>" + BLANK_LINE + "</td>"));
+  for (const zone of ["Athlète", "Juge", "Date"]) assert.ok(html.includes("<div>" + zone + "</div>"), zone);
+  for (const absent of ["Responsable", "Chef des juges", "portrait", "/api/v1/photos/", "Dossard", "Statut approuvé", "Dérogation", "Sexe", "Pays", "Section"]) assert.ok(!html.includes(absent), absent);
+  assert.ok(!html.includes("<script>") && !html.includes("<b>Abidjan</b>") && html.includes("Club &lt;b&gt;Abidjan&lt;/b&gt;"));
   assert.ok(renderPrint(event, "fiche", { person_id: "inconnu" }).includes("Aucune donnée correspondant à cette sélection."));
   assert.ok(!renderPrint(event, "fiche", { person_id: "q" }).includes("KONÉ"));
 
-  // csv et xlsx : une ligne par athlète, toutes les colonnes.
+  // csv et xlsx : une ligne par athlète, neuf colonnes, valeurs brutes (vide reste vide). Un numéro
+  // commençant par « + » est neutralisé comme toute formule tableur (apostrophe de tête, safeCell).
   const csv = decode(exportDocument(event, "fiche", "csv").data.slice(3)).split("\r\n");
   assert.equal(csv[0], "Fiches d'inscription");
-  assert.equal(csv[1], FICHE_COLUMNS.join(","));
-  assert.equal(csv[2], 'KONÉ,Awa,1995-06-15,31,Féminin,"CI, FR",CI,Club <b>Abidjan</b>,Amateur,Senior,7,165,58.0,Oui,Oui,Oui,Non,Sans objet,Sans objet,Sans objet,');
+  assert.equal(csv[1], "Nom,Prénoms,Date de naissance,Téléphone,Club,Nationalité,Taille cm,Poids kg,Catégorie");
+  assert.equal(csv[2], "KONÉ,Awa,1995-06-15,'+225 07 00 00 00 <script>,Club <b>Abidjan</b>,\"CI, FR\",165,58.0,Senior");
+  assert.equal(csv[3], "TRAORÉ,Bakary,2010-01-02,,,CI,170,,Junior");
   assert.equal(csv.filter(Boolean).length, 4);
   const sheet = xlsxRead(exportDocument(event, "fiche", "xlsx").data);
   assert.deepEqual(sheet[1], FICHE_COLUMNS);
-  assert.equal(sheet[3][1], "Bakary");
-  assert.equal(sheet[3][20], "Junior : Mesures à confirmer sur place (signée par Chef Test)");
+  assert.equal(sheet[2][3], "'+225 07 00 00 00 <script>");
+  assert.deepEqual(sheet[3], ["TRAORÉ", "Bakary", "2010-01-02", null, null, "CI", "170", null, "Junior"]);
 
-  // pdf : une page par athlète, sans photo, texte relisible.
+  // pdf : une page par athlète, deux parties, lignes à compléter, texte relisible.
   const pdf = exportDocument(event, "fiche", "pdf").data;
   assert.equal(checkPdf(pdf).pages, 2);
   const text = extractText(pdf).replace(/\n/g, " ");
-  assert.ok(text.includes("KONÉ Awa - dossard 7") && text.includes("Senior - dossard 7") && text.includes("Chef Test") && text.includes("Paiement"), text);
-  assert.ok(text.includes("[X]") && text.includes("[ ]"));
+  assert.ok(text.includes("KONÉ Awa") && text.includes("Téléphone") && text.includes(JUDGES_PART) && text.includes(BLANK_LINE), text);
+  assert.ok(text.indexOf("Nationalité") < text.indexOf(JUDGES_PART) && text.indexOf(JUDGES_PART) < text.indexOf("Taille cm"));
+  assert.ok(!text.includes("Statut approuvé") && !text.includes("Dérogation"));
   assert.equal(TITLES.programme, "Ordre de passage");
+});
+
+test("fiche d'inscription vierge : blank=3 donne trois fiches sans aucune donnée, bornes du paramètre", () => {
+  const event = ficheState();
+  const blanks = fiches(event, { blank: 3, person_id: "p" });
+  assert.equal(blanks.length, 3);
+  assert.ok(blanks.every((f) => f.person_id === null && f.title === "Fiche d'inscription"));
+  assert.ok(blanks.every((f) => [...f.athlete, ...f.judges].every(([, v]) => v === "")));
+  assert.deepEqual(blanks[0].rows().map((r) => r[1]), [...Array(6).fill(BLANK_LINE), "", ...Array(3).fill(BLANK_LINE)]);
+  // Sections et HTML : trois pages vierges, aucune donnée de l'événement (hors en-tête).
+  assert.equal(documentSections(event, "fiche", { blank: 3 }).length, 3);
+  const html = renderPrint(event, "fiche", { blank: 3 });
+  assert.equal((html.match(/<section class="fiche">/g) ?? []).length, 3);
+  assert.equal((html.match(new RegExp(BLANK_LINE, "g")) ?? []).length, 27, "9 lignes à compléter par fiche");
+  for (const absent of ["KONÉ", "TRAORÉ", "Senior", "+225"]) assert.ok(!html.includes(absent), absent);
+  assert.ok(html.includes("Palais des sports"));
+  // csv : trois lignes vides sous les en-têtes ; pdf : trois pages.
+  const csv = decode(exportDocument(event, "fiche", "csv", { blank: 3 }).data.slice(3)).split("\r\n");
+  assert.deepEqual(csv.slice(2, 5), [",,,,,,,,", ",,,,,,,,", ",,,,,,,,"]);
+  assert.equal(checkPdf(exportDocument(event, "fiche", "pdf", { blank: 3 }).data).pages, 3);
+  // Paramètre : absent → null ; entier de 1 à 50 ; sinon refus.
+  assert.equal(parseBlank(undefined), null);
+  assert.equal(parseBlank(""), null);
+  assert.equal(parseBlank("1"), 1);
+  assert.equal(parseBlank("50"), 50);
+  for (const bad of ["0", "51", "-1", "abc", "1.5", "3e1"]) assert.throws(() => parseBlank(bad), /entier de 1 à 50/, bad);
 });
 
 test("parcours : fiches réservées à la préparation, ordre de passage avec les dossards", async () => {
@@ -476,10 +509,16 @@ test("parcours : fiches réservées à la préparation, ordre de passage avec le
   const one = entries[0];
   html = await (await app.request("/api/v1/print/fiche?person_id=" + one.person_id, { headers: { cookie: chief } })).text();
   assert.equal((html.match(/<section class="fiche">/g) ?? []).length, 1);
-  assert.ok(html.includes(escapeHtml(people[one.person_id].first_name)) && html.includes("<td>Dossard " + one.bib + "</td>"));
+  assert.ok(html.includes(escapeHtml(people[one.person_id].first_name)) && !html.includes("Dossard"));
   html = await (await app.request("/api/v1/print/fiche?category_id=" + category.id, { headers: { cookie: chief } })).text();
   assert.equal((html.match(/<section class="fiche">/g) ?? []).length, entries.length);
-  // Le secrétariat y a accès ; un juge et la régie non, quel que soit le format.
+  // Fiches vierges : dix pages sans nom ; paramètre hors bornes refusé (422), sans données.
+  html = await (await app.request("/api/v1/print/fiche?blank=10", { headers: { cookie: chief } })).text();
+  assert.equal((html.match(/<section class="fiche">/g) ?? []).length, 10);
+  for (const p of state.people) assert.ok(!html.includes(escapeHtml(p.last_name)));
+  assert.equal((await app.request("/api/v1/print/fiche?blank=51", { headers: { cookie: chief } })).status, 422);
+  assert.equal((await app.request("/api/v1/print/fiche?blank=x", { headers: { cookie: chief } })).status, 422);
+  // Le secrétariat y a accès ; un juge et la régie non, quel que soit le format, vierges comprises.
   const login = async (role: string) => cookieOf(await app.request("/api/v1/auth/login", json({ code: Object.values(codes).find((a: any) => a.roles.includes(role))!.code })));
   const secretariat = await login("secretariat");
   assert.equal((await app.request("/api/v1/print/fiche", { headers: { cookie: secretariat } })).status, 200);
@@ -487,6 +526,7 @@ test("parcours : fiches réservées à la préparation, ordre de passage avec le
   const judge = Object.values(clients)[0];
   for (const cookie of [judge, regie]) {
     assert.equal((await app.request("/api/v1/print/fiche", { headers: { cookie } })).status, 403);
+    assert.equal((await app.request("/api/v1/print/fiche?blank=1", { headers: { cookie } })).status, 403);
     for (const format of ["csv", "xlsx", "pdf"]) assert.equal((await app.request("/api/v1/export/fiche?format=" + format, { headers: { cookie } })).status, 403);
   }
   // La régie garde l'ordre de passage.
@@ -498,7 +538,7 @@ test("parcours : fiches réservées à la préparation, ordre de passage avec le
   const pdf = new Uint8Array(await r.arrayBuffer());
   assert.equal(checkPdf(pdf).pages, entries.length);
   const text = extractText(pdf).replace(/\n/g, " ");
-  assert.ok(text.includes(people[one.person_id].first_name) && text.includes("Statut approuvé"));
+  assert.ok(text.includes(people[one.person_id].first_name) && text.includes("Partie réservée aux juges"));
 
   // Ordre de passage : chaque catégorie avec ses tours, puis ses dossards et noms.
   r = await app.request("/api/v1/print/programme", { headers: { cookie: chief } });

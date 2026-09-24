@@ -25,7 +25,7 @@ export const TITLES: Record<string, string> = {
   fiche: "Fiche d'inscription",
 };
 
-export type Filters = { category_id?: string | null; round_id?: string | null; judge_id?: string | null; person_id?: string | null };
+export type Filters = { category_id?: string | null; round_id?: string | null; judge_id?: string | null; person_id?: string | null; blank?: number | null };
 type Cell = string | number | null | undefined;
 // Une section = (titre, en-têtes, lignes), comme le tuple Python.
 export type Section = [string, string[], Cell[][]];
@@ -52,43 +52,61 @@ export function escapeHtml(value: unknown): string {
 }
 
 // --- Fiche d'inscription --------------------------------------------------------------------
-// Une fiche par athlète : identité, catégories et dossards, mesures, contrôles administratifs,
-// dérogation, signatures. Aucune valeur n'est déduite : un champ absent reste vide.
+// Modèle du PO (24/09/2026) : deux parties. En haut, la partie remplie par l'athlète (nom, prénoms,
+// date de naissance, téléphone, club, nationalité) ; en bas, la partie réservée aux juges (taille,
+// poids, catégorie). Le document sert aussi à la main : une valeur absente est rendue par une ligne
+// à compléter, et `blank` produit des fiches vierges. Aucune valeur n'est déduite.
 
-export type FicheCheck = { label: string; value: boolean | null }; // null = sans objet
+export const BLANK_LINE = "______________";
+export const JUDGES_PART = "Partie réservée aux juges";
+export const BLANK_MAX = 50;
 export type Fiche = {
-  person_id: string;
+  person_id: string | null; // null : fiche vierge
   title: string;
-  photo_id: string | null;
-  identity: [string, string][];
-  entries: [string, string][]; // une ligne par inscription : catégorie → dossard
-  measures: [string, string][];
-  checks: FicheCheck[];
-  derogation: string; // vide si aucune
-  rows: () => Cell[][]; // aplati en « Rubrique / Valeur » pour le PDF et les sections
+  athlete: [string, string][]; // partie athlète, valeurs brutes (vide si absente)
+  judges: [string, string][]; // partie juges, valeurs brutes
+  rows: () => Cell[][]; // aplati en « Rubrique / Valeur » pour le PDF et les sections, lignes à compléter
 };
 
-const yesNo = (v: unknown): string => (v ? "Oui" : "Non");
-const SEX: Record<string, string> = { M: "Masculin", F: "Féminin" };
-const SECTION: Record<string, string> = { amateur: "Amateur", pro: "Pro" };
-const year = (iso: unknown): number | null => {
-  const m = /^(\d{4})-\d{2}-\d{2}/.exec(text(iso));
-  return m ? Number(m[1]) : null;
-};
+// Les colonnes de l'export tabulaire (csv, xlsx) : une ligne par athlète, valeurs brutes.
+export const ATHLETE_FIELDS = ["Nom", "Prénoms", "Date de naissance", "Téléphone", "Club", "Nationalité"];
+export const JUDGES_FIELDS = ["Taille cm", "Poids kg", "Catégorie"];
+export const FICHE_COLUMNS = [...ATHLETE_FIELDS, ...JUDGES_FIELDS];
 
-// Âge à l'année de l'événement, même calcul que l'admission (preparation.ts : différence des années).
-export function ageAtEvent(state: any, person: any): number | null {
-  const y = year(state.date);
-  const b = year(person.birth_date);
-  return y !== null && b !== null ? y - b : null;
+// Une valeur absente devient une ligne à compléter à la main (document imprimé seulement).
+export const fill = (value: string): string => (value.trim() ? value : BLANK_LINE);
+
+// `blank` : nombre de fiches vierges demandé (entier de 1 à 50) ; absent → null ; sinon refus.
+export function parseBlank(raw: string | null | undefined): number | null {
+  if (raw === null || raw === undefined || raw === "") return null;
+  if (!/^\d+$/.test(raw)) throw new Problem(`Paramètre blank attendu : entier de 1 à ${BLANK_MAX}.`);
+  const n = Number(raw);
+  if (n < 1 || n > BLANK_MAX) throw new Problem(`Paramètre blank attendu : entier de 1 à ${BLANK_MAX}.`);
+  return n;
 }
 
-// Les colonnes de l'export tabulaire (csv, xlsx) : une ligne par athlète.
-export const FICHE_COLUMNS = ["Nom", "Prénom", "Date de naissance", "Âge", "Sexe", "Nationalités", "Pays", "Club", "Section", "Catégories", "Dossards", "Taille cm", "Poids kg", "Mesures confirmées", "Statut approuvé", "Licence", "Paiement", "Autorisation représentant légal", "Délégation", "Organisateur", "Dérogation"];
+function makeFiche(personId: string | null, name: string, athlete: [string, string][], judges: [string, string][]): Fiche {
+  const fiche: Fiche = {
+    person_id: personId,
+    title: TITLES.fiche + (name ? " - " + name : ""),
+    athlete,
+    judges,
+    rows: () => [
+      ...fiche.athlete.map(([k, v]): Cell[] => [k, fill(v)]),
+      [JUDGES_PART, ""],
+      ...fiche.judges.map(([k, v]): Cell[] => [k, fill(v)]),
+    ],
+  };
+  return fiche;
+}
 
 // Athlètes concernés, dans l'ordre des catégories puis des dossards ; `person_id` isole un athlète
-// (même sans inscription), `category_id` toutes les fiches d'une catégorie.
+// (même sans inscription), `category_id` toutes les fiches d'une catégorie ; `blank` remplace le
+// tout par des fiches vierges.
 export function fiches(state: any, filters: Filters = {}): Fiche[] {
+  if (filters.blank) {
+    return Array.from({ length: filters.blank }, () => makeFiche(null, "", ATHLETE_FIELDS.map((k) => [k, ""]), JUDGES_FIELDS.map((k) => [k, ""])));
+  }
   const personId = filters.person_id || null;
   const categoryId = filters.category_id || null;
   const people: any[] = state.people ?? [];
@@ -96,8 +114,6 @@ export function fiches(state: any, filters: Filters = {}): Fiche[] {
   const categories: any[] = [...(state.categories ?? [])].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
   const catIndex = new Map(categories.map((c, i) => [c.id, i]));
   const catName = (id: string): string => categories.find((c) => c.id === id)?.name ?? text(id);
-  const users: Record<string, string> = Object.fromEntries((state.users ?? []).map((u: any) => [u.id, u.name ?? u.id]));
-  const international = state.mode === "international";
 
   const ordered: string[] = [];
   const seen = new Set<string>();
@@ -110,68 +126,29 @@ export function fiches(state: any, filters: Filters = {}): Fiche[] {
   return ordered.map((pid) => {
     const person = people.find((p) => p.id === pid) ?? {};
     const own = entries.filter((e) => e.person_id === pid).sort((a, b) => (catIndex.get(a.category_id) ?? 1e9) - (catIndex.get(b.category_id) ?? 1e9));
-    const age = ageAtEvent(state, person);
-    const minor = age !== null && age < 18;
     const name = ((person.last_name ?? "") + " " + (person.first_name ?? "")).trim();
-    const bibs = own.map((e) => text(e.bib)).filter(Boolean);
-    const derogations = own
-      .filter((e) => e.derogation && typeof e.derogation === "object" && text(e.derogation.reason).trim())
-      .map((e) => `${catName(e.category_id)} : ${text(e.derogation.reason).trim()}` + (e.derogation.signed_by ? ` (signée par ${users[e.derogation.signed_by] ?? e.derogation.signed_by})` : ""));
-    const fiche: Fiche = {
-      person_id: pid,
-      title: `${TITLES.fiche} - ${name}` + (bibs.length ? ` - dossard ${bibs.join(", ")}` : ""),
-      photo_id: person.photo_portrait || null,
-      identity: [
+    return makeFiche(
+      pid,
+      name,
+      [
         ["Nom", text(person.last_name)],
-        ["Prénom", text(person.first_name)],
+        ["Prénoms", text(person.first_name)],
         ["Date de naissance", text(person.birth_date)],
-        ["Âge (année de l'événement)", age === null ? "" : String(age)],
-        ["Sexe", SEX[person.sex] ?? text(person.sex)],
-        ["Nationalités", Array.isArray(person.nationalities) ? person.nationalities.map(text).join(", ") : text(person.nationalities)],
-        ["Pays", text(person.country)],
+        ["Téléphone", text(person.private_contact)],
         ["Club", text(person.club)],
-        ["Section", SECTION[person.section] ?? text(person.section)],
+        ["Nationalité", Array.isArray(person.nationalities) ? person.nationalities.map(text).join(", ") : text(person.nationalities)],
       ],
-      entries: own.length ? own.map((e) => [catName(e.category_id), text(e.bib)]) : [["Catégorie", "Aucune inscription"]],
-      measures: [
+      [
         ["Taille cm", text(person.height_cm)],
         ["Poids kg", text(person.weight_kg)],
-        ["Mesures confirmées", person.measurements_confirmed ? "Oui" : "À contrôler"],
+        ["Catégorie", own.map((e) => catName(e.category_id)).join(" ; ")],
       ],
-      checks: [
-        { label: "Statut approuvé", value: Boolean(person.status_approved) },
-        { label: "Licence", value: Boolean(person.licence_ok) },
-        { label: "Paiement", value: Boolean(person.payment_ok) },
-        { label: "Autorisation du représentant légal (mineur)", value: minor ? Boolean(person.minor_authorization) : null },
-        { label: "Délégation", value: international ? Boolean(person.delegation_approved) : null },
-        { label: "Organisateur", value: international ? Boolean(person.organizer_approved) : null },
-      ],
-      derogation: derogations.join(" ; "),
-      rows: () => [
-        ...fiche.identity,
-        ...fiche.entries.map(([c, b]): Cell[] => ["Catégorie - dossard", c + (b ? " - dossard " + b : "")]),
-        ...fiche.measures,
-        ...fiche.checks.map((c): Cell[] => [c.label, c.value === null ? "Sans objet" : c.value ? "[X]" : "[ ]"]),
-        ["Dérogation", fiche.derogation || "Aucune"],
-      ],
-    };
-    return fiche;
+    );
   });
 }
 
-// Une ligne par athlète pour csv et xlsx, colonnes FICHE_COLUMNS.
-function ficheTableRow(fiche: Fiche, state: any): Cell[] {
-  const own: any[] = (state.entries ?? []).filter((e: any) => e.person_id === fiche.person_id);
-  const check = (i: number): string => (fiche.checks[i].value === null ? "Sans objet" : yesNo(fiche.checks[i].value));
-  return [
-    ...fiche.identity.map(([, v]) => v),
-    own.length ? fiche.entries.map(([c]) => c).join(" ; ") : "",
-    own.map((e) => text(e.bib)).filter(Boolean).join(" ; "),
-    ...fiche.measures.map(([, v]) => v),
-    ...fiche.checks.map((_, i) => check(i)),
-    fiche.derogation,
-  ];
-}
+// Une ligne par athlète pour csv et xlsx, colonnes FICHE_COLUMNS, valeurs brutes (vide si absente).
+const ficheTableRow = (fiche: Fiche): Cell[] => [...fiche.athlete.map(([, v]) => v), ...fiche.judges.map(([, v]) => v)];
 
 // `document_sections` (printing.py:11-116) : même découpage, mêmes libellés.
 export function documentSections(state: any, kind: string, filters: Filters = {}): Section[] {
@@ -364,25 +341,24 @@ export function renderPrint(state: any, kind: string, filters: Filters = {}): st
   const parts: string[] = [
     '<!doctype html><html lang="fr"><meta charset="utf-8"><title>' + esc(TITLES[kind]) + "</title>" +
       "<style>body{font:12pt Arial;color:#142e28;margin:24px}img{height:60px}table{width:100%;border-collapse:collapse}th,td{border:1px solid #879e96;padding:7px;text-align:left}thead{display:table-header-group}tr{break-inside:avoid}section{break-before:page}section:first-of-type{break-before:auto}footer{margin-top:20px;font-size:10pt}@media print{button{display:none}@page{size:A4;margin:15mm}}</style>" +
-      '<button onclick="window.print()">Imprimer</button><header><img src="/assets/fibda-logo.jpg" alt="FIBDA"><h1>' + esc(TITLES[kind]) + "</h1><p>" +
-      esc(state.name ?? "") + " - " + esc(state.date ?? "") + " - version événement " + version + "</p></header>",
+      '<button onclick="window.print()">Imprimer</button>' +
+      // La fiche d'inscription rappelle son propre en-tête sur chaque page ; les autres documents
+      // portent un en-tête général unique.
+      (kind === "fiche" ? "" : '<header><img src="/assets/fibda-logo.jpg" alt="FIBDA"><h1>' + esc(TITLES[kind]) + "</h1><p>" + esc(state.name ?? "") + " - " + esc(state.date ?? "") + " - version événement " + version + "</p></header>"),
   ];
   if (kind === "diploma") parts.push("<style>@page{size:A4 landscape}.diploma{text-align:center;padding:18mm 12mm}.diploma h2{font-size:32pt}.diploma p{font-size:20pt}</style>");
   if (kind === "fiche") {
-    // Une page par athlète : en-tête d'événement rappelé, photo portrait servie par URL (session de
-    // préparation exigée par la route photo), rubriques, cases à cocher, dérogation, signatures.
-    parts.push("<style>.fiche{position:relative}.fiche h2{margin:0 0 6px}.fiche .portrait{position:absolute;top:0;right:0;width:35mm;height:45mm;object-fit:cover;border:1px solid #879e96}.fiche h3{margin:14px 0 4px;font-size:12pt;border-bottom:1px solid #879e96}.fiche table{width:auto;min-width:60%}.fiche th{width:45%}.fiche .checks p{margin:4px 0}.fiche .signatures{display:flex;gap:16px;margin-top:28px}.fiche .signatures div{flex:1;border:1px solid #879e96;height:32mm;padding:6px}</style>");
+    // Une page par fiche, en-tête rappelé sur chacune (logo, titre, événement, date, lieu) : le
+    // document sert aussi à la main, d'où les lignes à compléter, les cases hautes de la partie
+    // juges et les fiches vierges. Ni photo, ni contrôles, ni dossard ici (voir Inscriptions, Mesures).
+    parts.push("<style>.fiche header{display:flex;align-items:center;gap:16px;margin-bottom:12px}.fiche h2{margin:0}.fiche h3{margin:18px 0 6px;font-size:12pt}.fiche table{width:100%}.fiche th{width:40%}.fiche .athlete td{height:9mm}.fiche .juges{border-top:2px solid #142e28;margin-top:22px;padding-top:6px}.fiche .juges td{height:14mm}.fiche .signatures{display:flex;gap:16px;margin-top:28px}.fiche .signatures div{flex:1;border:1px solid #879e96;height:32mm;padding:6px}</style>");
     const meta = esc(state.name ?? "") + " - " + esc(state.date ?? "") + (state.location ? " - " + esc(state.location) : "");
-    const kv = (rows: [string, string][]): string => "<table>" + rows.map(([k, v]) => "<tr><th>" + esc(k) + "</th><td>" + esc(v) + "</td></tr>").join("") + "</table>";
+    const kv = (rows: [string, string][], cls: string): string => '<table class="' + cls + '">' + rows.map(([k, v]) => "<tr><th>" + esc(k) + "</th><td>" + esc(fill(v)) + "</td></tr>").join("") + "</table>";
     for (const fiche of fiches(state, filters)) {
-      parts.push('<section class="fiche"><h2>' + esc(fiche.title) + "</h2><p>" + meta + "</p>");
-      if (fiche.photo_id) parts.push('<img class="portrait" src="/api/v1/photos/' + esc(fiche.photo_id) + '" alt="Portrait">');
-      parts.push("<h3>Identité</h3>" + kv(fiche.identity));
-      parts.push("<h3>Catégories et dossards</h3>" + kv(fiche.entries.map(([c, b]) => [c, b ? "Dossard " + b : ""])));
-      parts.push("<h3>Mesures</h3>" + kv(fiche.measures));
-      parts.push('<h3>Contrôles administratifs</h3><div class="checks">' + fiche.checks.map((c) => "<p>" + (c.value === null ? "&#9744; " + esc(c.label) + " - sans objet" : (c.value ? "&#9745; " : "&#9744; ") + esc(c.label)) + "</p>").join("") + "</div>");
-      parts.push("<h3>Dérogation</h3><p>" + (fiche.derogation ? esc(fiche.derogation) : "Aucune") + "</p>");
-      parts.push('<div class="signatures"><div>Athlète</div><div>Responsable</div><div>Chef des juges</div><div>Date</div></div>');
+      parts.push('<section class="fiche"><header><img src="/assets/fibda-logo.jpg" alt="FIBDA"><div><h2>' + esc(TITLES.fiche) + "</h2><p>" + meta + "</p></div></header>");
+      parts.push("<h3>Partie athlète</h3>" + kv(fiche.athlete, "athlete"));
+      parts.push('<div class="juges"><h3>' + JUDGES_PART + "</h3>" + kv(fiche.judges, "juges") + "</div>");
+      parts.push('<div class="signatures"><div>Athlète</div><div>Juge</div><div>Date</div></div>');
       parts.push("<footer>Version événement " + version + "</footer></section>");
     }
     if (!sections.length) parts.push("<p>Aucune donnée correspondant à cette sélection.</p>");
@@ -428,7 +404,7 @@ export function exportDocument(state: any, kind: string, format: string, filters
   let sections = documentSections(state, kind, filters);
   // Fiches en tableur : une seule table, une ligne par athlète avec toutes les colonnes.
   if (kind === "fiche" && (format === "csv" || format === "xlsx")) {
-    sections = [["Fiches d'inscription", FICHE_COLUMNS, fiches(state, filters).map((f) => ficheTableRow(f, state))]];
+    sections = [["Fiches d'inscription", FICHE_COLUMNS, fiches(state, filters).map(ficheTableRow)]];
   }
   if (format === "csv") {
     let out = "";

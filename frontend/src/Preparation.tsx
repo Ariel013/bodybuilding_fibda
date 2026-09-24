@@ -415,7 +415,7 @@ function People({ s, command, refresh }: Props) {
                 ["birth_date", "Date de naissance"],
                 ["club", "Club"],
                 ["country", "Pays représenté"],
-                ["private_contact", "Contact privé"],
+                ["private_contact", "Téléphone (WhatsApp de préférence)"],
                 ["pronunciation", "Prononciation speaker"],
               ].map(([k, label]) => (
                 <Field label={label} key={k}>
@@ -425,7 +425,8 @@ function People({ s, command, refresh }: Props) {
                       "last_name",
                       "birth_date",
                     ].includes(k)}
-                    type={k === "birth_date" ? "date" : "text"}
+                    type={k === "birth_date" ? "date" : k === "private_contact" ? "tel" : "text"}
+                    autoComplete={k === "private_contact" ? "tel" : undefined}
                     value={person[k] || ""}
                     onChange={(e) => update(k, e.target.value)}
                   />
@@ -1779,6 +1780,18 @@ export function Documents({ s, refresh }: Props) {
                 <small>Ouvrir la version imprimable</small>
               </a>
             ))}
+          {!personalOnly && (
+            <a
+              className="document-link"
+              href="/api/v1/print/fiche?blank=10"
+              target="_blank"
+              rel="noreferrer"
+            >
+              <span>↗</span>
+              Fiches d’inscription vierges
+              <small>Dix fiches à remplir à la main, pour les inscriptions sur place</small>
+            </a>
+          )}
         </div>
         <div className="actions">
           {/* Exports produits par le serveur (printing.ts) ; l'impression passe aussi par le HTML. */}

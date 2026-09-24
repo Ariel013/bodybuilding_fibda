@@ -12,7 +12,7 @@ import { tick } from "./workflow";
 import { loadCatalogue, eligibility } from "../domain/catalogue";
 import { seedDemo } from "./demo";
 import { previewImport, savePreview, commitPreview, MAX_FILE as MAX_IMPORT } from "./transfers";
-import { KINDS, renderPrint, exportDocument, type Filters } from "./printing";
+import { KINDS, renderPrint, exportDocument, parseBlank, type Filters } from "./printing";
 import { inspectImage, photoHeaders, MAX_PHOTO, OWNER_TYPES, KINDS as PHOTO_KINDS } from "./photos";
 
 // Routes HTTP : même contrat que backend/fibda/app.py (docs/CONTRACT.md), sans WebSocket ; photos en base.
@@ -338,7 +338,8 @@ export function createApp(opts: AppOptions) {
     const s = await store.read();
     const roles = new Set(u.roles);
     let judgeId: string | null = c.req.query("judge_id") || null;
-    const filters: Filters = { category_id: c.req.query("category_id") || null, round_id: c.req.query("round_id") || null, judge_id: judgeId, person_id: c.req.query("person_id") || null };
+    // `blank` (fiches d'inscription vierges, entier 1 à 50) est contrôlé après les droits, plus bas.
+    const filters: Filters = { category_id: c.req.query("category_id") || null, round_id: c.req.query("round_id") || null, judge_id: judgeId, person_id: c.req.query("person_id") || null, blank: null };
     const isPrivate = ["blank", "ballot", "recap", "results"].includes(kind);
     if (isPrivate) {
       if (!intersects(roles, ADMIN)) {
@@ -358,6 +359,7 @@ export function createApp(opts: AppOptions) {
     else require(u, union(PREPARATION, ["regie", "speaker"])); // app.py:348
     // Les droits sont vérifiés avant de reconnaître le document : un juge n'apprend pas quels noms existent.
     if (!KINDS.has(kind)) throw new Problem("Document inconnu");
+    if (kind === "fiche") filters.blank = parseBlank(c.req.query("blank"));
     // app.py:349 : noms des comptes pour libeller les juges, rapports d'examen filtrés, horodatage.
     s.users = await store.allUsers();
     s.exam_reports = exams(s, u).reports;

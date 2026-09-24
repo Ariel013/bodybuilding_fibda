@@ -794,6 +794,12 @@ td small {
   border: 1px solid #adcdb8;
   touch-action: none;
   user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  cursor: grab;
+}
+.bib.dragging {
+  opacity: 0.45;
 }
 .bib strong {
   font-size: 31px;
@@ -888,6 +894,44 @@ td small {
 }
 .ranks .icon {
   margin-right: 8px;
+}
+.ranks.armed li {
+  border-style: dashed;
+  border-color: #6fa88a;
+}
+.ranks li.drop-hover,
+.selection-zone.drop-hover {
+  background: #cdeed9;
+  border: 2px solid #195f41;
+  box-shadow: 0 0 0 4px #80bd9866;
+}
+.selection-zone {
+  min-height: 96px;
+  padding: 12px;
+  border: 1px dashed #adcdb8;
+  border-radius: 12px;
+  background: #f9fffa;
+}
+.selection-zone.armed {
+  border-color: #6fa88a;
+}
+.selection-zone.full {
+  background: #e8efe9;
+}
+.selection-zone.full.drop-hover {
+  border-color: #b3541e;
+  box-shadow: 0 0 0 4px #e9b48a66;
+}
+.selection-count {
+  margin: 0 0 8px;
+}
+.selection-hint {
+  margin: 0 0 8px;
+  color: #8a3d0f;
+  font-weight: 600;
+}
+.selection-list .rank-slot {
+  min-height: 48px;
 }
 .ballot-footer {
   position: sticky;
@@ -1858,15 +1902,8 @@ footer {
     padding: 7px;
     margin-bottom: 8px;
     border-radius: 12px;
-    max-height: max(240px, calc(100dvh - 600px));
-    overflow-y: auto;
-    overscroll-behavior: contain;
-    scrollbar-gutter: stable;
   }
   .judge-page .judge-layout .panel-head {
-    position: sticky;
-    top: -7px;
-    z-index: 2;
     padding: 5px 0;
     margin-bottom: 5px;
     background: #eff8f2;
@@ -1953,8 +1990,9 @@ footer {
   }
 }
 @media (max-width: 600px) {
+  /* `pan-y` laissait le navigateur prendre le geste (pointercancel) : le glisser échouait au doigt. */
   .judge-page .bib {
-    touch-action: pan-y;
+    touch-action: none;
   }
   .judge-mode .sidebar nav a {
     min-height: 48px;

@@ -162,3 +162,39 @@ test("connexion juge ou stagiaire ouvre directement son bulletin, administration
   ])
     assert.equal(landingTab(roles), "home");
 });
+
+import {
+  toggleSelection,
+  addSelection,
+  isDragMove,
+  dropTarget,
+  autoScrollStep,
+} from "./ranking";
+test("sélection éliminatoire : bascule et ajout bornés par le quota", () => {
+  assert.deepEqual(toggleSelection([], "a", 2), ["a"]);
+  assert.deepEqual(toggleSelection(["a"], "a", 2), []);
+  assert.deepEqual(toggleSelection(["a", "b"], "c", 2), ["a", "b"]);
+  assert.deepEqual(addSelection(["a"], "b", 2), ["a", "b"]);
+  assert.deepEqual(addSelection(["a"], "a", 2), ["a"]);
+  assert.deepEqual(addSelection(["a", "b"], "c", 2), ["a", "b"]);
+});
+test("un glissement n'est reconnu qu'au-delà de 6 px", () => {
+  assert.equal(isDragMove(3, 4), false);
+  assert.equal(isDragMove(0, 7), true);
+  assert.equal(isDragMove(-5, -5), true);
+});
+test("cible de dépôt : rang valide, zone sélectionnés, sinon rien", () => {
+  assert.deepEqual(dropTarget({ rank: "2" }, 5), { kind: "rank", rank: 2 });
+  assert.deepEqual(dropTarget({ drop: "selected" }, 5), { kind: "selected" });
+  assert.equal(dropTarget({ rank: "5" }, 5), null);
+  assert.equal(dropTarget({ rank: "x" }, 5), null);
+  assert.equal(dropTarget({}, 5), null);
+  assert.equal(dropTarget(undefined, 5), null);
+});
+test("défilement automatique seulement près des bords, nul au centre", () => {
+  assert.equal(autoScrollStep(300, 0, 600), 0);
+  assert.ok(autoScrollStep(10, 0, 600) < 0);
+  assert.ok(autoScrollStep(590, 0, 600) > 0);
+  assert.equal(autoScrollStep(0, 0, 600), -14);
+  assert.equal(autoScrollStep(50, 0, 80), 0);
+});

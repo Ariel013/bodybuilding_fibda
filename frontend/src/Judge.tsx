@@ -9,12 +9,18 @@ import {
   personName,
 } from "./types";
 import {
+  addSelection,
+  autoScrollStep,
   complete,
   draftKey,
+  dropTarget,
+  isDragMove,
   place,
   remove,
   selectionValid,
   secondsRemaining,
+  toggleSelection,
+  type DropTarget,
   type Ranking,
 } from "./ranking";
 import { draftGet, draftSave, draftDelete, type Draft } from "./drafts";
@@ -99,15 +105,25 @@ function Ballot({
   const [busy, setBusy] = useState(false);
   const [ack, setAck] = useState<any>(null);
   const [now, setNow] = useState(Date.now());
+  const [hint, setHint] = useState("");
+  /*
+   * Glisser-déposer aux Pointer Events (souris et doigt). L'API HTML5 drag and drop n'est pas
+   * utilisée : elle ne fonctionne pas au doigt sur iOS Safari ni sur la plupart des Android.
+   * `drag` porte l'aperçu qui suit le pointeur, `over` la cible surlignée sous le pointeur.
+   */
   const [drag, setDrag] = useState<{ id: string; x: number; y: number } | null>(
     null,
   );
+  const [over, setOver] = useState<DropTarget | null>(null);
   const dragStart = useRef<{
     id: string;
     x: number;
     y: number;
     moved: boolean;
   } | null>(null);
+  const lastPointer = useRef({ x: 0, y: 0 });
+  const justDragged = useRef(false);
+  const scrollLoop = useRef<number | null>(null);
   const serverAnchor = useRef({ server: 0, local: Date.now() });
   useEffect(() => {
     const t =
@@ -161,31 +177,88 @@ function Ballot({
     change({ ...snap, ranking: place(snap.ranking, id, rank) });
     setChosen(null);
   }
+  function toggle(id: string) {
+    setHint("");
+    change({ ...snap, selected: toggleSelection(snap.selected, id, r.quota) });
+  }
+  /** Zone de dépôt (rang ou « Sélectionnés ») sous une position d'écran, et son élément. */
+  function targetAt(x: number, y: number) {
+    const el =
+      document
+        .elementFromPoint(x, y)
+        ?.closest<HTMLElement>("[data-rank], [data-drop]") ?? null;
+    return { el, target: dropTarget(el?.dataset, ids.length) };
+  }
+  function drop(id: string, target: DropTarget) {
+    if (target.kind === "rank") return put(id, target.rank);
+    const next = addSelection(snap.selected, id, r.quota);
+    if (next === snap.selected) {
+      if (!snap.selected.includes(id))
+        setHint(`Quota atteint (${r.quota}) : retirez d’abord un athlète.`);
+      return;
+    }
+    setHint("");
+    change({ ...snap, selected: next });
+  }
+  /** Défilement automatique près des bords pendant le glisser (fenêtre ou panneau défilant). */
+  function autoScroll() {
+    const { x, y } = lastPointer.current;
+    const under = document.elementFromPoint(x, y);
+    const box = scrollableAncestor(under);
+    const rect =
+      !box || box === document.scrollingElement
+        ? { top: 0, bottom: window.innerHeight }
+        : box.getBoundingClientRect();
+    const step = autoScrollStep(y, rect.top, rect.bottom);
+    if (step && box) {
+      box.scrollTop += step;
+      const { target } = targetAt(x, y);
+      setOver((o) => (sameTarget(o, target) ? o : target));
+    }
+    scrollLoop.current = dragStart.current
+      ? requestAnimationFrame(autoScroll)
+      : null;
+  }
+  function endDrag() {
+    dragStart.current = null;
+    if (scrollLoop.current !== null) cancelAnimationFrame(scrollLoop.current);
+    scrollLoop.current = null;
+    setDrag(null);
+    setOver(null);
+  }
   function pointerDown(e: React.PointerEvent<HTMLButtonElement>, id: string) {
-    if (locked || elimination) return;
+    if (locked || e.button > 0) return;
     dragStart.current = { id, x: e.clientX, y: e.clientY, moved: false };
+    lastPointer.current = { x: e.clientX, y: e.clientY };
     e.currentTarget.setPointerCapture(e.pointerId);
   }
   function pointerMove(e: React.PointerEvent<HTMLButtonElement>) {
     const start = dragStart.current;
     if (!start) return;
-    if (Math.hypot(e.clientX - start.x, e.clientY - start.y) > 8) {
+    lastPointer.current = { x: e.clientX, y: e.clientY };
+    if (!start.moved) {
+      if (!isDragMove(e.clientX - start.x, e.clientY - start.y)) return;
       start.moved = true;
-      setDrag({ id: start.id, x: e.clientX, y: e.clientY });
+      setChosen(null);
+      if (scrollLoop.current === null)
+        scrollLoop.current = requestAnimationFrame(autoScroll);
     }
+    setDrag({ id: start.id, x: e.clientX, y: e.clientY });
+    const { target } = targetAt(e.clientX, e.clientY);
+    setOver((o) => (sameTarget(o, target) ? o : target));
   }
   function pointerUp(e: React.PointerEvent<HTMLButtonElement>) {
     const start = dragStart.current;
     if (!start) return;
-    dragStart.current = null;
-    setDrag(null);
-    if (start.moved) {
-      const slot = document
-        .elementFromPoint(e.clientX, e.clientY)
-        ?.closest<HTMLElement>("[data-rank]");
-      if (slot) put(start.id, Number(slot.dataset.rank));
-    }
+    endDrag();
+    if (!start.moved) return;
+    // Le clic synthétisé après un glissement ne doit pas passer le dossard en mode « toucher ».
+    justDragged.current = true;
+    setTimeout(() => (justDragged.current = false), 300);
+    const { target } = targetAt(e.clientX, e.clientY);
+    if (target) drop(start.id, target);
   }
+  useEffect(() => () => endDrag(), []);
   async function submit() {
     setBusy(true);
     setError("");
@@ -226,26 +299,23 @@ function Ballot({
             return (
               <button
                 key={id}
-                className={`bib ${selected ? "selected" : ""} ${rank >= 0 && !elimination ? "placed" : ""}`}
+                className={`bib ${selected ? "selected" : ""} ${rank >= 0 && !elimination ? "placed" : ""} ${drag?.id === id ? "dragging" : ""}`}
                 disabled={locked}
+                aria-pressed={!elimination ? chosen === id : undefined}
                 onPointerDown={(e) => pointerDown(e, id)}
                 onPointerMove={pointerMove}
                 onPointerUp={pointerUp}
-                onPointerCancel={() => {
-                  dragStart.current = null;
-                  setDrag(null);
+                onPointerCancel={endDrag}
+                onContextMenu={(e) => {
+                  if (dragStart.current) e.preventDefault();
                 }}
                 onClick={() => {
-                  if (elimination)
-                    change({
-                      ...snap,
-                      selected: selected
-                        ? snap.selected.filter((i) => i !== id)
-                        : snap.selected.length < r.quota
-                          ? [...snap.selected, id]
-                          : snap.selected,
-                    });
-                  else setChosen(id);
+                  if (justDragged.current) {
+                    justDragged.current = false;
+                    return;
+                  }
+                  if (elimination) toggle(id);
+                  else setChosen((c) => (c === id ? null : id));
                 }}
               >
                 <strong>{entry?.bib ?? "—"}</strong>
@@ -257,14 +327,77 @@ function Ballot({
           })}
         </div>
       </Panel>
+      {elimination && (
+        <Panel title="Sélectionnés">
+          <div
+            className={
+              "selection-zone" +
+              (drag ? " armed" : "") +
+              (over?.kind === "selected" ? " drop-hover" : "") +
+              ((received?.selected || snap.selected).length >= r.quota
+                ? " full"
+                : "")
+            }
+            data-drop="selected"
+            aria-live="polite"
+          >
+            <p className="selection-count">
+              <strong>
+                {(received?.selected || snap.selected).length} / {r.quota}
+              </strong>{" "}
+              sélectionnés
+            </p>
+            {hint && <p className="selection-hint">{hint}</p>}
+            {(received?.selected || snap.selected).length === 0 ? (
+              <p className="muted">
+                Glissez ici les dossards à sélectionner, ou touchez-les dans la
+                liste.
+              </p>
+            ) : (
+              <ol className="ranks selection-list">
+                {(received?.selected || snap.selected).map((id: string) => {
+                  const e = s.entries.find((e) => e.id === id);
+                  return (
+                    <li key={id}>
+                      <span className="rank-slot">
+                        <strong>N° {e?.bib}</strong> ·{" "}
+                        {personName(
+                          s.people.find((p) => p.id === e?.person_id),
+                        )}
+                      </span>
+                      {!locked && (
+                        <button
+                          className="icon ghost"
+                          aria-label={`Retirer le dossard ${e?.bib} de la sélection`}
+                          onClick={() => toggle(id)}
+                        >
+                          ×
+                        </button>
+                      )}
+                    </li>
+                  );
+                })}
+              </ol>
+            )}
+          </div>
+        </Panel>
+      )}
       {!elimination && (
         <Panel title="Rangs">
-          <ol className="ranks">
+          <ol className={"ranks" + (drag ? " armed" : "")}>
             {(received?.ranking || snap.ranking).map(
               (id: string | null, i: number) => {
                 const e = s.entries.find((e) => e.id === id);
                 return (
-                  <li key={i} data-rank={i}>
+                  <li
+                    key={i}
+                    data-rank={i}
+                    className={
+                      over?.kind === "rank" && over.rank === i
+                        ? "drop-hover"
+                        : undefined
+                    }
+                  >
                     <button
                       className={"rank-slot " + (chosen ? "target" : "")}
                       disabled={locked || !chosen}
@@ -349,7 +482,10 @@ function Ballot({
           ) : (
             <>
               {elimination ? (
-                <p>Sélectionnez exactement {r.quota} athlètes.</p>
+                <p>
+                  Sélectionnez exactement {r.quota} athlètes : glissez chaque
+                  dossard vers « Sélectionnés » ou touchez-le.
+                </p>
               ) : (
                 <details className="ballot-help">
                   <summary>Dossard → rang · glisser ou toucher</summary>
@@ -507,6 +643,31 @@ function Ballot({
       )}
     </>
   );
+}
+function sameTarget(a: DropTarget | null, b: DropTarget | null) {
+  return (
+    a === b ||
+    (!!a &&
+      !!b &&
+      a.kind === b.kind &&
+      (a.kind !== "rank" || b.kind !== "rank" || a.rank === b.rank))
+  );
+}
+/** Premier ancêtre qui défile verticalement, sinon l'élément de défilement du document. */
+function scrollableAncestor(el: Element | null | undefined): Element | null {
+  for (
+    let node = el;
+    node && node !== document.body;
+    node = node.parentElement
+  ) {
+    const overflow = getComputedStyle(node).overflowY;
+    if (
+      (overflow === "auto" || overflow === "scroll") &&
+      node.scrollHeight > node.clientHeight
+    )
+      return node;
+  }
+  return document.scrollingElement;
 }
 /** Heure de réception d'un bulletin, telle que renvoyée par le serveur (secondes ou ISO). */
 function receivedAt(received: any): string {

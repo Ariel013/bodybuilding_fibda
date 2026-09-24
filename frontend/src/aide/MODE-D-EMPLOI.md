@@ -299,7 +299,7 @@ Rôles : judge
 1. Ouvrez l'adresse remise par l'organisation dans Safari ou Chrome et ajoutez la page à l'écran d'accueil du téléphone.
 2. Saisissez votre code personnel, touchez « Accéder à la compétition » et vérifiez votre nom en haut de l'écran.
 3. Dans **Mon jugement**, attendez que le bulletin de la manche ouverte s'affiche ; « Aucune manche affectée » signifie que le chef n'a pas encore ouvert la manche, l'écran se met à jour seul.
-4. Classez les dossards : glissez chaque dossard sur un rang en finale ou demi-finale, touchez les dossards à sélectionner en éliminatoires (voir « Classer les dossards »).
+4. Classez les dossards : glissez chaque dossard sur un rang en finale ou demi-finale ; en éliminatoires, glissez-le vers « Sélectionnés » ou touchez-le (voir « Classer les dossards »).
 5. Vérifiez le compteur « rangs attribués » (ou « sélectionnés ») ; corrigez avec « Annuler », « Rétablir » ou la croix d'un rang (voir « Corriger »).
 6. Touchez « Vérifier et valider », relisez le résumé, puis « Confirmer et transmettre » (voir « Valider et attendre l'accusé de réception »).
 7. Attendez « Bulletin reçu et verrouillé par le serveur » : sans ce message, le bulletin n'est pas reçu.
@@ -316,8 +316,9 @@ Un compte qui n'a que le rôle juge arrive directement dans **Mon jugement** apr
 
 ### Classer les dossards
 
-- En finale ou en demi-finale : glissez un dossard sur un rang, ou touchez le dossard puis le rang. Remplacer un rang libère son ancien occupant sans décaler les autres.
-- En éliminatoires : touchez les dossards pour les sélectionner ; le bulletin exige exactement le quota demandé (« Sélectionnez exactement N athlètes »).
+- En finale ou en demi-finale : posez le doigt (ou la souris) sur un dossard et glissez-le sur un rang ; le rang visé se surligne à l'approche, relâchez pour le placer. Autre geste : touchez le dossard, puis touchez le rang. Remplacer un rang libère son ancien occupant sans décaler les autres ; un dossard placé reste dans la liste, marqué « Rang N ».
+- En éliminatoires : glissez chaque dossard vers la zone « Sélectionnés », ou touchez-le pour le sélectionner (nouveau toucher : retiré). Le bulletin exige exactement le quota demandé (« Sélectionnez exactement N athlètes ») ; au-delà, la zone refuse le dossard et l'indique.
+- Sur téléphone, un dossard ne fait pas défiler la page : pour faire défiler, glissez le doigt sur la colonne des rangs ou sur les titres. Pendant un glisser, la page défile d'elle-même quand le doigt approche du haut ou du bas de l'écran.
 - « Voir un athlète » ouvre sa fiche (photo autorisée, taille et poids confirmés) ; « Revenir au jugement » la ferme sans rien changer.
 
 ### Corriger

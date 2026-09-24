@@ -28,8 +28,8 @@ Carte des documents :
   exigé, chef créé, connexion, état, écran public, en-têtes de sécurité, contrôle d'origine.
   Démonstration séparée : https://fibda-bodybuilding-demo.vercel.app (base `fibda-demo`,
   24 athlètes fictifs, 9 comptes). **Aucun test sur téléphone réel encore.** Secrets hors dépôt : `~/fibda-secrets-2026-09-23.txt`.
-- **Code** : `main` poussé sur `origin` (voir `git log`). `npm run check` = 118 tests verts
-  (21 interface dont 6 sur le manuel, 17 moteur, 80 serveur). Déploiement : toujours
+- **Code** : `main` poussé sur `origin` (voir `git log`). `npm run check` = 124 tests verts
+  (21 interface dont 6 sur le manuel, 17 moteur, 86 serveur). Déploiement : toujours
   `vercel build` puis `vercel deploy --prebuilt` (`docs/DEPLOIEMENT-VERCEL.md` §2).
 - **Livré le 23/09 au soir** : impressions HTML (bulletin vierge = plan papier), export CSV,
   import CSV, mode d'emploi par profil dans l'onglet « Aide » (source
@@ -38,6 +38,10 @@ Carte des documents :
 - **Décisions du PO** : overall **par discipline et par sexe** (24/09, définitif : 3 dames,
   4 hommes ; la finale toutes disciplines du 23/09 est retirée de l'interface), codes admin
   8 caractères, 4G prévu, Railway en suspens.
+- **Absences (24/09, 7 h)** : `round.absent` / `round.present` (chef ou responsable, avant le premier
+  bulletin, propagé aux tours dépendants, quota réduit), panneau « Présence à l'appel » ;
+  un absent = 0 point club. Correctifs PO : erreur d'action en bandeau fixe bas d'écran ; photo
+  sélectionnée signalée non enregistrée (aucune photo n'avait atteint le serveur).
 - **Meilleur club (24/09, 6 h)** : barème FIBDA 15/10/5/4/3 puis 1, finales et overalls par
   discipline, chaque inscription compte, éliminé = 1 point ; divergence assumée avec le Python
   (P11). Drapeaux à côté des pays, rubrique « Athlètes », « Sélectionner une catégorie ».
@@ -86,6 +90,13 @@ Carte des documents :
 - Ouvert : photos (P9), XLSX/PDF (P10), test téléphone réel par le PO, H1 (overall par sexe ?).
 
 ## 🎓 Leçons apprises
+
+### On ne déploie pas pendant qu'un agent écrit dans les fichiers du serveur (2026-09-24)
+Un déploiement lancé pour deux correctifs d'interface a embarqué des fichiers serveur en cours
+de modification par un agent parallèle ; la démo a échoué au build, la production a tourné
+quelques minutes avec du code non vérifié (routes toujours saines, vérifié au curl).
+Règle : avant `vercel build`, `git status` doit ne montrer que les fichiers du lot à livrer ;
+sinon, attendre le rapport de l'agent.
 
 ### Une fonction Vercel en ESM ne regroupe pas ses imports relatifs (2026-09-23)
 `FUNCTION_INVOCATION_FAILED` muet sur chaque route API, statiques servis normalement.

@@ -43,6 +43,8 @@ export function canCommand(roles: string[], kind: string): boolean {
     "round.open",
     "round.next",
     "round.incident",
+    "round.absent",
+    "round.present",
     "overall.create",
     "overall.final",
     "discipline.advance",

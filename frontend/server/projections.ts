@@ -117,8 +117,11 @@ export function exams(state: any, actor: User): any {
 export function collective(state: any): any {
   // Décision FIBDA du 24/09/2026 (voir domain.ts collectiveResults et OPEN-QUESTIONS P11) :
   // comptent les finales validées/publiées, les overalls de discipline validés/publiés (dont un
-  // champion seul confirmé, rang 1) et, à 1 point, chaque inscription confirmée d'une catégorie
-  // déjà engagée (au moins un tour validé) absente de tout résultat officiel de finale.
+  // champion seul confirmé, rang 1) et, à 1 point, chaque inscription confirmée effectivement
+  // alignée (présente dans `participant_ids`) sur au moins un tour validé/publié de sa catégorie,
+  // hors overall, et absente de tout résultat officiel de finale (éliminée en demi ou en éliminatoire).
+  // « Un athlète absent est absent, il ne compte aucun point » (PO, 24/09/2026) : une inscription
+  // déclarée absente (round.absent) ou jamais alignée ne figure dans aucun `participant_ids` → 0 point.
   // L'overall final toutes disciplines (`grand_final`) n'est pas compté : non tranché par le PO.
   const closed = (r: any) => ["validated", "published"].includes(r.status);
   const finals = state.rounds.filter((r: any) => r.phase === "final");
@@ -131,9 +134,9 @@ export function collective(state: any): any {
     for (const x of (r.result ?? {}).official ?? []) set.add(x.entry_id);
     rankedByCategory.set(r.category_id, set);
   }
-  const engaged = new Set<string>(state.rounds.filter((r: any) => r.phase !== "overall" && closed(r)).map((r: any) => r.category_id));
+  const aligned = new Set<string>(state.rounds.filter((r: any) => r.phase !== "overall" && closed(r)).flatMap((r: any) => r.participant_ids));
   for (const e of state.entries) {
-    if (!e.confirmed || !engaged.has(e.category_id) || rankedByCategory.get(e.category_id)?.has(e.id)) continue;
+    if (!e.confirmed || !aligned.has(e.id) || rankedByCategory.get(e.category_id)?.has(e.id)) continue;
     rows.push({ entry_id: e.id, rank: 99, participation: true, round_id: null, phase: "final", category_id: e.category_id });
   }
   const complete = finals.length > 0 && finals.every(closed);

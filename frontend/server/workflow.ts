@@ -69,7 +69,9 @@ export function ready(state: any, r: any): boolean {
   if (r.dependency_id) {
     const before = find(state.rounds, r.dependency_id, "Tour précédent");
     if (!CLOSED.has(before.status)) return false;
-    r.participant_ids = [...before.result.qualified];
+    // Un athlète déclaré absent (round.absent) ne revient pas par la qualification du tour précédent.
+    const absent = new Set<string>(r.absent_ids ?? []);
+    r.participant_ids = before.result.qualified.filter((i: string) => !absent.has(i));
   }
   if (r.phase === "overall" && !state.discipline_progress[r.discipline]?.category_rewards_done) return false;
   if ((r.phase === "semi" || r.phase === "elimination") && !quotaValid(r)) return false;
@@ -338,6 +340,56 @@ function applySportInner(state: any, actor: User, kind: string, p: any, users: U
     tick(state, users, now);
     return {};
   }
+  if (kind === "round.absent" || kind === "round.present") {
+    // Décision PO du 24/09/2026 : « Un athlète absent est absent, il ne compte aucun point ! »
+    // Avant le premier bulletin seulement : ensuite l'absence se traite par un incident.
+    const r = find(state.rounds, p.round_id, "Tour");
+    const entryId: string = p.entry_id;
+    find(state.entries, entryId, "Inscription");
+    if (r.status !== "pending" && r.status !== "open") throw new Problem("Ce tour n’est plus en attente ni à l’appel.", 409);
+    if (Object.keys(r.ballots).length) throw new Problem("Un bulletin a déjà été reçu : traitez l’absence par un incident.", 409);
+    r.absent_ids ??= [];
+    r.absences ??= [];
+    if (kind === "round.absent") {
+      if (!strip(p.reason)) throw new Problem("Motif obligatoire.");
+      if (r.absent_ids.includes(entryId)) throw new Problem("Déjà déclaré absent.", 422);
+      if (!r.participant_ids.includes(entryId)) throw new Problem("Cette inscription ne participe pas à ce tour.");
+      if (r.participant_ids.length <= 1) throw new Problem("Le dernier participant ne peut pas être déclaré absent : suspendez la manche par un incident.");
+      r.participant_ids = r.participant_ids.filter((i: string) => i !== entryId);
+      r.absent_ids.push(entryId);
+      r.absences.push({ entry_id: entryId, reason: p.reason, at: now, by: actor.id });
+      shrinkQuota(r);
+      r.version += 1;
+      for (const x of dependents(state, r)) {
+        x.absent_ids ??= [];
+        if (!x.absent_ids.includes(entryId)) x.absent_ids.push(entryId);
+        if (x.participant_ids.includes(entryId)) {
+          x.participant_ids = x.participant_ids.filter((i: string) => i !== entryId);
+          shrinkQuota(x);
+          x.version += 1;
+        }
+      }
+      return { absent_ids: [...r.absent_ids] };
+    }
+    const absence = r.absences.find((a: any) => a.entry_id === entryId && !a.restored) ?? null;
+    if (!absence || !r.absent_ids.includes(entryId)) throw new Problem("Cette inscription n’a pas été déclarée absente sur ce tour.");
+    absence.restored = { at: now, by: actor.id };
+    r.absent_ids = r.absent_ids.filter((i: string) => i !== entryId);
+    // Retour à la place d'origine : ordre de qualification du tour précédent, sinon ordre des inscriptions.
+    const before = r.dependency_id ? find(state.rounds, r.dependency_id, "Tour précédent") : null;
+    const base: string[] = before?.result?.qualified ?? state.entries.map((e: any) => e.id);
+    const present = new Set<string>([...r.participant_ids, entryId]);
+    r.participant_ids = [...base.filter((i) => present.has(i)), ...r.participant_ids.filter((i: string) => !base.includes(i))];
+    restoreQuota(r);
+    r.version += 1;
+    for (const x of dependents(state, r)) {
+      if (x.absent_ids?.includes(entryId)) {
+        x.absent_ids = x.absent_ids.filter((i: string) => i !== entryId);
+        x.version += 1;
+      }
+    }
+    return { absent_ids: [...r.absent_ids] };
+  }
   if (kind === "round.incident" || kind === "round.resolve") {
     const r = find(state.rounds, p.round_id, "Tour");
     if (!strip(p.reason)) throw new Problem("Motif obligatoire.");
@@ -465,6 +517,34 @@ function applySportInner(state: any, actor: User, kind: string, p: any, users: U
     return {};
   }
   throw new Problem("Commande sportive inconnue.", 404);
+}
+
+// Tours qui dépendent (directement ou en chaîne) d'un tour : demi-finale → finale.
+export function dependents(state: any, r: any): any[] {
+  const out: any[] = [];
+  let ids = new Set<string>([r.id]);
+  while (ids.size) {
+    const next = state.rounds.filter((x: any) => ids.has(x.dependency_id) && !out.includes(x));
+    out.push(...next);
+    ids = new Set(next.map((x: any) => x.id));
+  }
+  return out;
+}
+
+// Même règle que `quotaValid` : le quota d'une demi-finale ou d'une éliminatoire ne dépasse jamais
+// l'effectif. Un tour réduit par une absence garde son quota d'origine pour un éventuel rétablissement.
+function shrinkQuota(r: any): void {
+  if ((r.phase !== "semi" && r.phase !== "elimination") || !Number.isInteger(r.quota)) return;
+  if (r.quota > r.participant_ids.length && r.participant_ids.length >= 1) {
+    r.quota_before_absence ??= r.quota;
+    r.quota = r.participant_ids.length;
+  }
+}
+
+function restoreQuota(r: any): void {
+  if (r.quota_before_absence == null) return;
+  r.quota = Math.min(r.quota_before_absence, r.participant_ids.length);
+  if (r.quota === r.quota_before_absence) delete r.quota_before_absence;
 }
 
 export function validateTrainees(ids: string[], users: User[], panel: string[]): string[] {

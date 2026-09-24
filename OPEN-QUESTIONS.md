@@ -161,6 +161,12 @@ P11. **Barème collectif : divergence TypeScript / Python** (24/09). Décision P
    choix provisoires à confirmer : (a) l'overall final toutes disciplines (`grand_final`, décision du
    23/09) n'est **pas** compté ; (b) une inscription confirmée dans une catégorie dont aucun tour n'est
    encore validé ne rapporte rien tant que la catégorie n'est pas engagée (le point de participation
-   apparaît dès le premier tour validé, de manière provisoire jusqu'à la finale) ; (c) un athlète
-   absent (forfait) d'une catégorie engagée compte comme participant à 1 point.
+   apparaît dès le premier tour validé, de manière provisoire jusqu'à la finale, et seulement pour
+   les inscriptions effectivement alignées dans les `participant_ids` d'un tour validé). Point (c)
+   **tranché par le PO le 24/09/2026** : « Un athlète absent est absent, il ne compte aucun point ! »
+   — une inscription déclarée absente (`round.absent`, avant le premier bulletin du tour) est retirée
+   du tour et des tours suivants de la catégorie et rapporte 0 point ; un éliminé en demi-finale ou
+   en éliminatoire garde 1 point. Cas limite retenu sans décision PO : le dernier participant d'un
+   tour ne peut pas être déclaré absent (un tour vide ne devient jamais prêt, cf. `ready`) ; on passe
+   par un incident. Un tour réduit à 1 participant reste jugeable, comme en Python.
 

@@ -142,6 +142,76 @@ export function Competition({ s, command }: { s: State; command: Command }) {
     </>
   );
 }
+/**
+ * Appel des athlètes avant le premier bulletin (décision PO du 24/09/2026 : un absent ne compte
+ * aucun point). Un absent est retiré de la manche et des manches suivantes de la catégorie ;
+ * « Rétablir » annule tant qu'aucun bulletin n'est reçu. Après un bulletin : incident.
+ */
+function Attendance({
+  r,
+  s,
+  command,
+}: {
+  r: Round;
+  s: State;
+  command: Command;
+}) {
+  const [reason, setReason] = useState("");
+  const absences = (r.absences || []).filter((a: any) => !a.restored);
+  return (
+    <Panel title="Présence à l’appel">
+      <Notice>
+        Un athlète absent est retiré de cette manche et des manches suivantes de
+        la catégorie, et ne rapporte aucun point à son club. Possible tant
+        qu’aucun bulletin n’est reçu ; ensuite, passez par un incident.
+      </Notice>
+      <Field label="Motif de l’absence">
+        <input
+          value={reason}
+          onChange={(e) => setReason(e.target.value)}
+          placeholder="Non présenté à l’appel, blessure, forfait…"
+        />
+      </Field>
+      <DataTable
+        columns={["Athlète", "Action"]}
+        rows={r.participant_ids.map((id) => [
+          entryLabel(s, id),
+          <AsyncButton
+            allowed={canCommand(s.me.roles, "round.absent")}
+            className="ghost"
+            disabled={!reason}
+            action={() =>
+              command("round.absent", { round_id: r.id, entry_id: id, reason })
+            }
+          >
+            Déclarer absent
+          </AsyncButton>,
+        ])}
+      />
+      {absences.length > 0 && (
+        <DataTable
+          columns={["Absent", "Motif", "Action"]}
+          rows={absences.map((a: any) => [
+            entryLabel(s, a.entry_id),
+            a.reason,
+            <AsyncButton
+              allowed={canCommand(s.me.roles, "round.present")}
+              className="ghost"
+              action={() =>
+                command("round.present", {
+                  round_id: r.id,
+                  entry_id: a.entry_id,
+                })
+              }
+            >
+              Rétablir
+            </AsyncButton>,
+          ])}
+        />
+      )}
+    </Panel>
+  );
+}
 function RoundControl({
   r,
   s,
@@ -253,6 +323,10 @@ function RoundControl({
             />
           </>
         )}
+        {(r.status === "pending" || r.status === "open") &&
+          !Object.keys(r.ballots || {}).length && (
+            <Attendance r={r} s={s} command={command} />
+          )}
         <Multi
           title="Qualification explicite si un arbitrage est requis"
           items={r.participant_ids.map((id) => ({

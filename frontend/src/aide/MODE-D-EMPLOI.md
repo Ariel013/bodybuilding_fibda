@@ -104,6 +104,7 @@ Cette section suit une compétition du début à la fin, dans l'ordre que le ser
 6. Calculé, validé, diffusé : calculé signifie que le serveur a fait la somme ; validé que le chef l'a arrêtée ; diffusé que la régie l'a mise sur un écran public. Rien ne s'affiche en salle sans les deux dernières étapes.
 7. Une fois la manche validée, la manche suivante prête s'ouvre d'elle-même ; « Passer à la manche suivante » force ce passage et répond « Des bulletins officiels ou stagiaires sont encore attendus. » s'il est trop tôt.
 8. Incident : « Suspendre et consigner » bloque la manche avec un motif ; « Résoudre l'incident » la rouvre. Réseau tombé : « Saisie papier et correction contrôlée » (chef uniquement) saisit une feuille signée à la place du bulletin d'un juge, avec « Signature de la feuille papier » et « Motif de saisie ou correction ». Erreur après validation : « Soumettre la correction » recalcule aussitôt si le résultat n'a pas été diffusé ; s'il l'a été, elle attend « Signer la correction en attente » par un directeur, et les écrans publics repassent à l'accueil avec « Résultat en cours de mise à jour ».
+9. Absent à l'appel : dans le dossier de la manche (en attente ou ouverte, avant le premier bulletin), le panneau « Présence à l'appel » liste les athlètes ; indiquez le « Motif de l'absence » puis « Déclarer absent ». L'athlète est retiré de cette manche et des manches suivantes de la catégorie, et ne rapporte aucun point à son club (décision du 24/09/2026 : un absent ne compte aucun point). « Rétablir » annule l'absence tant qu'aucun bulletin n'est reçu ; après un bulletin, le serveur refuse (« Un bulletin a déjà été reçu : traitez l'absence par un incident. ») et l'absence se traite par « Suspendre et consigner ».
 
 ### 11. Diffuser sur l'écran public
 
@@ -212,6 +213,8 @@ Le chef de jury et le responsable disposent des onglets Vue d'ensemble, Prépara
 2. Touchez « Ouvrir cette manche ». Les juges affectés voient aussitôt le bulletin sur leur téléphone.
 3. Le panneau affiche « Juges officiels reçus », « Stagiaires reçus » et, pour chaque personne, « Reçu », « En attente » ou « Délai expiré ». Un juge n'a pas terminé tant que la ligne n'indique pas « Reçu ».
 4. Après le dernier bulletin officiel, le serveur attend au plus 60 secondes les stagiaires, puis les marque hors délai sans inventer de note.
+5. Athlète absent à l'appel : avant le premier bulletin, panneau « Présence à l'appel » du dossier, motif puis « Déclarer absent » ; l'athlète est retiré de la manche et des manches suivantes de la catégorie et ne rapporte aucun point à son club. « Rétablir » annule tant qu'aucun bulletin n'est reçu.
+6. Après un bulletin reçu, une absence ne se déclare plus ici : suspendez la manche par « Suspendre et consigner » et traitez-la comme un incident.
 
 ### Valider les résultats
 

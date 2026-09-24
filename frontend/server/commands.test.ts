@@ -60,10 +60,12 @@ test("collective place counts precede custom criterion", () => {
 test("collective scale 15/10/5/4/3/1 with finals, overall and participation (décision PO 24/09/2026)", () => {
   const f = new Fixture();
   // Catégorie « cat » : 8 inscrits a..h. Demi-finale validée à 8, finale validée à 7 (h éliminé en demi).
+  // Un 9e inscrit confirmé, i (club B), déclaré absent : aligné sur aucun tour → 0 point (PO 24/09/2026).
   const ids = ["a", "b", "c", "d", "e", "f", "g", "h"];
-  f.s.people = ids.map((x) => ({ id: x, first_name: x, last_name: "Test", nationalities: ["CI"], country: "CI", club: ["a", "c", "e", "g", "h"].includes(x) ? "A" : "B" }));
-  f.s.entries = ids.map((x, i) => ({ id: x, person_id: x, category_id: "cat", bib: i + 1, confirmed: true }));
+  f.s.people = [...ids, "i"].map((x) => ({ id: x, first_name: x, last_name: "Test", nationalities: ["CI"], country: "CI", club: ["a", "c", "e", "g", "h"].includes(x) ? "A" : "B" }));
+  f.s.entries = [...ids, "i"].map((x, i) => ({ id: x, person_id: x, category_id: "cat", bib: i + 1, confirmed: true }));
   const semi = makeRound(f.s, f.cat, "semi", ids);
+  semi.absent_ids = ["i"];
   semi.status = "validated";
   semi.result = { official: ids.map((x, i) => ({ entry_id: x, rank: i + 1 })), version: 1 };
   f.r.participant_ids = ids.slice(0, 7);
@@ -78,12 +80,13 @@ test("collective scale 15/10/5/4/3/1 with finals, overall and participation (dé
   let out = collective(f.s);
   // Club A : a 1er = 15, c 3e = 5, e 5e = 3, g 7e = 1, h éliminé en demi = 1 (participation),
   //          a champion overall = 15 → 40. Places : deux 1res (finale + overall), une 3e, une 5e, deux « 6e et au-delà ».
-  // Club B : b 2e = 10, d 4e = 4, f 6e = 1 → 15. Places : une 2e, une 4e, une « 6e et au-delà ».
+  // Club B : b 2e = 10, d 4e = 4, f 6e = 1 → 15 ; i absent = 0. Places : une 2e, une 4e, une « 6e et au-delà ».
   assert.deepEqual(out.club.map((r: any) => [r.name, r.points, r.counts, r.rank]), [
     ["A", 40, [2, 0, 1, 0, 1, 2], 1],
     ["B", 15, [0, 1, 0, 1, 0, 1], 2],
   ]);
   assert.deepEqual([...out.club[0].people].sort(), ["a", "c", "e", "g", "h"]);
+  assert.deepEqual([...out.club[1].people].sort(), ["b", "d", "f"]);
   assert.equal(out.complete, true);
   assert.equal(out.winners.club, "A");
   // L'empreinte change avec la version de l'overall.
@@ -94,11 +97,12 @@ test("collective scale 15/10/5/4/3/1 with finals, overall and participation (dé
   overall.status = "open";
   out = collective(f.s);
   assert.equal(out.club[0].points, 25);
-  // Finale non validée mais demi validée : catégorie engagée, chaque inscrit confirmé vaut 1 point provisoire.
+  // Finale non validée mais demi validée : chaque inscrit aligné en demi vaut 1 point provisoire ; i absent reste à 0.
   f.r.status = "open";
   out = collective(f.s);
   assert.equal(out.complete, false);
   assert.deepEqual(out.club.map((r: any) => [r.name, r.points]), [["A", 5], ["B", 3]]);
+  assert.equal(out.club[1].people.includes("i"), false);
 });
 
 test("corrected result requires new reveal before podium", async () => {

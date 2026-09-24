@@ -181,3 +181,61 @@ test("elimination unknown qualification blocks dependent round", () => {
   assert.deepEqual(following.participant_ids, ["a", "b"]);
   assert.equal(following.status, "open");
 });
+
+// Décision PO du 24/09/2026 : « Un athlète absent est absent, il ne compte aucun point ! »
+test("absent on pending semi is removed from the semi and from the dependent final", () => {
+  const f = new Fixture();
+  Object.assign(f.r, { phase: "semi", quota: 3, status: "pending", opened_at: null });
+  f.s.active_round_id = null;
+  const following = makeRound(f.s, f.cat, "final", [], null, f.r.id);
+  f.s.rounds.push(following);
+  const out = applySport(f.s, f.chief, "round.absent", { round_id: f.r.id, entry_id: "c", reason: "Non présenté" }, f.users, 50);
+  assert.deepEqual(out.absent_ids, ["c"]);
+  assert.deepEqual(f.r.participant_ids, ["a", "b"]);
+  assert.deepEqual(f.r.absent_ids, ["c"]);
+  assert.equal(f.r.absences[0].reason, "Non présenté");
+  assert.equal(f.r.absences[0].by, "0");
+  // Quota 3 > effectif 2 : ramené à l'effectif, comme l'exige quotaValid.
+  assert.equal(f.r.quota, 2);
+  assert.deepEqual(following.absent_ids, ["c"]);
+  // Idempotence : rejouer → 422.
+  assert.throws(() => applySport(f.s, f.chief, "round.absent", { round_id: f.r.id, entry_id: "c", reason: "Encore" }, f.users, 51), (e: any) => e instanceof Problem && e.status === 422);
+  // Le tour reste jugeable ; la finale dépendante ne reprend pas l'absent par la qualification.
+  tick(f.s, f.users, 60);
+  assert.equal(f.r.status, "open");
+  for (let i = 0; i < 5; i++) f.submit(String(i), ["a", "b"], 100 + i);
+  f.submit("t", ["a", "b"], 105);
+  f.validate();
+  assert.deepEqual(f.r.result.qualified, ["a", "b"]);
+  assert.equal(following.status, "open");
+  assert.deepEqual(following.participant_ids, ["a", "b"]);
+});
+
+test("absent on open round without ballot, refused after a ballot, restored before", () => {
+  const f = new Fixture();
+  applySport(f.s, f.chief, "round.absent", { round_id: f.r.id, entry_id: "b", reason: "Blessure" }, f.users, 50);
+  assert.deepEqual(f.r.participant_ids, ["a", "c"]);
+  throwsProblem(() => applySport(f.s, f.chief, "round.absent", { round_id: f.r.id, entry_id: "b", reason: "" }, f.users, 50));
+  throwsProblem(() => applySport(f.s, f.chief, "round.present", { round_id: f.r.id, entry_id: "a" }, f.users, 51));
+  applySport(f.s, f.chief, "round.present", { round_id: f.r.id, entry_id: "b" }, f.users, 52);
+  assert.deepEqual(f.r.participant_ids, ["a", "b", "c"]);
+  assert.deepEqual(f.r.absent_ids, []);
+  assert.equal(f.r.absences[0].restored.by, "0");
+  f.submit("1", null, 100);
+  assert.throws(() => applySport(f.s, f.chief, "round.absent", { round_id: f.r.id, entry_id: "b", reason: "Tard" }, f.users, 101), (e: any) => e instanceof Problem && e.status === 409 && /incident/.test(e.message));
+  throwsProblem(() => applySport(f.s, f.chief, "round.present", { round_id: f.r.id, entry_id: "b" }, f.users, 101));
+  // Le juge ne peut pas être surpris par la commande : le directeur en est exclu, un juge aussi.
+  throwsProblem(() => applySport(f.s, f.users[1], "round.absent", { round_id: f.r.id, entry_id: "c", reason: "X" }, f.users, 101));
+});
+
+test("last participant cannot be declared absent; a single participant stays judgeable", () => {
+  const f = new Fixture();
+  applySport(f.s, f.chief, "round.absent", { round_id: f.r.id, entry_id: "a", reason: "Forfait" }, f.users, 50);
+  applySport(f.s, f.chief, "round.absent", { round_id: f.r.id, entry_id: "b", reason: "Forfait" }, f.users, 51);
+  throwsProblem(() => applySport(f.s, f.chief, "round.absent", { round_id: f.r.id, entry_id: "c", reason: "Forfait" }, f.users, 52));
+  assert.deepEqual(f.r.participant_ids, ["c"]);
+  for (let i = 0; i < 5; i++) f.submit(String(i), ["c"], 100 + i);
+  f.submit("t", ["c"], 105);
+  f.validate();
+  assert.deepEqual(f.r.result.official.map((x: any) => x.entry_id), ["c"]);
+});

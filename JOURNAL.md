@@ -28,8 +28,8 @@ Carte des documents :
   exigé, chef créé, connexion, état, écran public, en-têtes de sécurité, contrôle d'origine.
   Démonstration séparée : https://fibda-bodybuilding-demo.vercel.app (base `fibda-demo`,
   24 athlètes fictifs, 9 comptes). **Aucun test sur téléphone réel encore.** Secrets hors dépôt : `~/fibda-secrets-2026-09-23.txt`.
-- **Code** : `main` poussé sur `origin` (voir `git log`). `npm run check` = 114 tests verts
-  (20 interface dont 6 sur le manuel, 15 moteur, 79 serveur). Déploiement : toujours
+- **Code** : `main` poussé sur `origin` (voir `git log`). `npm run check` = 118 tests verts
+  (21 interface dont 6 sur le manuel, 17 moteur, 80 serveur). Déploiement : toujours
   `vercel build` puis `vercel deploy --prebuilt` (`docs/DEPLOIEMENT-VERCEL.md` §2).
 - **Livré le 23/09 au soir** : impressions HTML (bulletin vierge = plan papier), export CSV,
   import CSV, mode d'emploi par profil dans l'onglet « Aide » (source
@@ -38,6 +38,10 @@ Carte des documents :
 - **Décisions du PO** : overall **par discipline et par sexe** (24/09, définitif : 3 dames,
   4 hommes ; la finale toutes disciplines du 23/09 est retirée de l'interface), codes admin
   8 caractères, 4G prévu, Railway en suspens.
+- **Meilleur club (24/09, 6 h)** : barème FIBDA 15/10/5/4/3 puis 1, finales et overalls par
+  discipline, chaque inscription compte, éliminé = 1 point ; divergence assumée avec le Python
+  (P11). Drapeaux à côté des pays, rubrique « Athlètes », « Sélectionner une catégorie ».
+  Provisoire : absent = 1 point ; catégorie sans tour validé = 0.
 - **XLSX et PDF (24/09, 5 h)** : export XLSX/PDF et import XLSX écrits sans dépendance (audit :
   pdf-lib sans publication depuis 2022, SheetJS via miroir tiers) ; relecture sécurité : un
   bloquant (regex quadratiques, 73 à 190 s sur 2 Mo malformés) corrigé par un scanner

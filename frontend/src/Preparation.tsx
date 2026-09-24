@@ -10,7 +10,7 @@ import {
   type Choix,
   type Proposition,
 } from "./categorieAuto";
-import { useEffect, useState, type FormEvent } from "react";
+import { Fragment, useEffect, useState, type FormEvent } from "react";
 import { api, post, download } from "./api";
 import {
   type State,
@@ -418,19 +418,24 @@ function People({ s, command, refresh }: Props) {
                 ["private_contact", "Téléphone (WhatsApp de préférence)"],
                 ["pronunciation", "Prononciation speaker"],
               ].map(([k, label]) => (
-                <Field label={label} key={k}>
-                  <input
-                    required={[
-                      "first_name",
-                      "last_name",
-                      "birth_date",
-                    ].includes(k)}
-                    type={k === "birth_date" ? "date" : k === "private_contact" ? "tel" : "text"}
-                    autoComplete={k === "private_contact" ? "tel" : undefined}
-                    value={person[k] || ""}
-                    onChange={(e) => update(k, e.target.value)}
-                  />
-                </Field>
+                <Fragment key={k}>
+                  <Field label={label}>
+                    <input
+                      required={[
+                        "first_name",
+                        "last_name",
+                        "birth_date",
+                      ].includes(k)}
+                      type={k === "birth_date" ? "date" : k === "private_contact" ? "tel" : "text"}
+                      autoComplete={k === "private_contact" ? "tel" : undefined}
+                      value={person[k] || ""}
+                      onChange={(e) => update(k, e.target.value)}
+                    />
+                  </Field>
+                  {k === "club" && (
+                    <ClubLogo club={person.club || ""} s={s} refresh={refresh} />
+                  )}
+                </Fragment>
               ))}
               <Field label="Nationalités (codes séparés par virgule)">
                 <span className="drapeaux" aria-hidden="true">
@@ -1181,6 +1186,20 @@ function Officials({ s, command, refresh }: Props) {
     </div>
   );
 }
+// Fiche officiel à créer pour un compte (juge, chef, responsable, directeur, stagiaire) : la photo
+// se prend ensuite sur la fiche officiel (rubrique Officiels), jamais sur le compte lui-même.
+const ROLES_AVEC_FICHE = ["chief", "responsable", "director", "judge", "trainee"];
+const normaliseNom = (x: string) => x.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/\s+/g, " ").trim();
+function ficheOfficielDuCompte(s: State, u: Entity): Entity | undefined {
+  const cible = normaliseNom(u.name || "");
+  return s.officials.find((o) => normaliseNom(personName(o)) === cible);
+}
+function officielDepuisCompte(u: Entity): { first_name: string; last_name: string; post: string } | null {
+  const mots = (u.name || "").trim().split(/\s+/).filter(Boolean);
+  if (mots.length < 2) return null;
+  const role = ROLES_AVEC_FICHE.find((r) => u.roles.includes(r)) ?? u.roles[0];
+  return { first_name: mots[0], last_name: mots.slice(1).join(" "), post: labels[role] ?? "Juge" };
+}
 function Jury({ s, command }: Props) {
   const [name, setName] = useState(""),
     [code, setCode] = useState(""),
@@ -1255,7 +1274,7 @@ function Jury({ s, command }: Props) {
         </Panel>
         <Panel title="Accès et approbations">
           <DataTable
-            columns={["Membre", "Rôles", "État"]}
+            columns={["Membre", "Rôles", "État", "Fiche officiel"]}
             rows={s.users.map((u) => [
               u.name,
               u.roles.map((r: string) => labels[r]).join(", "),
@@ -1269,8 +1288,27 @@ function Jury({ s, command }: Props) {
                   Approuver
                 </AsyncButton>
               ),
+              !u.roles.some((r: string) => ROLES_AVEC_FICHE.includes(r)) ? (
+                ""
+              ) : ficheOfficielDuCompte(s, u) ? (
+                <small>Fiche existante : photo dans « Officiels »</small>
+              ) : officielDepuisCompte(u) ? (
+                <AsyncButton
+                  allowed={canCommand(s.me.roles, "official.save")}
+                  action={() =>
+                    command("official.save", { official: { id: uid(), ...officielDepuisCompte(u)! } })
+                  }
+                >
+                  Créer la fiche officiel de ce compte
+                </AsyncButton>
+              ) : (
+                <small>Nom du compte en un seul mot : créez la fiche dans « Officiels ».</small>
+              ),
             ])}
           />
+          <small>
+            La photo d'un juge se prend sur sa fiche officiel (rubrique « Officiels »), pas sur son compte.
+          </small>
         </Panel>
       </div>
       <Panel title="Composition du jury">
@@ -1354,11 +1392,15 @@ export // Réduction de la photo dans le navigateur avant envoi : le serveur (se
 // d'image) n'accepte que 1 Mo au maximum et ne re-encode pas. Côté le plus long ramené à 1200 px,
 // JPEG qualité 0,85 ; le recadrage éventuel (en pixels de l'original) est appliqué ici.
 const PHOTO_MAX_SIDE = 1200;
+// Un logo de club est petit sur les écrans : 400 px de côté suffisent.
+const LOGO_MAX_SIDE = 400;
 const PHOTO_MAX_BYTES = 1024 * 1024;
 async function reducePhoto(
   file: File,
   crop: number[] | null,
+  options: { maxSide?: number; keepPng?: boolean } = {},
 ): Promise<Blob> {
+  const maxSide = options.maxSide ?? PHOTO_MAX_SIDE;
   const url = URL.createObjectURL(file);
   try {
     // L'orientation EXIF (photo prise en portrait) est appliquée par le navigateur :
@@ -1392,10 +1434,7 @@ async function reducePhoto(
       sourceHeight = bottom - top;
     if (sourceWidth <= 0 || sourceHeight <= 0)
       throw new Error("Recadrage hors photo.");
-    const scale = Math.min(
-      1,
-      PHOTO_MAX_SIDE / Math.max(sourceWidth, sourceHeight),
-    );
+    const scale = Math.min(1, maxSide / Math.max(sourceWidth, sourceHeight));
     const canvas = document.createElement("canvas");
     canvas.width = Math.max(1, Math.round(sourceWidth * scale));
     canvas.height = Math.max(1, Math.round(sourceHeight * scale));
@@ -1412,6 +1451,12 @@ async function reducePhoto(
       canvas.width,
       canvas.height,
     );
+    // Un logo PNG garde sa transparence (le JPEG la remplacerait par un fond noir), tant qu'il
+    // tient dans la limite ; sinon repli sur le JPEG comme pour une photo.
+    if (options.keepPng && file.type === "image/png") {
+      const png = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/png"));
+      if (png && png.size <= PHOTO_MAX_BYTES) return png;
+    }
     for (const quality of [0.85, 0.7, 0.5]) {
       const blob = await new Promise<Blob | null>((resolve) =>
         canvas.toBlob(resolve, "image/jpeg", quality),
@@ -1630,6 +1675,112 @@ function PhotoUpload({
     </section>
   );
 }
+// Logo du club d'un athlète : une image par nom de club exact (clé de `s.club_logos`), partagée
+// par tous les athlètes du même club. Envoi (owner_type « club », kind « logo »), puis autorisation
+// d'usage par la route d'approbation ; le logo n'est public qu'une fois autorisé (`club_logos_approved`).
+function ClubLogo({
+  club,
+  s,
+  refresh,
+}: {
+  club: string;
+  s: State;
+  refresh: () => Promise<void>;
+}) {
+  const name = club.trim();
+  const [file, setFile] = useState<File>(),
+    [error, setError] = useState(""),
+    [consent, setConsent] = useState(false);
+  useEffect(() => {
+    setFile(undefined);
+    setConsent(false);
+    setError("");
+  }, [name]);
+  const current: string | undefined = name ? s.club_logos?.[name] : undefined;
+  const approved = Boolean(current) && s.club_logos_approved?.[name] === current;
+  return (
+    <section className="photo-upload" style={{ gridColumn: "1 / -1" }}>
+      <h3>Logo du club</h3>
+      {!name ? (
+        <p className="muted">Saisissez le club ci-dessus pour lui associer un logo.</p>
+      ) : (
+        <>
+          <p className="muted">
+            Le logo vaut pour tous les athlètes du club « {name} » (nom exact).{" "}
+            {current ? (approved ? "Logo autorisé pour l'affichage public." : "Logo importé, usage pas encore autorisé.") : "Aucun logo pour ce club."}
+          </p>
+          {current && (
+            <img
+              className="photo-preview"
+              src={"/api/v1/photos/" + current}
+              alt={"Logo du club " + name}
+            />
+          )}
+          <Field label="Fichier image du logo">
+            <input
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              onChange={(e) => setFile(e.target.files?.[0])}
+            />
+          </Field>
+          <small>
+            Le logo est réduit dans le navigateur avant l'envoi ({LOGO_MAX_SIDE} px de côté au plus,
+            1 Mo maximum) ; un PNG garde sa transparence.
+          </small>
+          <div className="actions">
+            <AsyncButton
+              disabled={!file}
+              action={async () => {
+                try {
+                  const reduced = await reducePhoto(file!, null, { maxSide: LOGO_MAX_SIDE, keepPng: true });
+                  const fd = new FormData();
+                  fd.append("file", reduced, reduced.type === "image/png" ? "logo.png" : "logo.jpg");
+                  fd.append("owner_type", "club");
+                  fd.append("owner_id", name);
+                  fd.append("kind", "logo");
+                  await api("/photos", { method: "POST", body: fd });
+                  setFile(undefined);
+                  setConsent(false);
+                  await refresh();
+                  setError("");
+                } catch (e) {
+                  setError((e as Error).message);
+                }
+              }}
+            >
+              {current ? "Remplacer le logo" : "Importer le logo"}
+            </AsyncButton>
+          </div>
+          {current && !approved && (
+            <>
+              <Check
+                label="Autorisation d'usage du logo obtenue du club"
+                value={consent}
+                onChange={setConsent}
+              />
+              <AsyncButton
+                disabled={!consent}
+                action={async () => {
+                  try {
+                    await post("/photos/" + current + "/approve", { consent: true });
+                    await refresh();
+                    setError("");
+                  } catch (e) {
+                    setError((e as Error).message);
+                  }
+                }}
+              >
+                Autoriser l'affichage public du logo
+              </AsyncButton>
+            </>
+          )}
+          {error && <Notice kind="error">{error}</Notice>}
+        </>
+      )}
+    </section>
+  );
+}
+
 function ImportPanel({ refresh }: { refresh: () => Promise<void> }) {
   const [file, setFile] = useState<File>(),
     [preview, setPreview] = useState<any>(),

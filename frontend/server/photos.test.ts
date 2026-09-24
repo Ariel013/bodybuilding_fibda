@@ -218,3 +218,105 @@ test("sauvegarde et restauration avec une photo approuvée ; sauvegarde sans pho
   r = await b.app.request("/api/v1/restore", { method: "POST", body: JSON.stringify(bad), headers: { cookie: cb, "x-setup-token": "jeton-test" } });
   assert.equal(r.status, 422);
 });
+
+// Logo de club : owner_type « club », owner_id = nom exact du club (trim, 1 à 80 caractères),
+// kind « logo » ; `club_logos[nom]` = logo courant, `club_logos_approved[nom]` = logo autorisé.
+test("logo de club : club_logos renseigné, privé avant autorisation, public après, remplacement", async () => {
+  const { app, cookie, judge } = await setup();
+  const logo = (name: string, bytes = PNG) => upload(app, cookie, bytes, "logo.png", { owner_type: "club", owner_id: name, kind: "logo" });
+  let r = await logo("  Club Abidjan  ");
+  const out = await body(r);
+  assert.equal(r.status, 200, JSON.stringify(out));
+  let s = await body(app.request("/api/v1/state", { headers: { cookie } }));
+  assert.deepEqual(s.club_logos, { "Club Abidjan": out.id });
+  assert.deepEqual(s.club_logos_approved, {});
+  assert.equal(s.version, 6);
+  const audit = await body(app.request("/api/v1/audit", { headers: { cookie } }));
+  assert.ok(audit.some((a: any) => a.action === "photo.upload" && a.data.photo_id === out.id && a.data.owner_id === "Club Abidjan"));
+  // Privé : sans session 401, juge 403, préparation 200.
+  assert.equal((await app.request("/api/v1/photos/" + out.id)).status, 401);
+  assert.equal((await app.request("/api/v1/photos/" + out.id, { headers: { cookie: judge } })).status, 403);
+  r = await app.request("/api/v1/photos/" + out.id, { headers: { cookie } });
+  assert.equal(r.status, 200);
+  assert.equal(r.headers.get("cache-control"), "private, no-store");
+  // Autorisation d'usage : consentement explicite, préparation seulement.
+  assert.equal((await app.request("/api/v1/photos/" + out.id + "/approve", json({}, { cookie }))).status, 422);
+  assert.equal((await app.request("/api/v1/photos/" + out.id + "/approve", json({ consent: true }, { cookie: judge }))).status, 403);
+  r = await app.request("/api/v1/photos/" + out.id + "/approve", json({ consent: true }, { cookie }));
+  assert.deepEqual(await body(r), { approved: true });
+  s = await body(app.request("/api/v1/state", { headers: { cookie } }));
+  assert.deepEqual(s.club_logos_approved, { "Club Abidjan": out.id });
+  assert.equal(s.version, 7);
+  r = await app.request("/api/v1/photos/" + out.id);
+  assert.equal(r.status, 200);
+  assert.equal(r.headers.get("content-type"), "image/png");
+  assert.equal(r.headers.get("cache-control"), "private, max-age=300");
+  // Remplacement : le nouveau logo devient courant et n'est pas autorisé ; l'ancien redevient privé.
+  const second = (await body(logo("Club Abidjan", JPEG))).id;
+  s = await body(app.request("/api/v1/state", { headers: { cookie } }));
+  assert.deepEqual(s.club_logos, { "Club Abidjan": second });
+  assert.deepEqual(s.club_logos_approved, {});
+  assert.equal((await app.request("/api/v1/photos/" + out.id)).status, 401);
+  assert.equal((await app.request("/api/v1/photos/" + second)).status, 401);
+  // L'ancien logo ne peut plus être autorisé : il n'est plus courant.
+  assert.equal((await app.request("/api/v1/photos/" + out.id + "/approve", json({ consent: true }, { cookie }))).status, 409);
+  // Un autre club a son propre logo, sans toucher au premier.
+  const other = (await body(logo("Club Bouaké"))).id;
+  s = await body(app.request("/api/v1/state", { headers: { cookie } }));
+  assert.deepEqual(s.club_logos, { "Club Abidjan": second, "Club Bouaké": other });
+});
+
+test("logo de club : nom vide ou trop long → 422, type incohérent → 422, juge → 403", async () => {
+  const { app, cookie, judge } = await setup();
+  const logo = (fields: Record<string, string>, c = cookie) => upload(app, c, PNG, "logo.png", { owner_type: "club", kind: "logo", ...fields });
+  let r = await logo({ owner_id: "   " });
+  assert.equal(r.status, 422);
+  assert.match((await body(r)).detail, /Nom du club obligatoire/);
+  r = await logo({ owner_id: "x".repeat(81) });
+  assert.equal(r.status, 422);
+  assert.match((await body(r)).detail, /trop long/);
+  assert.equal((await logo({ owner_id: "x".repeat(80) })).status, 200);
+  // « logo » sans club, « portrait » pour un club : refusés.
+  assert.equal((await logo({ owner_type: "person", owner_id: "p1" })).status, 422);
+  assert.equal((await logo({ owner_id: "Club", kind: "portrait" })).status, 422);
+  assert.equal((await logo({ owner_id: "Club" }, judge)).status, 403);
+  assert.equal((await logo({ owner_id: "Club" }, "")).status, 401);
+});
+
+test("logo de club : sauvegarde et restauration ; sans photos, les logos sont retirés de l'état", async () => {
+  const a = await setup();
+  const { id } = await body(upload(a.app, a.cookie, PNG, "logo.png", { owner_type: "club", owner_id: "Club Abidjan", kind: "logo" }));
+  await a.app.request("/api/v1/photos/" + id + "/approve", json({ consent: true }, { cookie: a.cookie }));
+  const archive = await body(a.app.request("/api/v1/backup", { method: "POST", headers: { cookie: a.cookie } }));
+  assert.equal(archive.photos.length, 1);
+  assert.equal(archive.photos[0].owner_type, "club");
+  const restoreInto = async (text: string) => {
+    const b = make();
+    await b.app.request("/api/v1/auth/setup", json({ name: "Chef B", code: "efgh5678" }, { "x-setup-token": "jeton-test" }));
+    const cb = cookieOf(await b.app.request("/api/v1/auth/login", json({ code: "efgh5678" })));
+    const r = await b.app.request("/api/v1/restore", { method: "POST", body: text, headers: { cookie: cb, "x-setup-token": "jeton-test" } });
+    assert.equal(r.status, 200, JSON.stringify(await body(r)));
+    const cookie = cookieOf(await b.app.request("/api/v1/auth/login", json({ code: "abcd1234" })));
+    return { app: b.app, cookie };
+  };
+  const full = await restoreInto(JSON.stringify(archive));
+  assert.equal((await full.app.request("/api/v1/photos/" + id)).status, 200);
+  let s = await body(full.app.request("/api/v1/state", { headers: { cookie: full.cookie } }));
+  assert.deepEqual(s.club_logos, { "Club Abidjan": id });
+  assert.deepEqual(s.club_logos_approved, { "Club Abidjan": id });
+  const { sha256: _old, ...rest } = archive;
+  const light: any = { ...rest, photos: [], photos_omitted: true };
+  const { createHash } = await import("node:crypto");
+  light.sha256 = createHash("sha256").update(JSON.stringify(light)).digest("hex");
+  const partial = await restoreInto(JSON.stringify(light));
+  s = await body(partial.app.request("/api/v1/state", { headers: { cookie: partial.cookie } }));
+  assert.deepEqual(s.club_logos, {});
+  assert.deepEqual(s.club_logos_approved, {});
+  // Archive avec un logo mal typé (kind « portrait » pour un club) : refusée.
+  const bad: any = { ...rest, photos: [{ ...archive.photos[0], kind: "portrait" }] };
+  bad.sha256 = createHash("sha256").update(JSON.stringify(bad)).digest("hex");
+  const b = make();
+  await b.app.request("/api/v1/auth/setup", json({ name: "Chef B", code: "efgh5678" }, { "x-setup-token": "jeton-test" }));
+  const cb = cookieOf(await b.app.request("/api/v1/auth/login", json({ code: "efgh5678" })));
+  assert.equal((await b.app.request("/api/v1/restore", { method: "POST", body: JSON.stringify(bad), headers: { cookie: cb, "x-setup-token": "jeton-test" } })).status, 422);
+});

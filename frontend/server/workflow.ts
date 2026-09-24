@@ -11,6 +11,13 @@ import { loadCatalogue } from "../domain/catalogue";
 
 export { find };
 
+// Motif libre saisi par un utilisateur : nettoyé et borné, il entre dans l'état, l'audit et chaque projection.
+export function motif(value: unknown): string {
+  const s = strip(value == null ? "" : String(value));
+  if (s.length > 500) throw new Problem("Motif trop long : 500 caractères au maximum.");
+  return s;
+}
+
 export const PHASES: Record<string, number> = { elimination: 0, semi: 1, final: 2, overall: 3 };
 
 // Horloge en secondes Unix (flottant), comme `time.time()` côté Python.
@@ -266,7 +273,7 @@ function applySportInner(state: any, actor: User, kind: string, p: any, users: U
     const value: string[] = p[key] ?? [];
     if (key === "ranking") validateRanking(value, r.participant_ids);
     else if (value.length !== r.quota || new Set(value).size !== value.length || !isSubset(new Set(value), new Set<string>(r.participant_ids))) throw new Problem("La sélection doit respecter exactement le quota sans doublon.");
-    r.ballots[judge] = { [key]: [...value], original: { [key]: [...value] }, received_at: now, version: 1, source: kind === "paper.submit" ? "paper" : "digital", signature: p.signature ?? null, reason: p.reason ?? null };
+    r.ballots[judge] = { [key]: [...value], original: { [key]: [...value] }, received_at: now, version: 1, source: kind === "paper.submit" ? "paper" : "digital", signature: p.signature ?? null, reason: p.reason ? motif(p.reason) : null };
     tick(state, users, now);
     return { received: true, round_id: r.id, judge_id: judge, received_at: now };
   }
@@ -364,7 +371,7 @@ function applySportInner(state: any, actor: User, kind: string, p: any, users: U
   if (kind === "round.validate") {
     const r = find(state.rounds, p.round_id, "Tour");
     if (r.status !== "awaiting_validation" || !officialsComplete(r)) throw new Problem("Le tour attend encore ses bulletins ou une décision d’incident.");
-    calculate(state, r, users, p.qualified_ids ?? null, p.reason ?? "");
+    calculate(state, r, users, p.qualified_ids ?? null, motif(p.reason ?? ""));
     r.status = "validated";
     tick(state, users, now);
     return { result: r.result };
@@ -382,7 +389,7 @@ function applySportInner(state: any, actor: User, kind: string, p: any, users: U
     for (const j of remove) if (j in r.ballots) r.removed_ballots[j] = r.ballots[j];
     for (const j of remove) delete r.ballots[j];
     r.panel = panel;
-    (r.panel_changes ??= []).push({ remove_ids: remove, reason: p.reason, at: now });
+    (r.panel_changes ??= []).push({ remove_ids: remove, reason: motif(p.reason), at: now });
     r.status = "open";
     r.version += 1;
     tick(state, users, now);
@@ -407,7 +414,7 @@ function applySportInner(state: any, actor: User, kind: string, p: any, users: U
       // L'absent sort de l'ordre de passage ; les autres gardent leur rang relatif.
       if (r.passage_order) r.passage_order = r.passage_order.filter((i: string) => i !== entryId);
       r.absent_ids.push(entryId);
-      r.absences.push({ entry_id: entryId, reason: p.reason, at: now, by: actor.id });
+      r.absences.push({ entry_id: entryId, reason: motif(p.reason), at: now, by: actor.id });
       shrinkQuota(r);
       r.version += 1;
       for (const x of dependents(state, r)) {
@@ -451,7 +458,7 @@ function applySportInner(state: any, actor: User, kind: string, p: any, users: U
       if (r.status === "suspended") throw new Problem("Ce tour est déjà suspendu.");
       r.previous_status = r.status;
       r.status = "suspended";
-      (r.incidents ??= []).push({ reason: p.reason, at: now, by: actor.id });
+      (r.incidents ??= []).push({ reason: motif(p.reason), at: now, by: actor.id });
     } else {
       if (r.status !== "suspended") throw new Problem("Aucun incident à résoudre.");
       r.status = r.previous_status ?? "open";

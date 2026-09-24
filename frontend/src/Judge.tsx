@@ -212,6 +212,101 @@ function Ballot({
       setBusy(false);
     }
   }
+  const layout = (
+    <div className={"judge-layout" + (elimination ? " elimination" : "")}>
+      <Panel title={elimination ? "Athlètes à sélectionner" : "Dossards"}>
+        <div className="bib-grid">
+          {ids.map((id) => {
+            const entry = s.entries.find((e) => e.id === id);
+            const p = s.people.find((p) => p.id === entry?.person_id);
+            const selected = elimination
+              ? (received?.selected || snap.selected).includes(id)
+              : chosen === id;
+            const rank = snap.ranking.indexOf(id);
+            return (
+              <button
+                key={id}
+                className={`bib ${selected ? "selected" : ""} ${rank >= 0 && !elimination ? "placed" : ""}`}
+                disabled={locked}
+                onPointerDown={(e) => pointerDown(e, id)}
+                onPointerMove={pointerMove}
+                onPointerUp={pointerUp}
+                onPointerCancel={() => {
+                  dragStart.current = null;
+                  setDrag(null);
+                }}
+                onClick={() => {
+                  if (elimination)
+                    change({
+                      ...snap,
+                      selected: selected
+                        ? snap.selected.filter((i) => i !== id)
+                        : snap.selected.length < r.quota
+                          ? [...snap.selected, id]
+                          : snap.selected,
+                    });
+                  else setChosen(id);
+                }}
+              >
+                <strong>{entry?.bib ?? "—"}</strong>
+                <span>{personName(p)}</span>
+                {!elimination && rank >= 0 && <small>Rang {rank + 1}</small>}
+                {elimination && selected && <small>Sélectionné</small>}
+              </button>
+            );
+          })}
+        </div>
+      </Panel>
+      {!elimination && (
+        <Panel title="Rangs">
+          <ol className="ranks">
+            {(received?.ranking || snap.ranking).map(
+              (id: string | null, i: number) => {
+                const e = s.entries.find((e) => e.id === id);
+                return (
+                  <li key={i} data-rank={i}>
+                    <button
+                      className={"rank-slot " + (chosen ? "target" : "")}
+                      disabled={locked || !chosen}
+                      onClick={() => chosen && put(chosen, i)}
+                    >
+                      <span className="rank-number">{i + 1}</span>
+                      {id ? (
+                        <span>
+                          <strong>N° {e?.bib}</strong> ·{" "}
+                          {personName(
+                            s.people.find((p) => p.id === e?.person_id),
+                          )}
+                        </span>
+                      ) : (
+                        <span className="muted">
+                          {chosen ? "Attribuer ici" : "Libre"}
+                        </span>
+                      )}
+                    </button>
+                    {id && !locked && (
+                      <button
+                        className="icon ghost"
+                        aria-label={`Libérer le rang ${i + 1}`}
+                        onClick={() =>
+                          change({
+                            ...snap,
+                            ranking: remove(snap.ranking, id),
+                          })
+                        }
+                      >
+                        ×
+                      </button>
+                    )}
+                  </li>
+                );
+              },
+            )}
+          </ol>
+        </Panel>
+      )}
+    </div>
+  );
   return (
     <>
       <div className="ballot-context">
@@ -248,12 +343,7 @@ function Ballot({
           {received ? (
             <Notice kind="success">
               <strong>Bulletin reçu et verrouillé par le serveur.</strong>{" "}
-              {received.received_at &&
-                new Date(
-                  typeof received.received_at === "number"
-                    ? received.received_at * 1000
-                    : received.received_at,
-                ).toLocaleString("fr-FR")}
+              {receivedAt(received)}
               <p>Aucune nouvelle soumission n’est nécessaire.</p>
             </Notice>
           ) : (
@@ -302,99 +392,24 @@ function Ballot({
           )}
         </Panel>
       </div>
-      <div className={"judge-layout" + (elimination ? " elimination" : "")}>
-        <Panel title={elimination ? "Athlètes à sélectionner" : "Dossards"}>
-          <div className="bib-grid">
-            {ids.map((id) => {
-              const entry = s.entries.find((e) => e.id === id);
-              const p = s.people.find((p) => p.id === entry?.person_id);
-              const selected = elimination
-                ? (received?.selected || snap.selected).includes(id)
-                : chosen === id;
-              const rank = snap.ranking.indexOf(id);
-              return (
-                <button
-                  key={id}
-                  className={`bib ${selected ? "selected" : ""} ${rank >= 0 && !elimination ? "placed" : ""}`}
-                  disabled={locked}
-                  onPointerDown={(e) => pointerDown(e, id)}
-                  onPointerMove={pointerMove}
-                  onPointerUp={pointerUp}
-                  onPointerCancel={() => {
-                    dragStart.current = null;
-                    setDrag(null);
-                  }}
-                  onClick={() => {
-                    if (elimination)
-                      change({
-                        ...snap,
-                        selected: selected
-                          ? snap.selected.filter((i) => i !== id)
-                          : snap.selected.length < r.quota
-                            ? [...snap.selected, id]
-                            : snap.selected,
-                      });
-                    else setChosen(id);
-                  }}
-                >
-                  <strong>{entry?.bib ?? "—"}</strong>
-                  <span>{personName(p)}</span>
-                  {!elimination && rank >= 0 && <small>Rang {rank + 1}</small>}
-                  {elimination && selected && <small>Sélectionné</small>}
-                </button>
-              );
-            })}
-          </div>
-        </Panel>
-        {!elimination && (
-          <Panel title="Rangs">
-            <ol className="ranks">
-              {(received?.ranking || snap.ranking).map(
-                (id: string | null, i: number) => {
-                  const e = s.entries.find((e) => e.id === id);
-                  return (
-                    <li key={i} data-rank={i}>
-                      <button
-                        className={"rank-slot " + (chosen ? "target" : "")}
-                        disabled={locked || !chosen}
-                        onClick={() => chosen && put(chosen, i)}
-                      >
-                        <span className="rank-number">{i + 1}</span>
-                        {id ? (
-                          <span>
-                            <strong>N° {e?.bib}</strong> ·{" "}
-                            {personName(
-                              s.people.find((p) => p.id === e?.person_id),
-                            )}
-                          </span>
-                        ) : (
-                          <span className="muted">
-                            {chosen ? "Attribuer ici" : "Libre"}
-                          </span>
-                        )}
-                      </button>
-                      {id && !locked && (
-                        <button
-                          className="icon ghost"
-                          aria-label={`Libérer le rang ${i + 1}`}
-                          onClick={() =>
-                            change({
-                              ...snap,
-                              ranking: remove(snap.ranking, id),
-                            })
-                          }
-                        >
-                          ×
-                        </button>
-                      )}
-                    </li>
-                  );
-                },
-              )}
-            </ol>
-          </Panel>
-        )}
-      </div>
+      {received && <WaitingScreen round={r} received={received} />}
+      {r.status === "pending" && !received && (
+        <div className="judge-waiting upcoming" role="status">
+          <strong>Manche à venir.</strong>
+          <p>
+            Cette manche n’est pas encore ouverte. Le bulletin s’affichera ici
+            automatiquement à son ouverture, sans recharger la page.
+          </p>
+        </div>
+      )}
+      {received ? (
+        <details className="ballot-sent">
+          <summary>Voir mon bulletin transmis</summary>
+          {layout}
+        </details>
+      ) : (
+        layout
+      )}
       {!received && (
         <div className="ballot-footer">
           <div>
@@ -491,5 +506,59 @@ function Ballot({
         </div>
       )}
     </>
+  );
+}
+/** Heure de réception d'un bulletin, telle que renvoyée par le serveur (secondes ou ISO). */
+function receivedAt(received: any): string {
+  if (!received?.received_at) return "";
+  return new Date(
+    typeof received.received_at === "number"
+      ? received.received_at * 1000
+      : received.received_at,
+  ).toLocaleString("fr-FR");
+}
+/**
+ * Écran d'attente après réception du bulletin (demande du PO, 24/09/2026). L'état projeté pour un
+ * juge ne contient que son propre bulletin (`projectState` retire ceux des autres) : aucun compteur
+ * « reçus x/y » n'est donc affiché. Ce que le serveur laisse voir : l'état de la manche et, une fois
+ * tous les bulletins officiels reçus, le délai stagiaire (`trainee_deadline`) fixé par le serveur.
+ * Quand le chef valide, le serveur ouvre la manche suivante (`tick` → `tryNext`) et l'état actualisé
+ * remplace cet écran sans action du juge.
+ */
+function WaitingScreen({
+  round: r,
+  received,
+}: {
+  round: Round;
+  received: any;
+}) {
+  const officialsDone =
+    r.trainee_deadline !== null && r.trainee_deadline !== undefined;
+  const stage =
+    r.status === "open"
+      ? officialsDone
+        ? "Tous les bulletins des juges officiels sont reçus. Les stagiaires disposent de leur délai, puis le chef de jury valide."
+        : "La manche est en cours : le serveur attend les autres bulletins."
+      : r.status === "awaiting_validation"
+        ? "Tous les bulletins sont reçus. Le chef de jury valide les résultats."
+        : r.status === "suspended"
+          ? "Manche suspendue par le chef de jury."
+          : "Manche validée par le chef de jury.";
+  return (
+    <div className="judge-waiting" role="status" aria-live="polite">
+      <span className="judge-waiting-mark" aria-hidden="true">
+        ✓
+      </span>
+      <strong>Bulletin validé et reçu.</strong>
+      <p className="judge-waiting-main">
+        Patientez : la prochaine manche s’affichera ici automatiquement.
+      </p>
+      <p className="judge-waiting-stage">
+        <span className="badge">{labels[r.status]}</span> {stage}
+      </p>
+      {receivedAt(received) && (
+        <small>Reçu par le serveur le {receivedAt(received)}</small>
+      )}
+    </div>
   );
 }

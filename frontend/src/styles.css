@@ -2165,3 +2165,236 @@ dialog.athlete-card::backdrop {
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
   font-size: 15px;
 }
+
+/* ---------- Profil juge / stagiaire seul (demande du PO, 24/09/2026) ----------
+   Navigation réduite à « Mon jugement » et « Aide » : la colonne latérale devient un bandeau
+   en haut, à toutes les largeurs, et le bulletin occupe toute la largeur de l'écran. */
+.judge-only .sidebar {
+  position: static;
+  width: 100%;
+  flex-direction: row;
+  align-items: center;
+  gap: 18px;
+  padding: 8px 18px;
+  background: #ffffffe0;
+  backdrop-filter: none;
+  border-right: 0;
+  border-bottom: 1px solid white;
+}
+.judge-only .brand-plate {
+  padding: 3px 5px;
+}
+.judge-only .brand img {
+  width: 28px;
+  height: 35px;
+}
+.judge-only .brand strong {
+  font-size: 11px;
+}
+.judge-only .brand small,
+.judge-only .event-mini {
+  display: none;
+}
+.judge-only .sidebar nav {
+  flex-direction: row;
+  gap: 6px;
+  margin: 0;
+}
+.judge-only .sidebar nav a {
+  min-height: 48px;
+  font-size: 15px;
+  white-space: nowrap;
+}
+.judge-only .sidebar-bottom {
+  margin: 0 0 0 auto;
+  padding: 0;
+  text-align: right;
+}
+.judge-only .sidebar-bottom small {
+  display: block;
+  padding: 0;
+}
+.judge-only.app-shell {
+  display: block;
+}
+.judge-only .workspace {
+  margin-left: 0;
+}
+.judge-only .saving-bar {
+  left: 0;
+}
+.judge-only main {
+  max-width: none;
+  padding: 18px 22px 60px;
+}
+/* Dossards et zones de dépôt plus grands quand toute la largeur est disponible. */
+.judge-only .judge-layout {
+  gap: 18px;
+}
+.judge-only .bib-grid {
+  grid-template-columns: repeat(auto-fill, minmax(136px, 1fr));
+  gap: 14px;
+}
+.judge-only .bib {
+  min-height: 132px;
+  padding: 16px 10px;
+}
+.judge-only .bib strong {
+  font-size: 40px;
+}
+.judge-only .bib span {
+  font-size: 13px;
+}
+.judge-only .bib small {
+  font-size: 12px;
+}
+.judge-only .ranks li {
+  min-height: 74px;
+}
+.judge-only .rank-slot {
+  min-height: 72px;
+  padding: 10px 12px;
+}
+.judge-only .rank-slot > span:nth-child(2) {
+  font-size: 15px;
+}
+.judge-only .rank-number {
+  width: 46px;
+  height: 46px;
+  font-size: 21px;
+}
+@media (max-width: 800px) {
+  .judge-only .sidebar {
+    padding: 6px 10px;
+    gap: 10px;
+  }
+  .judge-only .sidebar-bottom {
+    display: block;
+    font-size: 10px;
+  }
+  .judge-only .sidebar nav a span {
+    display: none;
+  }
+}
+@media (max-width: 600px) {
+  .judge-only .sidebar .brand {
+    display: none;
+  }
+  .judge-only main,
+  .judge-only.judge-mode main {
+    padding: 6px 6px 16px;
+  }
+  .judge-only .judge-page .bib {
+    min-height: 72px;
+  }
+  .judge-only .judge-page .bib strong {
+    font-size: 28px;
+  }
+  .judge-only .judge-page .ranks li,
+  .judge-only .judge-page .rank-slot {
+    min-height: 70px;
+  }
+  .judge-only .judge-page .rank-number {
+    width: 30px;
+    height: 36px;
+    font-size: 18px;
+  }
+  .judge-only .judge-page .judge-layout > .panel {
+    max-height: max(260px, calc(100dvh - 520px));
+  }
+}
+
+/* Écran d'attente après réception du bulletin : grand, lisible de loin. */
+.judge-waiting {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 10px;
+  margin-bottom: 22px;
+  padding: 40px 24px;
+  background: linear-gradient(135deg, #e6f6ec, #f6fdf8);
+  border: 2px solid #86c39e;
+  border-radius: 19px;
+  box-shadow: 0 8px 26px #2d634112;
+}
+.judge-waiting-mark {
+  width: 64px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #195f41;
+  color: white;
+  border-radius: 50%;
+  font-size: 34px;
+  font-weight: 800;
+}
+.judge-waiting > strong {
+  font-size: 30px;
+  line-height: 1.2;
+  color: #143f2c;
+}
+.judge-waiting-main {
+  font-size: 20px;
+  line-height: 1.4;
+  color: #234b37;
+  margin: 0;
+  max-width: 34em;
+}
+.judge-waiting-stage {
+  font-size: 15px;
+  line-height: 1.5;
+  margin: 0;
+  color: #3d6650;
+  max-width: 40em;
+}
+.judge-waiting-stage .badge {
+  margin-right: 6px;
+}
+.judge-waiting > small {
+  font-size: 12px;
+  color: #5a7d6b;
+}
+.judge-waiting.upcoming {
+  background: linear-gradient(135deg, #fff7e8, #fffdf7);
+  border-color: #e3c58a;
+}
+.judge-waiting.upcoming > strong {
+  font-size: 24px;
+}
+.judge-waiting.upcoming p {
+  font-size: 16px;
+  margin: 0;
+  max-width: 34em;
+}
+.ballot-sent {
+  margin-bottom: 22px;
+}
+.ballot-sent > summary {
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  font-weight: 700;
+  padding: 0 8px;
+}
+.ballot-sent[open] > summary {
+  margin-bottom: 12px;
+}
+@media (max-width: 600px) {
+  .judge-waiting {
+    padding: 26px 14px;
+    margin-bottom: 10px;
+    border-radius: 12px;
+  }
+  .judge-waiting > strong {
+    font-size: 24px;
+  }
+  .judge-waiting-main {
+    font-size: 17px;
+  }
+  .judge-waiting-stage {
+    font-size: 14px;
+  }
+}

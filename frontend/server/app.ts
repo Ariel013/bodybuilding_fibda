@@ -13,7 +13,7 @@ import { loadCatalogue, eligibility } from "../domain/catalogue";
 import { seedDemo } from "./demo";
 import { previewImport, savePreview, commitPreview, MAX_FILE as MAX_IMPORT } from "./transfers";
 import { KINDS, renderPrint, exportDocument, parseBlank, type Filters } from "./printing";
-import { inspectImage, photoHeaders, MAX_PHOTO, OWNER_TYPES, KINDS as PHOTO_KINDS } from "./photos";
+import { inspectImage, photoHeaders, MAX_PHOTO, validOwnerKind, clubName } from "./photos";
 
 // Routes HTTP : même contrat que backend/fibda/app.py (docs/CONTRACT.md), sans WebSocket ; photos en base.
 export const VERSION = "0.2.0";
@@ -30,8 +30,19 @@ const blobBytes = (v: unknown): Uint8Array<ArrayBuffer> => {
   return copy;
 };
 
-// Retire des fiches toute référence à une photo absente de la base, avec son approbation.
+// Logos de clubs dans l'état : `club_logos[nom] = photo_id` (logo courant) et
+// `club_logos_approved[nom] = photo_id` (dernier logo dont l'usage a été autorisé). Les deux
+// tables sont créées à la demande : les états antérieurs n'en ont pas.
+function clubLogos(state: any): { current: Record<string, string>; approved: Record<string, string> } {
+  if (!state.club_logos || typeof state.club_logos !== "object") state.club_logos = {};
+  if (!state.club_logos_approved || typeof state.club_logos_approved !== "object") state.club_logos_approved = {};
+  return { current: state.club_logos, approved: state.club_logos_approved };
+}
+
+// Retire des fiches (et des clubs) toute référence à une photo absente de la base, avec son approbation.
 function reconcilePhotos(state: any, present: Set<string>): void {
+  const logos = clubLogos(state);
+  for (const table of [logos.current, logos.approved]) for (const [name, id] of Object.entries(table)) if (!present.has(id)) delete table[name];
   for (const owner of [...(state.people ?? []), ...(state.officials ?? [])]) {
     let missing = false;
     for (const k of ["photo_portrait", "photo_full", "photo_id"]) {
@@ -278,7 +289,7 @@ export function createApp(opts: AppOptions) {
     const photos: any[] = archive.photos === undefined ? [] : archive.photos;
     if (!Array.isArray(photos)) throw new Problem("Archive FIBDA attendue.");
     const photoRows = photos.map((r) => {
-      if (!r || typeof r.id !== "string" || typeof r.owner_id !== "string" || !OWNER_TYPES.has(r.owner_type) || !PHOTO_KINDS.has(r.kind) || typeof r.data !== "string") throw new Problem("Archive FIBDA attendue : photo mal formée.");
+      if (!r || typeof r.id !== "string" || typeof r.owner_id !== "string" || !validOwnerKind(r.owner_type, r.kind) || typeof r.data !== "string") throw new Problem("Archive FIBDA attendue : photo mal formée.");
       const bytes = new Uint8Array(Buffer.from(r.data, "base64"));
       const info = inspectImage(bytes);
       return { id: r.id, owner_id: r.owner_id, owner_type: r.owner_type, kind: r.kind, approved: r.approved ? 1 : 0, consent: r.consent ? 1 : 0, mime: info.mime, size: bytes.length, data: bytes, created_at: Number(r.created_at) || store.clock() };
@@ -412,25 +423,33 @@ export function createApp(opts: AppOptions) {
     const form = await c.req.parseBody().catch(() => ({}) as Record<string, unknown>);
     const file = form["file"];
     const ownerType = String(form["owner_type"] ?? "");
-    const ownerId = String(form["owner_id"] ?? "");
     const kind = String(form["kind"] ?? "");
     // Le champ « crop » du contrat est accepté mais ignoré : le recadrage se fait dans le navigateur.
     if (!(file instanceof File)) throw new Problem("Fichier requis (champ « file »).");
     if (file.size > MAX_PHOTO) throw new Problem("Photo trop volumineuse : 1 Mo au maximum après réduction par le navigateur.", 413);
-    if (!OWNER_TYPES.has(ownerType) || !PHOTO_KINDS.has(kind)) throw new Problem("Type de photo invalide.");
+    if (!validOwnerKind(ownerType, kind)) throw new Problem("Type de photo invalide.");
+    // Logo de club : owner_id est le nom exact du club (clé de `club_logos`), pas un identifiant.
+    const ownerId = ownerType === "club" ? clubName(form["owner_id"]) : String(form["owner_id"] ?? "");
     const bytes = new Uint8Array(await file.arrayBuffer());
     const info = inspectImage(bytes);
     const photoId = await store.transact(async (tx) => {
       const s = await store.read(tx);
-      const owner = find(ownerType === "person" ? s.people : s.officials, ownerId, "Personne");
+      const owner = ownerType === "club" ? null : find(ownerType === "person" ? s.people : s.officials, ownerId, "Personne");
       const ident = uid();
       await tx.execute({
         sql: "INSERT INTO photos (id, owner_id, owner_type, kind, approved, consent, mime, size, data, created_at) VALUES (?, ?, ?, ?, 0, 0, ?, ?, ?, ?)",
         args: [ident, ownerId, ownerType, kind, info.mime, bytes.length, bytes, store.clock()],
       });
-      owner[ownerType === "official" ? "photo_id" : "photo_" + kind] = ident;
-      owner.photo_approved = false;
-      owner.photo_consent = false;
+      if (owner) {
+        owner[ownerType === "official" ? "photo_id" : "photo_" + kind] = ident;
+        owner.photo_approved = false;
+        owner.photo_consent = false;
+      } else {
+        // Nouveau logo : il devient le logo courant du club ; l'autorisation précédente ne vaut pas pour lui.
+        const logos = clubLogos(s);
+        logos.current[ownerId] = ident;
+        delete logos.approved[ownerId];
+      }
       const before = s.version;
       s.version += 1;
       await store.write(tx, s, before);
@@ -455,10 +474,17 @@ export function createApp(opts: AppOptions) {
       const row = (await tx.execute({ sql: "SELECT owner_id, owner_type FROM photos WHERE id = ?", args: [photoId] })).rows[0];
       if (!row) throw new Problem("Photo inconnue.", 404);
       const s = await store.read(tx);
-      const owner = find(row.owner_type === "person" ? s.people : s.officials, String(row.owner_id), "Personne");
-      owner.photo_approved = true;
-      owner.photo_consent = true;
-      owner.approved_photo_ids = [...new Set([...(owner.approved_photo_ids ?? []), photoId])];
+      if (row.owner_type === "club") {
+        // Un logo ne s'autorise que s'il est encore le logo courant de son club.
+        const logos = clubLogos(s);
+        if (logos.current[String(row.owner_id)] !== photoId) throw new Problem("Ce logo n'est plus le logo courant du club.", 409);
+        logos.approved[String(row.owner_id)] = photoId;
+      } else {
+        const owner = find(row.owner_type === "person" ? s.people : s.officials, String(row.owner_id), "Personne");
+        owner.photo_approved = true;
+        owner.photo_consent = true;
+        owner.approved_photo_ids = [...new Set([...(owner.approved_photo_ids ?? []), photoId])];
+      }
       await tx.execute({ sql: "UPDATE photos SET approved = 1, consent = 1 WHERE id = ?", args: [photoId] });
       const before = s.version;
       s.version += 1;
@@ -469,15 +495,22 @@ export function createApp(opts: AppOptions) {
   });
 
   // Servie sans session uniquement si approuvée, consentie, listée dans approved_photo_ids du
-  // propriétaire et encore sa photo courante ; sinon, session de préparation exigée.
+  // propriétaire et encore sa photo courante (pour un club : logo courant et autorisé) ; sinon,
+  // session de préparation exigée.
   app.get("/api/v1/photos/:photo_id", async (c) => {
     const photoId = c.req.param("photo_id");
     const row = (await store.execute("SELECT * FROM photos WHERE id = ?", [photoId]))[0];
     if (!row) throw new Problem("Photo inconnue.", 404);
     const s = await store.read();
-    const owner = (row.owner_type === "person" ? s.people : s.officials).find((x: any) => x.id === row.owner_id);
-    const current = Boolean(owner) && [owner.photo_portrait, owner.photo_full, owner.photo_id].includes(photoId);
-    const isPublic = Boolean(row.approved && row.consent && owner && owner.photo_consent && owner.photo_approved && (owner.approved_photo_ids ?? []).includes(photoId) && current);
+    let isPublic: boolean;
+    if (row.owner_type === "club") {
+      const name = String(row.owner_id);
+      isPublic = Boolean(row.approved && row.consent && s.club_logos?.[name] === photoId && s.club_logos_approved?.[name] === photoId);
+    } else {
+      const owner = (row.owner_type === "person" ? s.people : s.officials).find((x: any) => x.id === row.owner_id);
+      const current = Boolean(owner) && [owner.photo_portrait, owner.photo_full, owner.photo_id].includes(photoId);
+      isPublic = Boolean(row.approved && row.consent && owner && owner.photo_consent && owner.photo_approved && (owner.approved_photo_ids ?? []).includes(photoId) && current);
+    }
     if (!isPublic) require(await actor(c), PREPARATION);
     return c.body(blobBytes(row.data), 200, photoHeaders(String(row.mime), isPublic));
   });

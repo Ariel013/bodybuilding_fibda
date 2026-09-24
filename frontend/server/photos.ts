@@ -8,8 +8,26 @@ import { Problem } from "./problem";
 
 export const MAX_PHOTO = 1024 * 1024;
 export const MAX_PIXELS = 25_000_000;
-export const OWNER_TYPES = new Set(["person", "official"]);
-export const KINDS = new Set(["portrait", "full"]);
+// Propriétaires : une personne, un officiel, ou un club (owner_id = nom exact du club, cf. clubName).
+export const OWNER_TYPES = new Set(["person", "official", "club"]);
+// Le type « logo » est réservé aux clubs, et un club n'a qu'un logo.
+export const KINDS = new Set(["portrait", "full", "logo"]);
+export const CLUB_NAME_MAX = 80;
+
+// Nom de club tel qu'il sert de clé dans `state.club_logos` : la valeur saisie sur les fiches,
+// espaces de bord retirés, 1 à 80 caractères. Lève un Problem 422 sinon.
+export function clubName(raw: unknown): string {
+  const name = typeof raw === "string" ? raw.trim() : "";
+  if (!name) throw new Problem("Nom du club obligatoire pour un logo.");
+  if (name.length > CLUB_NAME_MAX) throw new Problem(`Nom du club trop long : ${CLUB_NAME_MAX} caractères au maximum.`);
+  return name;
+}
+
+// Cohérence propriétaire / type : « logo » va avec « club », et seulement avec lui.
+export function validOwnerKind(ownerType: string, kind: string): boolean {
+  if (!OWNER_TYPES.has(ownerType) || !KINDS.has(kind)) return false;
+  return (ownerType === "club") === (kind === "logo");
+}
 
 export type ImageInfo = { mime: "image/jpeg" | "image/png" | "image/webp"; width: number; height: number };
 

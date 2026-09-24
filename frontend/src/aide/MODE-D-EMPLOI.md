@@ -116,7 +116,7 @@ Cette section suit une compétition du début à la fin, dans l'ordre que le ser
 
 - Où : onglet **Régie & écrans**, panneau « Préparer la scène » : « Écran cible », « Contenu », puis « Diffuser sur … » après contrôle de « Aperçu du contenu préparé ».
 - Les contenus : « Accueil » (page neutre), « Catégorie / mosaïque » (athlètes appelés sur le plateau), « Qualifiés » (après une éliminatoire ou une demi-finale validée), « Révélation progressive », « Podium », « Classement » (finales et toutes catégories validés), « Un officiel », « Mosaïque des officiels ».
-- Le serveur refuse toute scène de résultat sur une manche non validée (« Résultat non validé : diffusion interdite. »).
+- Le serveur refuse toute scène de résultat sur une manche non validée (« Résultat non validé : diffusion interdite. »). Côté régie, le champ « Manche » ne propose déjà que les manches de la catégorie choisie et, pour un contenu de résultat, que les manches validées.
 - « Révélation progressive » annonce les athlètes un par un, du dernier au premier, avec « Nombre de places révélées » qui augmente d'une unité à chaque diffusion (« Annoncez les athlètes un par un du dernier au premier. »). « Podium » et « Classement » restent refusés tant que tous les athlètes de la manche n'ont pas été annoncés sur cet écran (« Terminez les annonces avant le podium et le classement complet. ») : le suspense de la cérémonie est garanti par le serveur, pas par la prudence de la régie.
 - Les photos non approuvées sont remplacées par l'emblème sur tous les écrans.
 
@@ -185,6 +185,9 @@ Le chef de jury et le responsable disposent des onglets Vue d'ensemble, Prépara
 2. Une photo importée est **privée** : elle n'apparaît sur aucun écran public tant qu'elle n'est pas approuvée. Cochez « Consentement de diffusion recueilli et photo vérifiée » seulement si l'autorisation de la personne (ou de son représentant légal pour un mineur) est en votre possession, puis « Autoriser la diffusion publique ».
 3. Importer une nouvelle photo remplace la précédente et annule l'approbation : il faut approuver de nouveau.
 4. L'import par archive ZIP n'est pas disponible sur cette version : ajoutez les photos une par une.
+5. **Logo du club** : sur la fiche de l'athlète (rubrique **Athlètes**), le bloc « Logo du club » se trouve sous le champ Club. Il montre le logo déjà enregistré pour le club saisi (nom exact, espaces de bord ignorés) ; « Importer le logo » ou « Remplacer le logo » l'envoie réduit à 400 px de côté (un PNG garde sa transparence). Un logo vaut pour tous les athlètes du même club : il suffit de l'importer une fois. Il reste privé tant que vous n'avez pas coché « Autorisation d'usage du logo obtenue du club » puis « Autoriser l'affichage public du logo » ; un logo remplacé doit être autorisé de nouveau.
+6. **Photo d'un officiel** : rubrique **Officiels**, ouvrez ou enregistrez le profil, puis utilisez le bloc « Photographie et droit de diffusion » sous le formulaire (une seule photo par officiel, de type Portrait), avec le même contrôle de consentement.
+7. **Photo d'un juge** : un compte utilisateur n'a pas de photo. Rubrique **Jury**, panneau « Accès et approbations », colonne « Fiche officiel » : si aucune fiche officiel ne porte le nom du compte, « Créer la fiche officiel de ce compte » en crée une (prénom = premier mot du nom, nom = la suite, fonction = rôle du compte) ; complétez-la ensuite dans **Officiels**, où se prend la photo. Un compte dont le nom tient en un seul mot se crée directement dans **Officiels**.
 
 ### Contrôler les mesures
 
@@ -300,9 +303,10 @@ Rôles : judge
 5. Vérifiez le compteur « rangs attribués » (ou « sélectionnés ») ; corrigez avec « Annuler », « Rétablir » ou la croix d'un rang (voir « Corriger »).
 6. Touchez « Vérifier et valider », relisez le résumé, puis « Confirmer et transmettre » (voir « Valider et attendre l'accusé de réception »).
 7. Attendez « Bulletin reçu et verrouillé par le serveur » : sans ce message, le bulletin n'est pas reçu.
-8. Si la connexion se coupe, gardez la page ouverte et, au retour du réseau, vérifiez si le bulletin est reçu avant de renvoyer quoi que ce soit (voir « Brouillon local »).
+8. L'écran d'attente « Bulletin validé et reçu. Patientez : la prochaine manche s'affichera ici automatiquement. » s'affiche alors en grand : ne touchez à rien, la manche suivante remplace cet écran d'elle-même (voir « Attendre la manche suivante »).
+9. Si la connexion se coupe, gardez la page ouverte et, au retour du réseau, vérifiez si le bulletin est reçu avant de renvoyer quoi que ce soit (voir « Brouillon local »).
 
-Le juge arrive directement dans **Mon jugement** après connexion. Il dispose aussi des onglets Examens, Documents et Aide.
+Un compte qui n'a que le rôle juge arrive directement dans **Mon jugement** après connexion et ne voit que **Mon jugement**, **Documents** (son bulletin imprimable) et **Aide**, plus « Déconnexion » : le bulletin occupe toute la largeur de l'écran, avec des dossards et des rangs plus grands. Un juge qui cumule un autre rôle (chef, responsable, secrétariat…) garde tous les onglets de ses rôles.
 
 ### Se connecter et vérifier son bulletin
 
@@ -328,15 +332,23 @@ Le juge arrive directement dans **Mon jugement** après connexion. Il dispose au
 3. Attendez « Bulletin reçu et verrouillé par le serveur » avec l'heure de réception. Le bulletin devient non modifiable. Sans ce message, le bulletin n'est pas reçu.
 4. Après réception, seul le circuit de correction du chef de jury permet une modification : signalez-lui toute erreur.
 
+### Attendre la manche suivante
+
+- Dès que le serveur a reçu votre bulletin, **Mon jugement** affiche en grand « Bulletin validé et reçu. Patientez : la prochaine manche s'affichera ici automatiquement. », avec l'heure de réception et l'état de la manche : « Ouvert » tant que le serveur attend d'autres bulletins (puis « Tous les bulletins des juges officiels sont reçus » quand c'est le cas), « À valider » quand le chef de jury valide les résultats, « Validé » ensuite.
+- Le nombre de bulletins reçus chez les autres juges n'est pas affiché : le serveur ne transmet à un juge que son propre bulletin.
+- « Voir mon bulletin transmis » permet de relire, sans pouvoir le modifier, le classement ou la sélection que vous avez envoyé.
+- Quand le chef de jury valide la manche, le serveur ouvre la manche suivante et elle remplace l'écran d'attente sur votre téléphone, sans action de votre part et sans recharger la page : l'écran se met à jour dès que le serveur le signale ou, au plus tard, à la prochaine interrogation automatique (quelques secondes). Si une manche à venir vous est affectée mais pas encore ouverte, l'écran l'indique (« Manche à venir ») et le bulletin s'ouvre de lui-même.
+- Si vous n'êtes pas membre du jury de la manche suivante, l'écran d'attente reste affiché sur votre dernière manche : c'est normal.
+
 ### Brouillon local
 
 - Vos placements sont enregistrés comme brouillon sur ce téléphone (« Brouillon local enregistré à … »). Ils ne sont pas envoyés au chef à chaque geste.
 - Après un rechargement, l'application propose « Reprendre le brouillon » ou « Écarter le brouillon ». Le brouillon ne se transfère pas sur un autre téléphone.
 - Si la connexion se coupe, gardez la page ouverte. Au retour du réseau, vérifiez si le bulletin apparaît comme reçu avant de le renvoyer : l'application n'envoie jamais un ancien brouillon toute seule.
 
-### Documents
+### Documents imprimés
 
-- L'onglet **Documents** donne accès aux bulletins vierges, à votre bulletin individuel et à l'examen des stagiaires, en version imprimable.
+- Votre bulletin individuel imprimable est dans votre onglet **Documents** (« Bulletin individuel ») ; les fiches de notation vierges sont éditées par le chef de jury ou le secrétariat.
 
 ## Profil : Stagiaire
 Rôles : trainee
@@ -348,9 +360,10 @@ Rôles : trainee
 3. Classez les dossards (glisser sur un rang) ou sélectionnez-les (éliminatoires) comme un juge (voir « Juger comme stagiaire »).
 4. Touchez « Vérifier et valider » puis « Confirmer et transmettre » avant la fin du compte à rebours « Temps restant après le dernier juge officiel » (60 secondes).
 5. Attendez « Bulletin reçu et verrouillé par le serveur » : sans ce message, le bulletin n'est pas reçu.
-6. Après la compétition, lisez votre rapport dans **Examens** et imprimez-le depuis **Documents** (voir « Consulter son examen »).
+6. L'écran d'attente « Bulletin validé et reçu. Patientez : la prochaine manche s'affichera ici automatiquement. » s'affiche en grand : ne touchez à rien, la manche suivante apparaît d'elle-même (voir « Attendre la manche suivante »).
+7. Après la compétition, consultez votre rapport d'examen dans l'onglet **Examens** (voir « Consulter son examen »).
 
-Le stagiaire juge avec son propre bulletin, hors calcul officiel. Il dispose des onglets Mon jugement, Examens, Documents et Aide.
+Le stagiaire juge avec son propre bulletin, hors calcul officiel. Un compte qui n'a que le rôle stagiaire (ou juge et stagiaire) ne voit que **Mon jugement**, **Examens** (son rapport), **Documents** et **Aide**, plus « Déconnexion », en pleine largeur.
 
 ### Juger comme stagiaire
 
@@ -358,10 +371,14 @@ Le stagiaire juge avec son propre bulletin, hors calcul officiel. Il dispose des
 - Le bulletin porte la mention « Bulletin stagiaire, hors calcul officiel ».
 - Après le dernier bulletin officiel, un compte à rebours « Temps restant après le dernier juge officiel » s'affiche : vous avez 60 secondes. Passé ce délai, le bulletin est marqué « Délai expiré » et ne peut plus être envoyé.
 
+### Attendre la manche suivante
+
+- Dès réception de votre bulletin, l'écran d'attente « Bulletin validé et reçu. Patientez : la prochaine manche s'affichera ici automatiquement. » remplace le bulletin, avec l'heure de réception et l'état de la manche. « Voir mon bulletin transmis » permet de le relire sans le modifier.
+- Quand le chef de jury valide la manche, la suivante s'affiche d'elle-même sur votre téléphone, sans recharger la page. Si vous n'êtes pas affecté à la manche suivante, l'écran d'attente reste sur votre dernière manche.
+
 ### Consulter son examen
 
-- L'onglet **Examens** affiche votre rapport : moyenne, catégories évaluées, paires comparées, concordance par manche avec la version de référence du chef. « N/D » signifie qu'une mesure manque, pas une note de zéro.
-- L'onglet **Documents** permet d'imprimer votre bulletin individuel et le rapport « Examen des stagiaires ».
+- Votre rapport (moyenne, catégories évaluées, paires comparées, concordance par manche avec la version de référence du chef) se lit dans votre onglet **Examens** et s'imprime depuis **Documents** (« Examen des stagiaires »). « N/D » signifie qu'une mesure manque, pas une note de zéro.
 
 ## Profil : Secrétariat
 Rôles : secretariat
@@ -372,7 +389,7 @@ Rôles : secretariat
 2. Enregistrez chaque athlète sur une seule fiche (identité, contrôles, taille, poids) : la catégorie et l'inscription sont créées automatiquement ; cochez « Statut approuvé », « Licence contrôlée », « Paiement reçu » et « Mesures confirmées » seulement après contrôle réel, l'inscription est alors confirmée (voir « Inscrire les athlètes »).
 3. Importez les photos une par une et touchez « Autoriser la diffusion publique » seulement avec le consentement en main (voir « Photographies »).
 4. La taille et le poids se saisissent sur la fiche athlète ; la rubrique **Mesures** sert de vue d'ensemble (voir « Saisir les mesures »).
-5. Renseignez les officiels (rubrique **Officiels**) et imprimez les documents, dont les « Bulletins vierges », depuis la rubrique **Documents** (voir « Officiels et documents »).
+5. Renseignez les officiels (rubrique **Officiels**) et imprimez les documents, dont les « Bulletins vierges » (fiches de notation papier) et la liste « Officiels » avec le jury, depuis la rubrique **Documents** (voir « Officiels et documents »).
 6. Pendant la cérémonie, dans **Récompenses** : « Récompense préparée », « Récompense remise », puis « Enregistrer la remise » (voir « Récompenses »).
 
 Le secrétariat dispose des onglets Vue d'ensemble, Préparation, Récompenses, Documents et Aide.
@@ -390,6 +407,9 @@ Le secrétariat dispose des onglets Vue d'ensemble, Préparation, Récompenses, 
 2. Une photo importée est **privée** : elle n'apparaît sur aucun écran public tant qu'elle n'est pas approuvée. Cochez « Consentement de diffusion recueilli et photo vérifiée » seulement si l'autorisation de la personne (ou de son représentant légal pour un mineur) est en votre possession, puis « Autoriser la diffusion publique ».
 3. Importer une nouvelle photo remplace la précédente et annule l'approbation : il faut approuver de nouveau.
 4. L'import par archive ZIP n'est pas disponible sur cette version : ajoutez les photos une par une.
+5. **Logo du club** : sur la fiche de l'athlète (rubrique **Athlètes**), le bloc « Logo du club » se trouve sous le champ Club. Il montre le logo déjà enregistré pour le club saisi (nom exact, espaces de bord ignorés) ; « Importer le logo » ou « Remplacer le logo » l'envoie réduit à 400 px de côté (un PNG garde sa transparence). Un logo vaut pour tous les athlètes du même club : il suffit de l'importer une fois. Il reste privé tant que vous n'avez pas coché « Autorisation d'usage du logo obtenue du club » puis « Autoriser l'affichage public du logo » ; un logo remplacé doit être autorisé de nouveau.
+6. **Photo d'un officiel** : rubrique **Officiels**, ouvrez ou enregistrez le profil, puis utilisez le bloc « Photographie et droit de diffusion » sous le formulaire (une seule photo par officiel, de type Portrait), avec le même contrôle de consentement.
+7. **Photo d'un juge** : un compte utilisateur n'a pas de photo. Rubrique **Jury**, panneau « Accès et approbations », colonne « Fiche officiel » : si aucune fiche officiel ne porte le nom du compte, « Créer la fiche officiel de ce compte » en crée une (prénom = premier mot du nom, nom = la suite, fonction = rôle du compte) ; complétez-la ensuite dans **Officiels**, où se prend la photo. Un compte dont le nom tient en un seul mot se crée directement dans **Officiels**.
 
 ### Saisir les mesures
 
@@ -399,6 +419,8 @@ Le secrétariat dispose des onglets Vue d'ensemble, Préparation, Récompenses, 
 
 - Rubrique **Officiels** : fiche de présentation des officiels (nom, parcours). Elle ne donne aucun droit de connexion.
 - Rubrique **Documents** : impressions (Fiches d'inscription, Ordre de passage, Inscriptions, Mesures, Bulletins vierges…) et exports « Résultats CSV », « Résultats XLSX » (tableur) et « Résultats PDF » (mise en page simple, une catégorie par page). Vérifiez la catégorie et la manche choisies avant d'imprimer.
+- « Bulletins vierges » : la fiche de notation papier, une page par manche (voir « Plan papier de secours » dans « Tous les profils »). En-tête « Catégorie <discipline> — Sous-catégorie <catégorie> — <phase> », tableau « Dossard | Position (1 à n) » sans nom d'athlète, ligne « Juge : ______ Signature : ______ ». Pour une éliminatoire, colonne « Sélectionné ☐ » et quota rappelé dans l'en-tête. Une manche choisie donne sa fiche ; une catégorie choisie, toutes ses manches ; sans choix, toutes les manches non encore validées.
+- « Officiels » : la liste des officiels (nom, fonction, organisation, pays, parcours) suivie de la section « Jury » : les comptes approuvés du chef de jury, du responsable, des juges et des stagiaires avec leur rôle. Formats HTML, CSV, XLSX et PDF ; jamais de code personnel dans le document.
 - « Fiches d'inscription » : une page par athlète en deux parties. En haut, la partie remplie par l'athlète : Nom, Prénoms, Date de naissance, Téléphone (WhatsApp de préférence), Club, Nationalité ; en bas, la « Partie réservée aux juges » : Taille, Poids, Catégorie ; puis les zones de signature « Athlète », « Juge » et « Date ». Toute valeur absente est imprimée comme une ligne à compléter à la main. Pour toute la compétition, une catégorie ou un athlète ; des fiches vierges s'impriment en ajoutant `?blank=10` (de 1 à 50 fiches, une par page) à l'adresse du document. Réservée à la préparation : elle contient le téléphone et la date de naissance des athlètes. Les contrôles administratifs, dossards et photos restent dans « Inscriptions » et « Mesures ».
 - « Ordre de passage » : sans filtre, l'ordre général de toutes les catégories ; avec une catégorie ou une manche, l'ordre détaillé des athlètes encore en lice, dans l'ordre tiré au sort.
 
@@ -428,12 +450,15 @@ La régie dispose des onglets Vue d'ensemble, Régie & écrans, Récompenses et 
 
 1. Onglet **Régie & écrans**, panneau « Préparer la scène » : choisissez l'écran cible (principal, secondaire, coulisses).
 2. Choisissez le contenu : Accueil, Catégorie / mosaïque, Qualifiés, Révélation progressive, Podium, Classement, Un officiel, Mosaïque des officiels. Selon le contenu, précisez la catégorie, la manche, l'officiel, le nombre de places révélées ou l'athlète appelé, et positionnez les athlètes sur le plateau (ligne, gauche, centre, droite, en attente).
-3. Contrôlez « Aperçu du contenu préparé », puis touchez « Diffuser sur … ». « Scènes actuellement diffusées » rappelle ce que chaque écran montre.
-4. Les classements et podiums ne se diffusent qu'après validation par le chef. Les photos non approuvées ne s'affichent pas : l'écran public applique lui-même les filtres du serveur.
+3. La manche suit la catégorie : le champ « Manche » ne propose que les manches de la catégorie choisie (Men's Physique choisi, aucune manche Bikini n'apparaît) ; la manche en cours, ou la dernière validée, est présélectionnée. Pour « Qualifiés », « Révélation progressive », « Podium » et « Classement », seules les manches déjà validées par le chef sont proposées ; sinon le champ indique « Aucune manche validée pour cette catégorie ». Les toutes catégories apparaissent dans la liste des catégories sous « Toutes catégories · discipline ».
+4. Contrôlez « Aperçu du contenu préparé », puis touchez « Diffuser sur … ». « Scènes actuellement diffusées » rappelle ce que chaque écran montre.
+5. Les classements et podiums ne se diffusent qu'après validation par le chef. Les photos non approuvées ne s'affichent pas : l'écran public applique lui-même les filtres du serveur.
+6. Logo du club : quand un logo a été enregistré pour le club d'un athlète (nom de club exactement identique), il s'affiche à côté du nom du club dans l'aperçu et sur les écrans publics. Sans logo enregistré, rien ne s'affiche.
+7. Championnat national : le classement et la récompense « Meilleur pays » n'existent pas ; seul « Meilleur club » apparaît dans **Récompenses**. Ils ne sont visibles qu'en compétition internationale.
 
 ### Récompenses
 
-- Onglet **Récompenses** : suivi des cartes préparées et remises, « Imprimer la liste » pour la cérémonie.
+- Onglet **Récompenses** : suivi des cartes préparées et remises, « Imprimer la liste » pour la cérémonie. En championnat national, aucune carte « Meilleur pays » n'apparaît.
 
 ## Profil : Speaker
 Rôles : speaker
@@ -450,8 +475,8 @@ Le speaker dispose des onglets Vue d'ensemble, Régie & écrans et Aide.
 ### Suivre le plateau
 
 1. Onglet **Régie & écrans** : l'écran « Espace speaker » propose « Ouvrir l'écran speaker ».
-2. La vue speaker affiche la scène en cours et le tableau « Conduite et prononciations » : dossard, athlète, prononciation du nom, club et pays, pour les athlètes actuellement appelés sur le plateau.
-3. Le speaker n'annonce que ce qui est affiché : la régie pilote les scènes, le chef valide les résultats.
+2. La vue speaker affiche la scène en cours et le tableau « Conduite et prononciations » : dossard, athlète, prononciation du nom, club et pays, pour les athlètes actuellement appelés sur le plateau. Le logo du club, s'il a été enregistré, apparaît à côté du club dans la mosaïque.
+3. Le speaker n'annonce que ce qui est affiché : la régie pilote les scènes, le chef valide les résultats. En championnat national, il n'y a pas de « Meilleur pays » à annoncer.
 
 ## Profil : Commission
 Rôles : commission
@@ -491,7 +516,7 @@ Rôles : tous
 
 ### Plan papier de secours
 
-- Avant la compétition, le secrétariat ou le chef imprime les « Bulletins vierges » de chaque catégorie depuis l'onglet **Documents** (bulletin de sélection avec cases pour les éliminatoires, bulletin de classement avec rangs pour les finales).
+- Avant la compétition, le secrétariat ou le chef imprime les « Bulletins vierges » depuis l'onglet **Documents** : une fiche de notation par manche et par page, lisible telle quelle, avec la catégorie, la sous-catégorie et la phase en en-tête, les dossards dans l'ordre croissant et une colonne « Position (1 à n) » à remplir (colonne « Sélectionné ☐ » et quota pour une éliminatoire), sans nom d'athlète, puis la ligne « Juge : ______ Signature : ______ ». Sans choix de catégorie ni de manche, le document contient toutes les manches non encore validées. Prévoir un exemplaire par juge et par manche.
 - Si le réseau tombe pendant une manche, le chef distribue les feuilles ; chaque juge remplit, signe et remet sa feuille. Le chef saisit ensuite chaque feuille dans **Compétition**, « Saisie papier et correction contrôlée », avec le nom du juge, la signature et le motif. Les feuilles signées sont conservées.
 
 ### Perte de connexion

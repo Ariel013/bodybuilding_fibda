@@ -107,7 +107,9 @@ test("écran public sans session, jamais de données privées", async () => {
   const r = await app.request("/api/v1/public/main");
   assert.equal(r.status, 200);
   const pub = await body(r);
-  assert.deepEqual(Object.keys(pub).sort(), ["categories", "demo", "entries", "mode", "name", "officials", "people", "rounds", "scene", "version"]);
+  // `club_logos` (24/09/2026) : nom de club → identifiant de photo, limité aux clubs affichés ; jamais de donnée personnelle.
+  assert.deepEqual(Object.keys(pub).sort(), ["categories", "club_logos", "demo", "entries", "mode", "name", "officials", "people", "rounds", "scene", "version"]);
+  assert.deepEqual(pub.club_logos, {});
   assert.equal((await app.request("/api/v1/public/regie")).status, 404);
   assert.equal((await app.request("/api/v1/state")).status, 401);
 });

@@ -3,7 +3,9 @@ import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { createApp } from "./app";
 import { Store } from "./store";
-import { documentSections, renderPrint, exportDocument, escapeHtml, fiches, parseBlank, FICHE_COLUMNS, BLANK_LINE, JUDGES_PART, TITLES } from "./printing";
+import { documentSections, renderPrint, exportDocument, escapeHtml, fiches, parseBlank, notationSections, juryRows, FICHE_COLUMNS, BLANK_LINE, JUDGES_PART, TITLES, JUDGE_LINE, CHECKBOX, CHECKBOX_PDF, TO_CONFIRM } from "./printing";
+import { publicState, collective, syncCollectiveRewards } from "./projections";
+import { newState } from "./state";
 import { xlsxRead } from "./xlsx";
 import { extractText, buildPdf, Page, wrap, encodeText, textWidth } from "./pdf";
 
@@ -46,7 +48,7 @@ function state(): any {
     version: 2,
     people: [{ id: "p", first_name: "A", last_name: "B" }],
     entries: [{ id: "e", person_id: "p", category_id: "c", bib: 7 }],
-    categories: [{ id: "c", name: "Senior" }],
+    categories: [{ id: "c", name: "Senior", discipline: "bikini" }],
     rounds: [{ id: "r", category_id: "c", phase: "final", status: "validated", participant_ids: ["e"], ballots: { j: { ranking: ["e"], version: 2, source: "paper" } }, result: { official: [{ entry_id: "e", rank: 1, total: 3 }] } }],
   };
 }
@@ -65,10 +67,11 @@ test("échappement HTML et isolation du bulletin", () => {
   assert.ok(html.includes('onclick="window.print()"') && html.includes("section{break-before:page}"));
 });
 
-test("bulletin vierge et export csv", () => {
+test("fiche de notation d'une éliminatoire et export csv", () => {
   const event = state();
-  Object.assign(event.rounds[0], { phase: "elimination", quota: 1 });
-  assert.ok(renderPrint(event, "blank").includes("sélectionner 1"));
+  Object.assign(event.rounds[0], { phase: "elimination", quota: 1, status: "open" });
+  const html = renderPrint(event, "blank");
+  assert.ok(html.includes("quota 1") && html.includes("Sélectionné " + CHECKBOX));
   const { data, mime, name } = exportDocument(event, "registrations", "csv");
   assert.deepEqual([...data.slice(0, 3)], [0xef, 0xbb, 0xbf]);
   assert.equal(mime, "text/csv; charset=utf-8");
@@ -179,14 +182,20 @@ test("affectation, bulletins manquants ou expirés, récompenses", () => {
   event.users = [{ id: "j", name: "Jean" }, { id: "t", name: "Tina" }, { id: "m", name: "Marc" }];
   Object.assign(rnd, { panel: ["j", "m"], trainees: ["t"], expired_trainees: ["t"] });
   rnd.ballots.j.corrections = [{ reason: "Rectification" }];
-  let blank = documentSections(event, "blank");
-  assert.equal(blank.length, 3);
-  assert.ok(blank[0][0].includes("Jean (officiel)") && blank[2][0].includes("Tina (stagiaire)"));
+  // Fiche de notation : une seule fiche par manche, quel que soit le jury, sans nom de juge ni d'athlète.
+  let blank = documentSections(event, "blank", { round_id: "r" });
+  assert.equal(blank.length, 1);
+  assert.ok(!blank[0][0].includes("Jean") && !blank[0][0].includes("Tina"));
   const recap = documentSections(event, "recap");
   assert.ok(recap[0][0].includes("Rectifié") && recap[1][0].includes("Manquant") && recap[2][0].includes("Expiré"));
   rnd.participant_ids = [];
-  blank = documentSections(event, "blank", { judge_id: "j" });
-  assert.ok(blank[0][0].includes("participants à confirmer") && blank[0][2].length === 6);
+  event.entries[0].confirmed = true;
+  blank = documentSections(event, "blank", { judge_id: "j", round_id: "r" });
+  // Participants inconnus : dossards confirmés de la catégorie, mention à confirmer.
+  assert.ok(blank[0][0].includes(TO_CONFIRM) && blank[0][2].length === 1 && blank[0][2][0][0] === 7);
+  event.entries[0].confirmed = false;
+  blank = documentSections(event, "blank", { round_id: "r" });
+  assert.ok(blank[0][0].includes(TO_CONFIRM) && blank[0][2].length === 6, "aucun dossard confirmé : six lignes vierges");
   event.rewards = [{ title: "Champion", category_id: "c", entry_id: "e", kind: "overall" }, { title: "Club", collective_name: "Club Abidjan" }];
   const rewards = documentSections(event, "rewards");
   assert.equal(rewards.length, 2);
@@ -204,6 +213,110 @@ test("affectation, bulletins manquants ou expirés, récompenses", () => {
   assert.deepEqual(programme[0][2], [["", 7, "A B", ""]]);
   event.officials = [{ first_name: "Invité", last_name: "FICTIF", post: "Président" }];
   assert.deepEqual(documentSections(event, "officials")[0][2], [["Invité FICTIF", "Président", "", "", ""]]);
+  // Seconde section « Jury » : comptes approuvés et actifs à rôle de jury, chef en tête, jamais le
+  // directeur, la régie, ni un compte non approuvé ou inactif.
+  event.users = [
+    { id: "j", name: "Jean", roles: ["judge"], approved: true, active: true },
+    { id: "c", name: "Chef", roles: ["chief", "judge"], approved: true, active: true },
+    { id: "t", name: "Tina", roles: ["trainee"], approved: true, active: true },
+    { id: "d", name: "Dir", roles: ["director"], approved: true, active: true },
+    { id: "x", name: "Attente", roles: ["judge"], approved: false, active: true },
+    { id: "y", name: "Parti", roles: ["judge"], approved: true, active: false },
+    { id: "r", name: "Régie", roles: ["regie"], approved: true, active: true },
+  ];
+  const officials = documentSections(event, "officials");
+  assert.equal(officials.length, 2);
+  assert.deepEqual(officials[1].slice(0, 2), ["Jury", ["Nom", "Rôle"]]);
+  assert.deepEqual(officials[1][2], [["Chef", "Chef de jury, Juge"], ["Jean", "Juge"], ["Tina", "Stagiaire"]]);
+  assert.deepEqual(juryRows([{ id: "u", roles: ["judge"] }]), [["u", "Juge"]], "sans nom ni indicateurs : identifiant, compte réputé actif");
+  assert.deepEqual(documentSections({ ...event, users: undefined }, "officials")[1][2], []);
+});
+
+test("fiche de notation : en-tête catégorie / sous-catégorie / phase, dossards croissants sans nom, ligne juge, une page par manche, filtres", () => {
+  const event = state();
+  event.people.push({ id: "q", first_name: "Zoé", last_name: "Nom" }, { id: "s", first_name: "Yann", last_name: "Autre" });
+  event.entries.push({ id: "f", person_id: "q", category_id: "c", bib: 3, confirmed: true }, { id: "g", person_id: "s", category_id: "c", bib: 12, confirmed: true });
+  const final = event.rounds[0];
+  final.participant_ids = ["e", "f", "g"];
+  final.status = "open";
+  // Sans filtre : uniquement les manches non validées, dans l'ordre des catégories puis des phases.
+  event.categories.push({ id: "c2", name: "Junior", discipline: "mens_physique", order: 1 });
+  event.rounds.push(
+    { id: "r2", category_id: "c2", phase: "final", status: "validated", participant_ids: ["h"], ballots: {}, result: { official: [] } },
+    { id: "r3", category_id: "c2", phase: "elimination", status: "pending", quota: 2, participant_ids: ["h", "i"], ballots: {} },
+  );
+  event.entries.push({ id: "h", person_id: "q", category_id: "c2", bib: 21, confirmed: true }, { id: "i", person_id: "s", category_id: "c2", bib: 20, confirmed: true });
+  let sections = notationSections(event);
+  assert.deepEqual(sections.map((x) => x[0]), ["Catégorie Bikini — Sous-catégorie Senior — Finale", "Catégorie Men’s Physique — Sous-catégorie Junior — Éliminatoire — quota 2"]);
+  assert.deepEqual(sections[0][1], ["Dossard", "Position (1 à 3)"]);
+  assert.deepEqual(sections[0][2], [[3, ""], [7, ""], [12, ""]], "dossards croissants, position à écrire, aucun nom");
+  assert.deepEqual(sections[1][1], ["Dossard", "Sélectionné " + CHECKBOX]);
+  assert.deepEqual(sections[1][2], [[20, CHECKBOX], [21, CHECKBOX]]);
+  // `category_id` : toutes les manches de la catégorie, validées comprises ; `round_id` : une seule.
+  assert.deepEqual(notationSections(event, { category_id: "c2" }).map((x) => x[0].split(" — ")[2]), ["Éliminatoire", "Finale"]);
+  assert.equal(notationSections(event, { round_id: "r2" }).length, 1);
+  assert.equal(documentSections(event, "blank", { round_id: "r2" })[0][0], "Catégorie Men’s Physique — Sous-catégorie Junior — Finale");
+  // Overall sans catégorie dans l'état : discipline et section de la manche.
+  event.rounds.push({ id: "o", category_id: "overall-bikini-amateur", discipline: "bikini", section: "amateur", phase: "overall", status: "pending", participant_ids: ["e"], ballots: {} });
+  assert.equal(notationSections(event, { round_id: "o" })[0][0], "Catégorie Bikini — Sous-catégorie Toutes catégories amateur — Toutes catégories");
+
+  // HTML : titre du document, une section par manche, en-tête lisible, ligne juge, aucun nom d'athlète.
+  const html = renderPrint(event, "blank");
+  assert.ok(html.includes("<title>Fiche de notation</title>"));
+  assert.equal((html.match(/<section class="notation">/g) ?? []).length, 3);
+  assert.ok(html.includes("<h2>Catégorie Bikini — Sous-catégorie Senior — Finale</h2>"));
+  assert.ok(html.includes("<th>Position (1 à 3)</th>") && html.includes("<td>3</td><td></td>"));
+  assert.ok(html.includes(escapeHtml(JUDGE_LINE)));
+  for (const name of ["Zoé", "Yann", "A B", "Nom", "Autre"]) assert.ok(!html.includes(">" + name), "nom absent : " + name);
+  assert.ok(!html.includes("Nom et signature"), "la ligne juge remplace la signature générique");
+  // CSV et XLSX : mêmes sections ; PDF : une page par fiche, ligne juge, case « [ ] » en WinAnsi.
+  const csv = decode(exportDocument(event, "blank", "csv").data.slice(3));
+  assert.ok(csv.includes("Catégorie Bikini — Sous-catégorie Senior — Finale\r\nDossard,Position (1 à 3)\r\n3,\r\n7,\r\n12,\r\n"));
+  assert.ok(!csv.includes("Zoé"));
+  const pdf = exportDocument(event, "blank", "pdf").data;
+  assert.equal(checkPdf(pdf).pages, 3);
+  const text = extractText(pdf);
+  assert.ok(text.includes("Juge :") && text.includes("Signature :") && text.includes(CHECKBOX_PDF) && !text.includes("?"));
+  assert.ok(!text.includes("Zoé") && !text.includes("Yann"));
+  const sheet = xlsxRead(exportDocument(event, "blank", "xlsx").data);
+  assert.ok(JSON.stringify(sheet).includes("Sélectionné"));
+  // Aucune manche non validée : document vide, sans invention.
+  for (const r of event.rounds) r.status = "validated";
+  assert.equal(notationSections(event).length, 0);
+  assert.ok(renderPrint(event, "blank").includes("Aucune donnée correspondant à cette sélection."));
+});
+
+test("écran public : logos de club limités aux clubs affichés ; mode national sans « Meilleur pays »", () => {
+  const s = newState();
+  s.people = [
+    { id: "a", first_name: "A", last_name: "Test", club: "Club A", country: "CI", nationalities: ["CI"] },
+    { id: "b", first_name: "B", last_name: "Test", club: "Club B", country: "CI", nationalities: ["CI"] },
+  ];
+  s.entries = [{ id: "ea", person_id: "a", category_id: "cat", bib: 1, confirmed: true }, { id: "eb", person_id: "b", category_id: "other", bib: 2, confirmed: true }];
+  s.categories = [{ id: "cat", name: "Catégorie", discipline: "bodybuilding", section: "amateur" }];
+  s.public.main = { kind: "category", category_id: "cat" };
+  // Sans `club_logos` dans l'état : objet vide.
+  assert.deepEqual(publicState(s, "main").club_logos, {});
+  s.club_logos = { "Club A": "logo-a", "Club B": "logo-b", "Club C": "logo-c", "Club D": "" };
+  assert.deepEqual(publicState(s, "main").club_logos, { "Club A": "logo-a" }, "seuls les clubs des athlètes affichés");
+
+  // Finale validée : en national, aucun classement pays ni récompense « Meilleur pays » ; un ancien
+  // « Meilleur pays » est retiré. En international (délégations approuvées), il apparaît.
+  s.entries[1].category_id = "cat";
+  s.rounds = [{ id: "r", category_id: "cat", discipline: "bodybuilding", section: "amateur", phase: "final", status: "validated", participant_ids: ["ea", "eb"], panel: [], trainees: [], ballots: {}, result: { official: [{ entry_id: "ea", rank: 1 }, { entry_id: "eb", rank: 2 }], version: 1 } }];
+  s.rewards = [{ id: "old", kind: "country", collective_name: "CI", title: "Meilleur pays" }];
+  let out = collective(s);
+  assert.equal(s.mode, "national");
+  assert.deepEqual(out.country, []);
+  assert.deepEqual(Object.keys(out.winners), ["club"]);
+  syncCollectiveRewards(s);
+  assert.deepEqual(s.rewards.map((r: any) => r.kind), ["club"]);
+  s.mode = "international";
+  for (const p of s.people) Object.assign(p, { delegation_approved: true, organizer_approved: true });
+  out = collective(s);
+  assert.equal(out.winners.country, "CI");
+  syncCollectiveRewards(s);
+  assert.deepEqual(s.rewards.map((r: any) => r.title).sort(), ["Meilleur club", "Meilleur pays"]);
 });
 
 // Démonstration peuplée, juges connectés ; renvoie l'app, le cookie chef, les cookies par utilisateur et les codes.
@@ -232,7 +345,7 @@ async function demo() {
   return { app, store, chief, clients, codes: seeded.codes as Record<string, any>, state: seeded.state, command };
 }
 
-test("parcours : bulletin vierge par catégorie, bulletin du juge, export csv, refus au juge", async () => {
+test("parcours : fiche de notation par catégorie, bulletin du juge, export csv, refus au juge", async () => {
   const { app, chief, clients, codes, command } = await demo();
   await command("event.update", { settings: { collective_tiebreak: "Décision motivée chef et directeur après égalité des places" } });
   // Un athlète de la première catégorie porte un nom à script et une formule tableur, avant le démarrage
@@ -248,27 +361,27 @@ test("parcours : bulletin vierge par catégorie, bulletin du juge, export csv, r
   assert.ok(entries.length >= 2 && others.length >= 1);
   const people: Record<string, any> = Object.fromEntries(state.people.map((p: any) => [p.id, p]));
 
-  // Bulletin vierge d'une catégorie : ses dossards, ses athlètes, son nom, la case de rang et la signature ;
-  // aucun dossard d'une autre catégorie, aucune donnée privée (club, mesures, contact).
+  // Fiche de notation d'une catégorie : ses dossards, son nom, la colonne de position et la ligne juge ;
+  // aucun nom d'athlète, aucun dossard d'une autre catégorie, aucune donnée privée (club, mesures, contact).
   let r = await app.request("/api/v1/print/blank?category_id=" + category.id, { headers: { cookie: chief } });
   assert.equal(r.status, 200);
   assert.match(r.headers.get("content-type") ?? "", /text\/html/);
   const blank = await r.text();
-  assert.ok(blank.includes("<title>Bulletin vierge</title>"));
-  assert.ok(blank.includes(category.name));
+  assert.ok(blank.includes("<title>Fiche de notation</title>"));
+  assert.ok(blank.includes("Sous-catégorie " + escapeHtml(category.name)));
   for (const e of entries) {
     assert.ok(blank.includes("<td>" + e.bib + "</td>"), "dossard " + e.bib);
-    assert.ok(blank.includes(escapeHtml(people[e.person_id].first_name)));
+    assert.ok(!blank.includes(escapeHtml(people[e.person_id].last_name)), "aucun nom d'athlète");
   }
   for (const e of others) assert.ok(!blank.includes("<td>" + e.bib + "</td>"), "dossard étranger " + e.bib);
-  assert.ok(blank.includes("<th>Rang</th>") || blank.includes("<th>Sélection</th>"));
-  assert.ok(blank.includes("<td>______</td>") || blank.includes("<td>[ ]</td>"));
-  assert.ok(blank.includes("Nom et signature"));
+  assert.ok(blank.includes("<th>Position (1 à ") || blank.includes("<th>Sélectionné"));
+  assert.ok(blank.includes(escapeHtml(JUDGE_LINE)));
   assert.ok(!blank.includes("Club fictif") && !blank.includes("height_cm") && !blank.includes("private_contact"));
-  // Une section (saut de page) par juge et par tour de la catégorie : chaque juge a son bulletin.
-  const expected = state.rounds.filter((x: any) => x.category_id === category.id).reduce((n: number, x: any) => n + x.panel.length + x.trainees.length, 0);
+  // Une section (saut de page) par manche de la catégorie, quel que soit le nombre de juges.
+  const expected = state.rounds.filter((x: any) => x.category_id === category.id).length;
   assert.ok(expected > 0);
-  assert.equal((blank.match(/<section>/g) ?? []).length, expected);
+  assert.equal((blank.match(/<section class="notation">/g) ?? []).length, expected);
+  // Un juge reçoit les fiches de ses propres tours (droits inchangés : direction sans restriction, juge = ses tours).
 
   // Un juge : ses bulletins uniquement ; le bulletin d'un autre juge est refusé ; jamais les résultats.
   const judges = Object.entries(codes).filter(([, a]) => a.roles.includes("judge") && !a.roles.includes("chief"));
@@ -285,6 +398,10 @@ test("parcours : bulletin vierge par catégorie, bulletin du juge, export csv, r
   assert.equal(r.status, 403);
   r = await app.request("/api/v1/print/blank?judge_id=" + second[0], { headers: { cookie: mine } });
   assert.equal(r.status, 403);
+  r = await app.request("/api/v1/print/blank", { headers: { cookie: mine } });
+  assert.equal(r.status, 200);
+  html = await r.text();
+  assert.equal((html.match(/<section class="notation">/g) ?? []).length, state.rounds.filter((x: any) => [...x.panel, ...x.trainees].includes(first[0]) && !["validated", "published"].includes(x.status)).length);
   r = await app.request("/api/v1/print/exams?judge_id=" + second[0], { headers: { cookie: mine } });
   assert.equal(r.status, 403);
   // Un juge n'apprend pas les documents inexistants (droits avant reconnaissance) ; le chef reçoit 422.
@@ -331,8 +448,9 @@ test("parcours : bulletin vierge par catégorie, bulletin du juge, export csv, r
   assert.equal(r.headers.get("content-type"), "application/pdf");
   r = await app.request("/api/v1/export/registrations?format=txt", { headers: { cookie: chief } });
   assert.equal(r.status, 422);
-  // Le nom porteur de script est échappé dans le HTML (bulletin vierge compris) et neutralisé dans le csv.
-  assert.ok(!blank.includes("<script>") && blank.includes("&lt;script&gt;alert(1)&lt;/script&gt;"));
+  // Le nom porteur de script est échappé dans le HTML et neutralisé dans le csv ; la fiche de notation
+  // ne porte aucun nom, ni brut ni échappé.
+  assert.ok(!blank.includes("<script>") && !blank.includes("alert(1)"));
   html = await (await app.request("/api/v1/print/registrations", { headers: { cookie: chief } })).text();
   assert.ok(!html.includes("<script>") && html.includes("&lt;script&gt;alert(1)&lt;/script&gt;"));
   const csv = await (await app.request("/api/v1/export/registrations?format=csv", { headers: { cookie: chief } })).text();
@@ -342,10 +460,17 @@ test("parcours : bulletin vierge par catégorie, bulletin du juge, export csv, r
 test("officiels imprimables par la préparation, récapitulatif et examens filtrés pour un juge", async () => {
   const { app, store, chief, clients, codes, command } = await demo();
   await command("official.save", { official: { id: randomUUID(), first_name: "Invité", last_name: "FICTIF", post: "Président", organization: "Test", country: "CI" } });
-  assert.ok((await (await app.request("/api/v1/print/officials", { headers: { cookie: chief } })).text()).includes("Invité"));
+  const officialsHtml = await (await app.request("/api/v1/print/officials", { headers: { cookie: chief } })).text();
+  assert.ok(officialsHtml.includes("Invité"));
+  // Section « Jury » : les comptes approuvés à rôle de jury, avec leur rôle, jamais leur code.
+  const chiefName = Object.values(codes).find((a: any) => a.roles.includes("chief"))!.name;
+  assert.ok(officialsHtml.includes(">Jury - version") && officialsHtml.includes("<td>" + escapeHtml(chiefName) + "</td><td>Chef de jury"));
   const r = await app.request("/api/v1/export/officials?format=csv", { headers: { cookie: chief } });
   assert.equal(r.status, 200);
-  assert.ok((await r.text()).includes("Invité FICTIF,Président,Test,CI,"));
+  const officialsCsv = await r.text();
+  assert.ok(officialsCsv.includes("Invité FICTIF,Président,Test,CI,"));
+  assert.ok(officialsCsv.includes("Jury\r\nNom,Rôle\r\n") && officialsCsv.includes(chiefName + ",Chef de jury"));
+  for (const access of Object.values(codes)) if (access.code) assert.ok(!officialsCsv.includes(access.code) && !officialsHtml.includes(access.code), "code personnel absent du document");
 
   // Même montage que test_judge_cannot_import_backup_or_read_other_ballots : un tour écrit directement
   // dans le magasin, deux juges avec un bulletin chacun, un programme d'examen pour chacun.

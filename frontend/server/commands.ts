@@ -4,7 +4,7 @@ import { find, uid } from "./util";
 import type { Store, Conn } from "./store";
 import type { User } from "./state";
 import { applyPreparation } from "./preparation";
-import { applySport, applyCorrection } from "./workflow";
+import { applySport, applyCorrection, motif } from "./workflow";
 import { exams, collective } from "./projections";
 
 // Dispatch des commandes : copie de commands.py. Chaque commande vérifie ses droits côté serveur.
@@ -120,7 +120,7 @@ export async function applyCommand(store: Store, conn: Conn, state: any, actor: 
     if (!report) throw new Problem("Programme d’examen absent.");
     if (!["approved", "rejected", "deferred"].includes(p.decision) || !String(p.reason ?? "").trim()) throw new Problem("Décision et motif requis.");
     if (p.decision === "approved" && !report.passed) throw new Problem("Les conditions de réussite ne sont pas atteintes.");
-    state.exam_decisions.push({ id: uid(), ...p, by: actor.id, at: now, report });
+    state.exam_decisions.push({ id: uid(), ...p, reason: motif(p.reason), by: actor.id, at: now, report });
     return {};
   }
   if (kind === "collective.decide") {
@@ -140,7 +140,7 @@ export async function applyCommand(store: Store, conn: Conn, state: any, actor: 
       if (!chief || !director || chief.winner === director.winner || [chief.by, director.by].includes(actor.id)) throw new Problem("Le responsable arbitre uniquement un désaccord préalable entre le chef et le directeur.");
       arbitration = [chief.id, director.id];
     }
-    state.collective_decisions.push({ id: uid(), kind: k, winner: p.winner, reason: p.reason, by: actor.id, roles: actor.roles, at: now, criterion: state.settings.collective_tiebreak, revision: result.revision, arbitrates: arbitration });
+    state.collective_decisions.push({ id: uid(), kind: k, winner: p.winner, reason: motif(p.reason), by: actor.id, roles: actor.roles, at: now, criterion: state.settings.collective_tiebreak, revision: result.revision, arbitrates: arbitration });
     return {};
   }
   throw new Problem("Commande inconnue.", 404);

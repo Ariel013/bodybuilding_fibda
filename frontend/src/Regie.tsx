@@ -42,10 +42,64 @@ const scenes: Record<string, string> = {
   official: "Un officiel",
   officials: "Mosaïque des officiels",
 };
+/** Scènes qui exigent une manche au résultat validé ou publié (le serveur le vérifie aussi). */
+const VALIDATED_SCENES = ["qualifiers", "reveal", "podium", "ranking"];
+const CLOSED = ["validated", "published"];
+/**
+ * Catégories proposées à la régie : celles de l'état, plus les catégories virtuelles des overalls
+ * (toutes catégories, overall final) qui n'y figurent pas mais portent bien des manches.
+ */
+export function regieCategories(s: State): { id: string; name: string }[] {
+  const known = new Set(s.categories.map((c) => c.id));
+  const virtual = new Map<string, string>();
+  for (const r of s.rounds) {
+    if (known.has(r.category_id) || virtual.has(r.category_id)) continue;
+    virtual.set(
+      r.category_id,
+      r.grand_final
+        ? "Overall final · " + (labels[r.section ?? ""] || r.section || "")
+        : `Toutes catégories · ${r.discipline || ""} ${labels[r.section ?? ""] || r.section || ""}`.trim(),
+    );
+  }
+  return [
+    ...s.categories.map((c) => ({ id: c.id, name: c.name })),
+    ...Array.from(virtual, ([id, name]) => ({ id, name })),
+  ];
+}
+/**
+ * Manches proposées pour une catégorie et un contenu (PO 24/09/2026) : uniquement celles de la
+ * catégorie choisie ; pour un contenu de résultat, uniquement celles au résultat validé ou publié.
+ * Sans catégorie, aucune manche.
+ */
+export function roundsFor(s: State, category: string, kind: string) {
+  if (!category) return [];
+  return s.rounds.filter(
+    (r) =>
+      r.category_id === category &&
+      (!VALIDATED_SCENES.includes(kind) || CLOSED.includes(r.status)),
+  );
+}
+/**
+ * Manche présélectionnée parmi les manches proposées : la manche courante si elle en fait
+ * partie, sinon la dernière validée, sinon l'unique manche proposée, sinon aucune.
+ */
+export function defaultRound(
+  s: State,
+  proposed: { id: string; status: string }[],
+): string {
+  const active = proposed.find((r) => r.id === s.active_round_id);
+  if (active) return active.id;
+  const closed = proposed.filter((r) => CLOSED.includes(r.status));
+  if (closed.length) return closed[closed.length - 1].id;
+  return proposed.length === 1 ? proposed[0].id : "";
+}
 export function Regie({ s, command }: { s: State; command: Command }) {
+  const activeRound = s.rounds.find((r) => r.id === s.active_round_id);
   const [screen, setScreen] = useState("main"),
     [kind, setKind] = useState("idle"),
-    [category, setCategory] = useState(s.categories[0]?.id || ""),
+    [category, setCategory] = useState(
+      activeRound?.category_id || s.categories[0]?.id || "",
+    ),
     [round, setRound] = useState(s.active_round_id || ""),
     [official, setOfficial] = useState(""),
     [officials, setOfficials] = useState<string[]>([]),
@@ -63,6 +117,14 @@ export function Regie({ s, command }: { s: State; command: Command }) {
     called_entry_id: called,
     positions,
   };
+  const categoryOptions = regieCategories(s);
+  const proposedRounds = roundsFor(s, category, kind);
+  // La manche suit toujours la catégorie et le contenu choisis : jamais une manche d'une autre
+  // catégorie, jamais une manche non validée pour un contenu de résultat.
+  useEffect(() => {
+    if (!proposedRounds.some((r) => r.id === round))
+      setRound(defaultRound(s, proposedRounds));
+  }, [category, kind, s.version]);
   const selected = s.rounds.find((r) => r.id === round);
   const canDirect = s.me.roles.some((role: string) =>
     ["chief", "responsable", "director", "regie"].includes(role),
@@ -138,7 +200,7 @@ export function Regie({ s, command }: { s: State; command: Command }) {
                 onChange={(e) => setCategory(e.target.value)}
               >
                 <option value="">Aucune</option>
-                {s.categories.map((c) => (
+                {categoryOptions.map((c) => (
                   <option key={c.id} value={c.id}>
                     {c.name}
                   </option>
@@ -147,11 +209,19 @@ export function Regie({ s, command }: { s: State; command: Command }) {
             </Field>
             <Field label="Manche">
               <select value={round} onChange={(e) => setRound(e.target.value)}>
-                <option value="">Aucune</option>
-                {s.rounds.map((r) => (
+                <option value="">
+                  {!category
+                    ? "Choisissez d’abord une catégorie"
+                    : proposedRounds.length
+                      ? "Aucune"
+                      : VALIDATED_SCENES.includes(kind)
+                        ? "Aucune manche validée pour cette catégorie"
+                        : "Aucune manche pour cette catégorie"}
+                </option>
+                {proposedRounds.map((r) => (
                   <option key={r.id} value={r.id}>
-                    {s.categories.find((c) => c.id === r.category_id)?.name} ·{" "}
-                    {labels[r.phase]}
+                    {r.grand_final ? "Toutes disciplines" : labels[r.phase]} ·{" "}
+                    {labels[r.status] || r.status}
                   </option>
                 ))}
               </select>
@@ -506,6 +576,7 @@ export function ScreenContent({
                   </strong>
                   <h2>{personName(p)}</h2>
                   <p>
+                    <ClubLogo logos={data.club_logos} club={p?.club} />
                     {p?.club} · {paysAvecDrapeau(p?.country)}
                   </p>
                   {scene.called_entry_id === id && (
@@ -523,7 +594,33 @@ export function ScreenContent({
     </>
   );
 }
+/**
+ * Logo du club (contrat du 24/09/2026) : `club_logos[nom exact du club]` = identifiant d'une photo
+ * servie par /api/v1/photos/<id>. Sans entrée, rien ne s'affiche.
+ */
+export function ClubLogo({
+  logos,
+  club,
+}: {
+  logos?: Record<string, string> | null;
+  club?: string | null;
+}) {
+  const id = club && logos ? logos[club] : "";
+  if (!id) return null;
+  return (
+    <img
+      className="club-logo"
+      src={"/api/v1/photos/" + id}
+      alt={club || ""}
+      style={{ height: "1.4em", verticalAlign: "middle", marginRight: "0.4em" }}
+    />
+  );
+}
 export function Rewards({ s, command }: { s: State; command: Command }) {
+  // Mode national (PO 24/09/2026) : aucun classement ni récompense « Meilleur pays ».
+  const rewards = s.rewards.filter(
+    (r) => s.mode !== "national" || r.kind !== "country",
+  );
   const [discipline, setDiscipline] = useState(
     s.categories[0]?.discipline || "bodybuilding",
   );
@@ -548,11 +645,11 @@ export function Rewards({ s, command }: { s: State; command: Command }) {
         seulement après la remise effective.
       </Notice>
       <div className="rewards-grid">
-        {s.rewards.map((r) => (
+        {rewards.map((r) => (
           <Reward key={r.id} reward={r} s={s} command={command} />
         ))}
       </div>
-      {!s.rewards.length && (
+      {!rewards.length && (
         <Panel>
           <Empty>
             Les récompenses apparaissent après la validation des résultats

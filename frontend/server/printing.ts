@@ -3,6 +3,7 @@ import { PHASES, passageOrderValid } from "./workflow";
 import { Problem } from "./problem";
 import { xlsxWrite, type XlsxRow } from "./xlsx";
 import { renderTablePdf, renderDiplomaPdf, type DiplomaPage } from "./pdf";
+import { loadCatalogue } from "../domain/catalogue";
 
 // Documents imprimables et téléchargeables : portage de backend/fibda/printing.py.
 // L'habilitation appartient à l'appelant (route dans app.ts), comme côté Python.
@@ -11,7 +12,7 @@ import { renderTablePdf, renderDiplomaPdf, type DiplomaPage } from "./pdf";
 
 export const KINDS = new Set(["blank", "ballot", "recap", "registrations", "programme", "measures", "results", "rewards", "diploma", "exams", "officials", "fiche"]);
 export const TITLES: Record<string, string> = {
-  blank: "Bulletin vierge",
+  blank: "Fiche de notation",
   ballot: "Bulletin individuel",
   recap: "Récapitulatif des bulletins",
   registrations: "Inscriptions",
@@ -44,6 +45,67 @@ export function formatDrawTime(at: unknown): string {
   const n = Number(at);
   if (!Number.isFinite(n)) return "";
   return new Date(n * 1000).toLocaleString("fr-FR", { timeZone: "Africa/Abidjan", dateStyle: "short", timeStyle: "short" });
+}
+
+// --- Fiche de notation par passage --------------------------------------------------------
+// Demande du PO (24/09/2026) : le plan papier en cas de coupure. Une fiche par manche et par page,
+// en-tête « Catégorie <discipline> — Sous-catégorie <catégorie> — <phase> » (vocabulaire du PO :
+// « catégorie » = discipline, « sous-catégorie » = catégorie de l'application), tableau Dossard
+// (ordre croissant) | Position (1 à n), sans aucun nom d'athlète, ligne juge / signature. Pour une
+// éliminatoire, colonne « Sélectionné ☐ » et quota rappelé dans l'en-tête.
+export const JUDGE_LINE = "Juge : ______________________ Signature : ______________________";
+export const CHECKBOX = "\u2610"; // ☐ ; remplacé par « [ ] » dans le PDF (police WinAnsi)
+export const CHECKBOX_PDF = "[ ]";
+export const TO_CONFIRM = "participants à confirmer";
+const CLOSED_STATUSES = ["validated", "published", "no_title"];
+
+let disciplineNames: Map<string, string> | null = null;
+// Libellé en clair d'une discipline du catalogue (« bikini » → « Bikini ») ; à défaut l'identifiant.
+export function disciplineLabel(id: unknown): string {
+  if (!disciplineNames) disciplineNames = new Map(loadCatalogue().disciplines.map((d) => [d.id, d.name]));
+  return disciplineNames.get(text(id)) ?? text(id);
+}
+
+// Titre d'une fiche : discipline en clair, nom de la catégorie (ou, pour un overall sans catégorie
+// dans l'état, la section), phase en français.
+export function notationTitle(state: any, r: any): string {
+  const cat = (state.categories ?? []).find((c: any) => c.id === r.category_id) ?? null;
+  const discipline = disciplineLabel(cat?.discipline ?? r.discipline ?? "");
+  const sub = cat?.name ?? [phaseLabel(r), SECTION_LABELS[r.section] ?? text(r.section)].filter(Boolean).join(" ");
+  return `Catégorie ${discipline} — Sous-catégorie ${sub} — ${phaseLabel(r)}`;
+}
+const SECTION_LABELS: Record<string, string> = { amateur: "amateur", pro: "professionnel" };
+
+// Manches concernées : `round_id` une manche ; `category_id` toutes les manches de la catégorie ;
+// sans filtre, toutes les manches non validées de la compétition. Ordre des catégories puis des phases.
+export function notationRounds(state: any, filters: Filters = {}): any[] {
+  const roundId = filters.round_id || null;
+  const categoryId = filters.category_id || null;
+  const order = new Map<string, number>((state.categories ?? []).map((c: any, i: number) => [c.id, c.order ?? i]));
+  return (state.rounds ?? [])
+    .filter((r: any) => (roundId ? r.id === roundId : categoryId ? r.category_id === categoryId : !CLOSED_STATUSES.includes(r.status)))
+    .sort((a: any, b: any) => (order.get(a.category_id) ?? 1e9) - (order.get(b.category_id) ?? 1e9) || (PHASES[a.phase] ?? 99) - (PHASES[b.phase] ?? 99));
+}
+
+// Sections « Fiche de notation » : dossards seuls, jamais de nom ; sans participants connus (manche
+// dépendante en attente), les dossards confirmés de la catégorie avec mention à confirmer ; sans
+// aucun dossard, six lignes vierges.
+export function notationSections(state: any, filters: Filters = {}): Section[] {
+  const entries: any[] = state.entries ?? [];
+  const bibOf = (id: string): Cell => entries.find((e) => e.id === id)?.bib ?? "";
+  const byBib = (ids: string[]): Cell[] => ids.map(bibOf).sort((a, b) => Number(a) - Number(b));
+  return notationRounds(state, filters).map((r: any): Section => {
+    const selection = r.phase === "elimination";
+    let title = notationTitle(state, r);
+    let bibs = byBib(r.participant_ids ?? []);
+    if (!bibs.length) {
+      bibs = byBib(entries.filter((e) => e.category_id === r.category_id && e.confirmed).map((e) => e.id));
+      title += " — " + TO_CONFIRM;
+    }
+    const rows: Cell[][] = bibs.length ? bibs.map((b) => [b, selection ? CHECKBOX : ""]) : Array.from({ length: 6 }, () => ["______", selection ? CHECKBOX : ""]);
+    if (selection) title += " — quota " + (text(r.quota) || "à confirmer");
+    return [title, ["Dossard", selection ? `Sélectionné ${CHECKBOX}` : `Position (1 à ${rows.length})`], rows];
+  });
 }
 
 // Équivalent de `html.escape(s, quote=True)` : & < > " ' échappés.
@@ -150,6 +212,17 @@ export function fiches(state: any, filters: Filters = {}): Fiche[] {
 // Une ligne par athlète pour csv et xlsx, colonnes FICHE_COLUMNS, valeurs brutes (vide si absente).
 const ficheTableRow = (fiche: Fiche): Cell[] => [...fiche.athlete.map(([, v]) => v), ...fiche.judges.map(([, v]) => v)];
 
+// Membres du jury (PO 24/09/2026) : comptes approuvés et actifs portant un rôle de jury, avec ces
+// rôles en français ; chef puis responsable, juges, stagiaires, puis par nom. Jamais de code.
+export const JURY_ROLES: [string, string][] = [["chief", "Chef de jury"], ["responsable", "Responsable"], ["judge", "Juge"], ["trainee", "Stagiaire"]];
+export function juryRows(users: any[]): Cell[][] {
+  const rank = (u: any): number => JURY_ROLES.findIndex(([id]) => (u.roles ?? []).includes(id));
+  return users
+    .filter((u) => u.approved !== false && u.active !== false && rank(u) >= 0)
+    .sort((a, b) => rank(a) - rank(b) || text(a.name).localeCompare(text(b.name), "fr"))
+    .map((u) => [text(u.name ?? u.id), JURY_ROLES.filter(([id]) => (u.roles ?? []).includes(id)).map(([, label]) => label).join(", ")]);
+}
+
 // `document_sections` (printing.py:11-116) : même découpage, mêmes libellés.
 export function documentSections(state: any, kind: string, filters: Filters = {}): Section[] {
   if (!KINDS.has(kind)) throw new Problem("Document inconnu"); // ValueError → 422 côté Python (app.py:117)
@@ -169,11 +242,15 @@ export function documentSections(state: any, kind: string, filters: Filters = {}
   const rounds: any[] = (state.rounds ?? []).filter((r: any) => (!roundId || r.id === roundId) && (!categoryId || r.category_id === categoryId));
   const sections: Section[] = [];
 
-  if (["blank", "ballot", "recap", "results", "diploma"].includes(kind)) {
+  if (kind === "blank") {
+    // Fiche de notation par passage : `judge_id` n'y change rien (une fiche par manche, sans nom de
+    // juge) ; pour un juge, la route a déjà restreint `state.rounds` à ses propres tours.
+    sections.push(...notationSections(state, filters));
+  } else if (["ballot", "recap", "results", "diploma"].includes(kind)) {
     for (const rnd of rounds) {
       const cat = (state.categories ?? []).find((c: any) => c.id === rnd.category_id) ?? {};
       const title = `${cat.name ?? rnd.category_id} - ${rnd.phase ?? ""} - ${rnd.status ?? ""}`;
-      if (["blank", "ballot", "recap"].includes(kind)) {
+      if (["ballot", "recap"].includes(kind)) {
         const panel: string[] = rnd.panel ?? Object.keys(rnd.ballots ?? {});
         const trainees: string[] = rnd.trainees ?? [];
         const judges = [...new Set([...panel, ...trainees])];
@@ -183,18 +260,6 @@ export function documentSections(state: any, kind: string, filters: Filters = {}
           if (judgeId && uid !== judgeId) continue;
           const role = trainees.includes(uid) ? "stagiaire" : "officiel";
           let label = title + ` - juge ${judgeName(uid)} (${role}) - tour version ${rnd.version ?? 1}`;
-          if (kind === "blank") {
-            // Plan papier de secours : une ligne par dossard, case de rang ou de sélection.
-            const selection = rnd.phase === "elimination";
-            const participants: string[] = rnd.participant_ids ?? [];
-            let rows: Cell[][] = participants.map((e) => [...identity(e), selection ? "[ ]" : "______"]);
-            if (!participants.length) {
-              label += " - participants à confirmer";
-              rows = Array.from({ length: 6 }, () => ["______", "________________________", selection ? "[ ]" : "______"]);
-            }
-            sections.push([label + (selection ? ` - sélectionner ${rnd.quota ?? ""} athlètes` : " - rangs uniques"), ["Dossard", "Athlète", selection ? "Sélection" : "Rang"], rows]);
-            continue;
-          }
           const ballot = (rnd.ballots ?? {})[uid];
           if (!ballot) {
             const status = (rnd.expired_trainees ?? []).includes(uid) ? "Expiré" : "Manquant";
@@ -302,6 +367,7 @@ export function documentSections(state: any, kind: string, filters: Filters = {}
       ["Nom", "Fonction", "Organisation", "Pays", "Parcours"],
       (state.officials ?? []).map((p: any) => [((p.first_name ?? "") + " " + (p.last_name ?? "")).trim(), p.post ?? "", p.organization ?? "", p.country ?? "", p.pedigree ?? ""]),
     ]);
+    sections.push(["Jury", ["Nom", "Rôle"], juryRows(state.users ?? [])]);
   } else if (kind === "rewards") {
     // Regroupement par catégorie, dans l'ordre d'apparition (dict Python ordonné).
     const grouped = new Map<string, Cell[][]>();
@@ -360,6 +426,18 @@ export function renderPrint(state: any, kind: string, filters: Filters = {}): st
       parts.push('<div class="juges"><h3>' + JUDGES_PART + "</h3>" + kv(fiche.judges, "juges") + "</div>");
       parts.push('<div class="signatures"><div>Athlète</div><div>Juge</div><div>Date</div></div>');
       parts.push("<footer>Version événement " + version + "</footer></section>");
+    }
+    if (!sections.length) parts.push("<p>Aucune donnée correspondant à cette sélection.</p>");
+    parts.push("</html>");
+    return parts.join("");
+  }
+  if (kind === "blank") {
+    // Une fiche par page, en-tête lisible tel quel, cases hautes pour écrire au stylo, ligne juge.
+    parts.push("<style>.notation h2{font-size:15pt;margin:8px 0}.notation th:last-child,.notation td:last-child{width:45%}.notation td{height:9mm;font-size:14pt}.notation footer{font-size:12pt;margin-top:24px}</style>");
+    for (const [title, headers, rows] of sections) {
+      parts.push('<section class="notation"><h2>' + esc(title) + "</h2><table><thead><tr>" + headers.map((h) => "<th>" + esc(h) + "</th>").join("") + "</tr></thead><tbody>");
+      for (const row of rows) parts.push("<tr>" + row.map((c) => "<td>" + esc(c) + "</td>").join("") + "</tr>");
+      parts.push("</tbody></table><footer>" + esc(JUDGE_LINE) + " - version événement " + version + "</footer></section>");
     }
     if (!sections.length) parts.push("<p>Aucune donnée correspondant à cette sélection.</p>");
     parts.push("</html>");
@@ -430,7 +508,9 @@ export function exportDocument(state: any, kind: string, format: string, filters
     return { data: xlsxWrite(TITLES[kind], rows), mime: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", name: kind + ".xlsx" };
   }
   if (format === "pdf") {
-    const footerLeft = "Date : __________ Nom et signature : ____________________";
+    const footerLeft = kind === "blank" ? JUDGE_LINE : "Date : __________ Nom et signature : ____________________";
+    // La case ☐ n'existe pas en WinAnsi : « [ ] » dans le PDF de la fiche de notation.
+    if (kind === "blank") sections = sections.map(([title, headers, rows]) => [title, headers.map((h) => h.replace(CHECKBOX, CHECKBOX_PDF)), rows.map((row) => row.map((c) => (c === CHECKBOX ? CHECKBOX_PDF : c)))]);
     const footerRight = "Version événement " + text(state.version ?? "") + " - page";
     let data: Uint8Array<ArrayBuffer>;
     if (kind === "diploma") {

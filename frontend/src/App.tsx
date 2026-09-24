@@ -83,6 +83,10 @@ const navigation = [
   },
   { id: "aide", label: "Aide", icon: "?", roles: [] },
 ];
+/** Vrai si la personne n'a que des rôles juge et/ou stagiaire (même critère que l'onglet d'arrivée, testé dans ranking.test.ts). */
+function judgeOnlyProfile(roles: string[]): boolean {
+  return landingTab(roles) === "judge";
+}
 export default function App() {
   const screen = location.pathname.match(
     /^\/screen\/(main|secondary|backstage|speaker)\/?$/,
@@ -233,10 +237,16 @@ function Workspace() {
       setPending(false);
     }
   }
+  // Demande du PO (24/09/2026) : un compte qui n'a que des rôles juge et/ou stagiaire ne voit que
+  // « Mon jugement » et « Aide », en pleine largeur, pour se concentrer sur son bulletin.
+  const judgeOnly = judgeOnlyProfile(user?.roles || []);
   const available = navigation.filter(
     (n) =>
       (!n.roles.length || n.roles.some((r) => user?.roles?.includes(r))) &&
-      !(n.id === "judge" && user?.roles?.includes("director")),
+      !(n.id === "judge" && user?.roles?.includes("director")) &&
+      // Profil juge ou stagiaire seul : Mon jugement, Aide, et ses propres documents
+      // (bulletin imprimable ; rapport d'examen pour un stagiaire).
+      (!judgeOnly || ["judge", "aide", "documents", "exams"].includes(n.id)),
   );
   const active = available.some((n) => n.id === tab)
     ? tab
@@ -265,7 +275,13 @@ function Workspace() {
       />
     );
   return (
-    <div className={"app-shell" + (active === "judge" ? " judge-mode" : "")}>
+    <div
+      className={
+        "app-shell" +
+        (active === "judge" ? " judge-mode" : "") +
+        (judgeOnly ? " judge-only" : "")
+      }
+    >
       <aside className="sidebar">
         <a className="brand" href="#home">
           <span className="brand-plate">
@@ -310,29 +326,31 @@ function Workspace() {
               {user.roles?.map((r: string) => labels[r]).join(" · ")}
             </small>
           </div>
-          <label className="global-mode">
-            <span>
-              Mode{" "}
-              {s.status !== "preparation" ? "· verrouillé" : "de compétition"}
-            </span>
-            <select
-              aria-label="Mode de compétition"
-              value={s.mode}
-              disabled={
-                s.status !== "preparation" ||
-                pending ||
-                !canCommand(user.roles, "event.update")
-              }
-              onChange={(e) => {
-                command("event.update", { mode: e.target.value }).catch(
-                  () => {},
-                );
-              }}
-            >
-              <option value="national">National</option>
-              <option value="international">International</option>
-            </select>
-          </label>
+          {!judgeOnly && (
+            <label className="global-mode">
+              <span>
+                Mode{" "}
+                {s.status !== "preparation" ? "· verrouillé" : "de compétition"}
+              </span>
+              <select
+                aria-label="Mode de compétition"
+                value={s.mode}
+                disabled={
+                  s.status !== "preparation" ||
+                  pending ||
+                  !canCommand(user.roles, "event.update")
+                }
+                onChange={(e) => {
+                  command("event.update", { mode: e.target.value }).catch(
+                    () => {},
+                  );
+                }}
+              >
+                <option value="national">National</option>
+                <option value="international">International</option>
+              </select>
+            </label>
+          )}
           <div className="actions">
             {s.demo && <span className="badge demo">DÉMONSTRATION</span>}
             <span className="connection">

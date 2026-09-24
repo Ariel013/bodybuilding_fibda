@@ -798,7 +798,7 @@ export function Collective({ s, command }: { s: State; command: Command }) {
           : "Classement provisoire : des finales restent à valider. Aucune récompense collective définitive n’est attribuée."}
       </Notice>
       <div className="split">
-        {["club", "country"].map((k) => (
+        {["club", "country"].filter((k) => k === "club" || s.mode === "international").map((k) => (
           <Panel title={k === "club" ? "Clubs" : "Pays"} key={k}>
             {data.winners?.[k] ? (
               <p>
@@ -823,7 +823,7 @@ export function Collective({ s, command }: { s: State; command: Command }) {
           <Field label="Classement">
             <select value={kind} onChange={(e) => setKind(e.target.value)}>
               <option value="club">Club</option>
-              <option value="country">Pays</option>
+              {s.mode === "international" && <option value="country">Pays</option>}
             </select>
           </Field>
           <Field label="Vainqueur">

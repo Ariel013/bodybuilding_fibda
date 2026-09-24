@@ -53,13 +53,22 @@ export function publicState(state: any, screen: string): any {
     }
     rounds.push(pr);
   }
+  const people = state.people.filter((p: any) => personIds.has(p.id)).map(publicPerson);
+  // Logos de club (contrat du 24/09/2026) : `state.club_logos` associe le nom exact du club à
+  // l'identifiant d'une photo servie par /api/v1/photos/<id> ; l'écran public n'en reçoit que les
+  // clubs des athlètes affichés. Absent de l'état → objet vide, rien ne s'affiche.
+  const clubs = new Set<string>(people.map((p: any) => p.club).filter(Boolean));
+  // Seul un logo autorisé (`club_logos_approved[club] === id`) est publié : un logo en attente reste privé.
+  const approvedLogos: Record<string, string> = state.club_logos_approved ?? {};
+  const club_logos = Object.fromEntries(Object.entries(state.club_logos ?? {}).filter(([club, id]) => clubs.has(club) && typeof id === "string" && id && approvedLogos[club] === id));
   return {
     name: state.name,
     mode: state.mode,
     demo: state.demo,
     version: state.version,
     scene,
-    people: state.people.filter((p: any) => personIds.has(p.id)).map(publicPerson),
+    people,
+    club_logos,
     entries,
     officials: state.officials.filter((o: any) => officialIds.has(o.id)).map(publicOfficial),
     categories: state.categories.filter((c: any) => c.id === scene.category_id || (r && c.id === r.category_id)).map((c: any) => pick(c, ["id", "name", "discipline", "section"])),
@@ -84,6 +93,8 @@ export function projectState(state: any, actor: User, users: User[], now: number
       delete r.history;
       delete r.removed_ballots;
       delete r.correction;
+      // Le motif d'une absence peut être une donnée de santé : hors direction et secrétariat, seul le fait reste.
+      if (!roles.has("secretariat") && Array.isArray(r.absences)) r.absences = r.absences.map((a: any) => ({ entry_id: a.entry_id, at: a.at, restored: a.restored ?? null }));
       r.ballots = Object.fromEntries(Object.entries(r.ballots).filter(([j]) => j === actor.id));
       // Le résultat sportif n'est partagé qu'avec la conduite / régie et après validation.
       if (!intersects(roles, ["regie", "speaker", "commission"])) r.result = null;
@@ -155,6 +166,8 @@ export function collective(state: any): any {
   };
   if (complete) {
     for (const kind of ["club", "country"]) {
+      // Mode national (PO 24/09/2026) : aucun classement ni récompense « Meilleur pays ».
+      if (kind === "country" && state.mode !== "international") continue;
       const tied = out[kind].filter((x: any) => x.rank === 1).map((x: any) => x.name);
       if (tied.length === 1) out.winners[kind] = tied[0];
       else if (tied.length > 1) {

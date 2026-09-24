@@ -47,6 +47,9 @@ Carte des documents :
   (jury, programme, 5 bulletins + stagiaire, validation, écran public, restauration) : tout
   200, ~3,5 s par bulletin connexion comprise ; 5 bulletins simultanés tous reçus, le dernier en
   7,2 s. Détail : `docs/PV-RECETTE.md`.
+- **Semis de test en production (24/09, 3 h)** : 7 catégories, 35 athlètes `TEST-…`, dossards,
+  jury complet, événement daté du 26/09. Sauvegarde d'avant semis chez Kevin, seule voie de
+  nettoyage (pas de suppression d'athlète dans l'app), à faire avant les vrais athlètes.
 - **Prochaine action** : le PO ouvre l'URL sur son téléphone, installe la PWA, se connecte
   avec le code du chef, crée un juge, envoie un bulletin de test (`A-FAIRE.md`). Critère de
   fin : accusé de réception d'un bulletin depuis un téléphone sur réseau mobile.

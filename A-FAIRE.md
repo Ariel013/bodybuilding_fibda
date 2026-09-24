@@ -5,6 +5,13 @@ Cocher quand c'est fait, avec la date.
 
 ## Avant samedi 26/09/2026
 
+- [ ] (24/09) **Données de test en production** : 7 catégories (bikini, wellness, bodyfitness,
+      bodybuilding, classic bodybuilding, classic physique, men's physique), 35 athlètes fictifs
+      nommés `TEST-…`, dossards attribués, jury = chef + 4 juges. **Nettoyage = restaurer
+      `~/fibda-prod-avant-semis-2026-09-24.json`** (Préparation → Sauvegarde et restauration,
+      ou curl avec le jeton). ⚠️ Cette restauration efface TOUT ce qui a été saisi après le
+      semis : la faire **avant** d'entrer les vrais athlètes, jamais après.
+
 - [ ] (23/09, **EN SUSPENS** sur décision PO : on finit l'app d'abord) ~~Créer le compte Railway~~ (compte créé) avec ton GitHub (sans carte), installer la
       CLI (`npm i -g @railway/cli`), puis `railway login`. Plan B Python (ADR 0002).
 - [x] (23/09) Compte Turso créé, base `fibda` créée en Irlande, jeton posé dans Vercel.

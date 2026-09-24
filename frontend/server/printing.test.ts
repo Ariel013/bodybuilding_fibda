@@ -298,7 +298,14 @@ test("écran public : logos de club limités aux clubs affichés ; mode national
   // Sans `club_logos` dans l'état : objet vide.
   assert.deepEqual(publicState(s, "main").club_logos, {});
   s.club_logos = { "Club A": "logo-a", "Club B": "logo-b", "Club C": "logo-c", "Club D": "" };
-  assert.deepEqual(publicState(s, "main").club_logos, { "Club A": "logo-a" }, "seuls les clubs des athlètes affichés");
+  // Sans autorisation, aucun logo n'est publié.
+  assert.deepEqual(publicState(s, "main").club_logos, {}, "logo non autorisé : privé");
+  s.club_logos_approved = { "Club A": "logo-a", "Club B": "logo-b" };
+  assert.deepEqual(publicState(s, "main").club_logos, { "Club A": "logo-a" }, "seuls les clubs des athlètes affichés, et autorisés");
+  // Un logo remplacé après autorisation redevient privé jusqu'à nouvelle autorisation.
+  s.club_logos["Club A"] = "logo-a2";
+  assert.deepEqual(publicState(s, "main").club_logos, {}, "logo remplacé : en attente d'autorisation");
+  s.club_logos["Club A"] = "logo-a";
 
   // Finale validée : en national, aucun classement pays ni récompense « Meilleur pays » ; un ancien
   // « Meilleur pays » est retiré. En international (délégations approuvées), il apparaît.

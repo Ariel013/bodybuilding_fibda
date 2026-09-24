@@ -147,6 +147,8 @@ Cette section suit une compétition du début à la fin, dans l'ordre que le ser
 - Le serveur refuse tant qu'une discipline n'a pas été terminée à l'étape 12 : « Toutes les disciplines et récompenses doivent être terminées. ».
 - Avant de toucher le bouton : téléchargez la sauvegarde finale (étape 14) et les documents de l'onglet **Documents** (Résultats, Récompenses, Diplôme, Récapitulatif jury, exports « Résultats CSV », « Résultats XLSX » et « Résultats PDF »).
 
+- **Revenir en préparation** (rubrique **Événement**, chef seulement, saisie de REINITIALISER) : pour rejouer un lancement après des essais. Efface manches, bulletins, résultats, récompenses et examens ; conserve comptes, athlètes, catégories, dossards et jury ; invalide les brouillons des téléphones. À ne jamais utiliser pendant une compétition réelle.
+
 ### 14. Sauvegarder à chaque étape clé
 
 - Où : onglet **Documents** (ou rubrique **Documents** de Préparation), panneau « Sauvegarde et restauration », bouton « Télécharger une sauvegarde complète ».

@@ -355,3 +355,22 @@ test("le résultat sportif ne dépend pas de l'ordre de passage", () => {
   assert.deepEqual(results[0], results[2]);
   assert.deepEqual(results[0].official.map((x: any) => x.entry_id), ["b", "a", "c"]);
 });
+
+test("event.reset : retour en préparation, chef seulement, confirmation exigée, données de préparation conservées", () => {
+  const f = new Fixture();
+  f.completed();
+  const oldRestore = f.s.restore_id;
+  throwsProblem(() => applySport(f.s, f.users[1], "event.reset", { confirm: "REINITIALISER" }, f.users, 300));
+  throwsProblem(() => applySport(f.s, f.chief, "event.reset", { confirm: "oui" }, f.users, 300));
+  const r = applySport(f.s, f.chief, "event.reset", { confirm: "REINITIALISER" }, f.users, 300);
+  assert.equal(r.rounds_effaces, 1);
+  assert.equal(f.s.status, "preparation");
+  assert.deepEqual(f.s.rounds, []);
+  assert.equal(f.s.active_round_id, null);
+  assert.deepEqual(f.s.rewards, []);
+  assert.notEqual(f.s.restore_id, oldRestore);
+  assert.equal(f.s.people.length, 3);
+  assert.equal(f.s.entries.length, 3);
+  assert.deepEqual(f.s.jury.panel, ["0", "1", "2", "3", "4"]);
+  throwsProblem(() => applySport(f.s, f.chief, "event.reset", { confirm: "REINITIALISER" }, f.users, 301));
+});

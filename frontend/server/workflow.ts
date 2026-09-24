@@ -254,7 +254,7 @@ export function applySport(state: any, actor: User, kind: string, p: any, users:
   }
 }
 
-const CHIEF_ONLY = new Set(["round.validate", "round.correct", "overall.confirm", "panel.reduce", "round.resolve"]);
+const CHIEF_ONLY = new Set(["round.validate", "round.correct", "overall.confirm", "panel.reduce", "round.resolve", "event.reset"]);
 const PROGRAMME_PHASES = ["elimination", "semi", "final"];
 
 function applySportInner(state: any, actor: User, kind: string, p: any, users: User[], now: Now): any {
@@ -322,6 +322,22 @@ function applySportInner(state: any, actor: User, kind: string, p: any, users: U
     state.status = "running";
     tick(state, users, now);
     return {};
+  }
+  if (kind === "event.reset") {
+    // Retour en préparation (PO, 24/09/2026) : pour rejouer un lancement après des essais, sans vider
+    // la base. Comptes, athlètes, catégories, dossards et jury sont conservés ; manches, bulletins,
+    // résultats, récompenses, examens et décisions collectives sont effacés. Chef seulement.
+    if (state.status === "preparation") throw new Problem("La compétition n’est pas démarrée.");
+    if (p.confirm !== "REINITIALISER") throw new Problem("Confirmation requise : saisir REINITIALISER.");
+    const effaces = state.rounds.length;
+    Object.assign(state, {
+      status: "preparation", rounds: [], active_round_id: null, rewards: [], exam_programs: [], exam_decisions: [],
+      collective_decisions: [], discipline_progress: {}, alerts: [], rules_snapshot: null,
+      public: { main: { kind: "idle" }, secondary: { kind: "idle" }, backstage: { kind: "idle" } },
+      // Les brouillons de bulletins des téléphones deviennent caducs.
+      restore_id: uid(),
+    });
+    return { rounds_effaces: effaces };
   }
   if (kind === "event.finish") {
     if (state.status !== "running" || currentDiscipline(state)) throw new Problem("Toutes les disciplines et récompenses doivent être terminées.");

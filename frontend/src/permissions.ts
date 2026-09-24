@@ -39,6 +39,7 @@ export function canCommand(roles: string[], kind: string): boolean {
     "entry.late",
     "event.start",
     "event.finish",
+    "event.reset",
     "round.configure",
     "round.open",
     "round.next",

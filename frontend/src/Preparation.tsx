@@ -237,6 +237,20 @@ function EventForm({ s, command }: Props) {
             >
               Terminer la compétition
             </AsyncButton>
+            <AsyncButton
+              allowed={canCommand(s.me.roles, "event.reset")}
+              className="ghost"
+              disabled={s.status === "preparation"}
+              action={async () => {
+                const saisie = window.prompt(
+                  "Revenir en préparation efface les manches, bulletins, résultats et récompenses. Comptes, athlètes, catégories, dossards et jury sont conservés. Tapez REINITIALISER pour confirmer.",
+                );
+                if (saisie === null) return;
+                await command("event.reset", { confirm: saisie.trim().toUpperCase() });
+              }}
+            >
+              Revenir en préparation
+            </AsyncButton>
           </div>
         </form>
       ) : (

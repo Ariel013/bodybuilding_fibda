@@ -5,6 +5,9 @@ Cocher quand c'est fait, avec la date.
 
 ## Avant samedi 26/09/2026
 
+- [ ] (24/09) **PO : envoyer le modèle papier de la fiche d'inscription** (photo ou fichier) pour
+      aligner le document « Fiches d'inscription » dessus.
+
 - [ ] (24/09) **Données de test en production** : 7 catégories (bikini, wellness, bodyfitness,
       bodybuilding, classic bodybuilding, classic physique, men's physique), 35 athlètes fictifs
       nommés `TEST-…`, dossards attribués, jury = chef + 4 juges. **Nettoyage = restaurer

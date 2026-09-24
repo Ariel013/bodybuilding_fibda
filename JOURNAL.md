@@ -45,7 +45,8 @@ Carte des documents :
   en 422 ; corrigé, testé, déployé. Le PO a un chef et un juge ; il en faut 5 officiels.
 - **Recette API réelle (24/09, 2 h)** : parcours complet joué sur la démo Vercel + Turso
   (jury, programme, 5 bulletins + stagiaire, validation, écran public, restauration) : tout
-  200, ~3,5 s par bulletin connexion comprise. Détail : `docs/PV-RECETTE.md`.
+  200, ~3,5 s par bulletin connexion comprise ; 5 bulletins simultanés tous reçus, le dernier en
+  7,2 s. Détail : `docs/PV-RECETTE.md`.
 - **Prochaine action** : le PO ouvre l'URL sur son téléphone, installe la PWA, se connecte
   avec le code du chef, crée un juge, envoie un bulletin de test (`A-FAIRE.md`). Critère de
   fin : accusé de réception d'un bulletin depuis un téléphone sur réseau mobile.

@@ -43,6 +43,7 @@ téléphone, aucun réseau de salle) ; c'est la preuve que le serveur réel tien
 | Jury (chef + 4 juges + 1 stagiaire), réglages, programme, démarrage | 200 à chaque commande, ~2,5 s chacune |
 | Tour ouvert automatiquement | demi-finale, 8 participants |
 | 5 bulletins officiels depuis 5 sessions distinctes | 200 avec accusé, ~3,5 s par juge connexion comprise |
+| 5 bulletins officiels envoyés **au même instant** (rejoué à 2 h 30) | 5 × 200 avec accusé, sérialisés par la base : 2,2 / 2,7 / 3,6 / 6,2 / 7,2 s ; aucun conflit de version |
 | Attente stagiaire après le dernier officiel | délai armé, tour toujours ouvert (règle 60 s) |
 | Bulletin du stagiaire | 200, tour passé en attente de validation |
 | Validation par le chef | 200, résultat calculé |

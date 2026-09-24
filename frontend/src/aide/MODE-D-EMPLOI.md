@@ -1,6 +1,6 @@
 # Mode d'emploi — FIBDA Compétition
 
-Ce mode d'emploi décrit ce que l'application fait réellement, profil par profil. Il est affiché dans l'application, onglet **Aide**, filtré selon vos rôles. Si vous lisez le fichier complet, cherchez la section « Profil » qui vous concerne, puis « Tous les profils » à la fin.
+Ce mode d'emploi décrit ce que l'application fait réellement, profil par profil. Il est affiché dans l'application, onglet **Aide**, filtré selon vos rôles. Si vous lisez le fichier complet, cherchez la section « Profil » qui vous concerne, puis « Tous les profils » à la fin. Chaque profil commence par un « En bref » : les gestes à faire, dans l'ordre. Le détail suit pour ceux qui veulent comprendre.
 
 **Se connecter.** Ouvrez l'adresse remise par l'organisation dans Safari ou Chrome : https://fibda-bodybuilding.vercel.app (la version d'entraînement est https://fibda-bodybuilding-demo.vercel.app, avec des données fictives). Saisissez votre **code personnel** puis touchez « Accéder à la compétition ». Le code est unique et personnel : ne le partagez jamais, même pour dépanner un collègue. Sur téléphone, ajoutez la page à l'écran d'accueil (menu « Partager » puis « Sur l'écran d'accueil » sur iPhone ; menu du navigateur puis « Ajouter à l'écran d'accueil » sur Android) : l'application s'ouvre ensuite comme une application ordinaire. La session reste ouverte au maximum 16 heures ; « Déconnexion » en haut à droite la ferme.
 
@@ -10,6 +10,17 @@ Ce mode d'emploi décrit ce que l'application fait réellement, profil par profi
 
 ## Profil : Déroulé complet d'une compétition
 Rôles : chief, responsable
+
+### En bref : ce que vous avez à faire
+
+1. Créez et approuvez les accès de l'équipe dans **Préparation**, rubrique **Jury** (voir « 1. Créer les accès de l'équipe »).
+2. Renseignez l'événement, le critère collectif et les trois cases de contrôle dans la rubrique **Événement**, puis « Enregistrer l'événement » (voir « 2. Renseigner l'événement et sa liste de contrôle »).
+3. Créez les catégories, enregistrez les athlètes, saisissez et confirmez les mesures, puis confirmez les inscriptions (rubriques **Catégories**, **Personnes** et **Mesures** ; voir les étapes 3 à 5).
+4. Ordonnez le programme et touchez « Attribuer les dossards », composez le jury et « Enregistrer le jury », puis « Générer les manches » (rubriques **Programme** et **Jury** ; voir les étapes 6 à 8).
+5. Touchez « Démarrer la compétition » dans la rubrique **Événement**, puis « Télécharger une sauvegarde complète » dans **Documents** (voir « 9. Démarrer la compétition »).
+6. Pour chaque manche, dans **Compétition** : « Ouvrir le dossier », attendez « Reçu » pour chaque juge officiel, puis « Valider les résultats sportifs » (voir « 10. Conduire une manche »).
+7. Faites diffuser les résultats validés par la régie dans **Régie & écrans** ; discipline terminée, remettez les récompenses dans **Récompenses**, « Créer le toutes catégories » dans **Compétition**, puis « Terminer cette discipline » (voir les étapes 11 et 12).
+8. Téléchargez la sauvegarde finale et les documents dans **Documents**, puis « Terminer la compétition » dans la rubrique **Événement** (voir « 13. Clôturer la compétition »).
 
 Cette section suit une compétition du début à la fin, dans l'ordre que le serveur impose. Chaque étape indique où agir (onglet, rubrique, panneau, bouton), ce que l'action fait réellement, pourquoi elle est exigée, et le message affiché si elle a été oubliée. Les profils détaillés plus bas reprennent chaque écran ; ici, seul l'enchaînement compte. Faites une sauvegarde après chaque étape clé (étape 14).
 
@@ -128,6 +139,17 @@ Cette section suit une compétition du début à la fin, dans l'ordre que le ser
 ## Profil : Chef de jury et responsable
 Rôles : chief, responsable
 
+### En bref : ce que vous avez à faire
+
+1. Créez les accès dans **Préparation**, rubrique **Jury**, puis « Approuver » chaque compte (voir « Créer les accès de l'équipe »).
+2. Renseignez l'événement, enregistrez les athlètes, leurs inscriptions, leurs photos et leurs mesures, puis préparez les catégories (rubriques **Événement**, **Personnes**, **Mesures** et **Catégories**).
+3. Ordonnez le programme, « Attribuer les dossards », composez le jury, puis « Générer les manches » (rubriques **Programme** et **Jury** ; voir « Dossards et programme » et « Composer le jury »).
+4. Touchez « Démarrer la compétition » dans la rubrique **Événement**, puis « Télécharger une sauvegarde complète » dans **Documents** (voir « Sauvegarder »).
+5. Dans **Compétition**, ouvrez le dossier de chaque manche et attendez « Reçu » pour chaque juge officiel (voir « Ouvrir une manche et suivre les bulletins »).
+6. Touchez « Valider les résultats sportifs », puis « Passer à la manche suivante » si elle ne s'ouvre pas seule (voir « Valider les résultats »).
+7. Après les finales d'une discipline : remises dans **Récompenses**, « Créer le toutes catégories » dans **Compétition**, puis « Terminer cette discipline » (voir « Récompenses et toutes catégories »).
+8. Téléchargez la sauvegarde finale et les documents dans **Documents**, puis « Terminer la compétition » dans la rubrique **Événement** (voir « Clôturer la compétition »).
+
 Le chef de jury et le responsable disposent des onglets Vue d'ensemble, Préparation, Mon jugement, Compétition, Régie & écrans, Récompenses, Collectifs, Examens, Documents et Aide. Le chef voit aussi Traçabilité. Certaines actions sont réservées au seul chef : approuver un accès, fusionner des catégories, valider une manche, saisir un bulletin papier, corriger, confirmer un toutes catégories, réduire un jury, résoudre un incident.
 
 ### Créer les accès de l'équipe
@@ -228,6 +250,14 @@ Le chef de jury et le responsable disposent des onglets Vue d'ensemble, Prépara
 ## Profil : Directeur
 Rôles : director
 
+### En bref : ce que vous avez à faire
+
+1. Ouvrez l'adresse remise par l'organisation, saisissez votre code personnel et touchez « Accéder à la compétition ».
+2. Participez à la préparation dans **Préparation** : événement, comptes, personnes, inscriptions, mesures et officiels (voir « Préparer avec le chef »).
+3. Pendant la compétition, suivez les manches dans **Compétition** et le journal du serveur dans **Traçabilité** (voir « Suivre la compétition »).
+4. Si le chef a soumis une correction sur un résultat validé, ouvrez le dossier de la manche dans **Compétition** et touchez « Signer la correction en attente » (voir « Signer une correction »).
+5. Avec le chef, touchez « Télécharger une sauvegarde complète » dans **Documents** aux étapes clés ; ne restaurez jamais sans avoir prévenu tout le monde (voir « Sauvegarde et restauration »).
+
 Le directeur assure le contrôle organisationnel. Il ne vote jamais : l'onglet Mon jugement lui est retiré même s'il cumule le rôle de juge. Il dispose de Vue d'ensemble, Préparation, Compétition, Régie & écrans, Récompenses, Collectifs, Examens, Documents, Traçabilité et Aide.
 
 ### Préparer avec le chef
@@ -249,6 +279,17 @@ Le directeur assure le contrôle organisationnel. Il ne vote jamais : l'onglet M
 
 ## Profil : Juge
 Rôles : judge
+
+### En bref : ce que vous avez à faire
+
+1. Ouvrez l'adresse remise par l'organisation dans Safari ou Chrome et ajoutez la page à l'écran d'accueil du téléphone.
+2. Saisissez votre code personnel, touchez « Accéder à la compétition » et vérifiez votre nom en haut de l'écran.
+3. Dans **Mon jugement**, attendez que le bulletin de la manche ouverte s'affiche ; « Aucune manche affectée » signifie que le chef n'a pas encore ouvert la manche, l'écran se met à jour seul.
+4. Classez les dossards : glissez chaque dossard sur un rang en finale ou demi-finale, touchez les dossards à sélectionner en éliminatoires (voir « Classer les dossards »).
+5. Vérifiez le compteur « rangs attribués » (ou « sélectionnés ») ; corrigez avec « Annuler », « Rétablir » ou la croix d'un rang (voir « Corriger »).
+6. Touchez « Vérifier et valider », relisez le résumé, puis « Confirmer et transmettre » (voir « Valider et attendre l'accusé de réception »).
+7. Attendez « Bulletin reçu et verrouillé par le serveur » : sans ce message, le bulletin n'est pas reçu.
+8. Si la connexion se coupe, gardez la page ouverte et, au retour du réseau, vérifiez si le bulletin est reçu avant de renvoyer quoi que ce soit (voir « Brouillon local »).
 
 Le juge arrive directement dans **Mon jugement** après connexion. Il dispose aussi des onglets Examens, Documents et Aide.
 
@@ -289,6 +330,15 @@ Le juge arrive directement dans **Mon jugement** après connexion. Il dispose au
 ## Profil : Stagiaire
 Rôles : trainee
 
+### En bref : ce que vous avez à faire
+
+1. Ouvrez l'adresse remise par l'organisation, saisissez votre code personnel et touchez « Accéder à la compétition ».
+2. Dans **Mon jugement**, attendez le bulletin portant la mention « Bulletin stagiaire, hors calcul officiel ».
+3. Classez les dossards (glisser sur un rang) ou sélectionnez-les (éliminatoires) comme un juge (voir « Juger comme stagiaire »).
+4. Touchez « Vérifier et valider » puis « Confirmer et transmettre » avant la fin du compte à rebours « Temps restant après le dernier juge officiel » (60 secondes).
+5. Attendez « Bulletin reçu et verrouillé par le serveur » : sans ce message, le bulletin n'est pas reçu.
+6. Après la compétition, lisez votre rapport dans **Examens** et imprimez-le depuis **Documents** (voir « Consulter son examen »).
+
 Le stagiaire juge avec son propre bulletin, hors calcul officiel. Il dispose des onglets Mon jugement, Examens, Documents et Aide.
 
 ### Juger comme stagiaire
@@ -304,6 +354,15 @@ Le stagiaire juge avec son propre bulletin, hors calcul officiel. Il dispose des
 
 ## Profil : Secrétariat
 Rôles : secretariat
+
+### En bref : ce que vous avez à faire
+
+1. Saisissez votre code personnel, touchez « Accéder à la compétition », puis ouvrez **Préparation**, rubrique **Personnes**.
+2. Enregistrez chaque athlète et son inscription ; cochez « Confirmer cette nouvelle inscription » seulement après contrôle des documents, de la licence et du paiement (voir « Inscrire les athlètes »).
+3. Importez les photos une par une et touchez « Autoriser la diffusion publique » seulement avec le consentement en main (voir « Photographies »).
+4. Saisissez la taille et le poids dans la rubrique **Mesures**, puis « Confirmer » après contrôle physique (voir « Saisir les mesures »).
+5. Renseignez les officiels (rubrique **Officiels**) et imprimez les documents, dont les « Bulletins vierges », depuis la rubrique **Documents** (voir « Officiels et documents »).
+6. Pendant la cérémonie, dans **Récompenses** : « Récompense préparée », « Récompense remise », puis « Enregistrer la remise » (voir « Récompenses »).
 
 Le secrétariat dispose des onglets Vue d'ensemble, Préparation, Récompenses, Documents et Aide.
 
@@ -336,6 +395,15 @@ Le secrétariat dispose des onglets Vue d'ensemble, Préparation, Récompenses, 
 ## Profil : Régie
 Rôles : regie
 
+### En bref : ce que vous avez à faire
+
+1. Saisissez votre code personnel et touchez « Accéder à la compétition » sur l'ordinateur de régie.
+2. Sur l'ordinateur relié au projecteur, ouvrez /screen/main, /screen/secondary, /screen/backstage ou /screen/speaker (voir « Ouvrir les écrans publics »).
+3. Dans **Régie & écrans**, panneau « Préparer la scène », choisissez l'écran cible et le contenu (voir « Préparer et diffuser une scène »).
+4. Contrôlez « Aperçu du contenu préparé », puis touchez « Diffuser sur … ».
+5. Pour un résultat, attendez la validation du chef ; pour une cérémonie, diffusez « Révélation progressive » place par place avant « Podium » et « Classement ».
+6. Suivez les cartes de **Récompenses** et touchez « Imprimer la liste » pour la cérémonie (voir « Récompenses »).
+
 La régie dispose des onglets Vue d'ensemble, Régie & écrans, Récompenses et Aide. Rien ne s'affiche sur les écrans publics sans son action.
 
 ### Ouvrir les écrans publics
@@ -356,6 +424,13 @@ La régie dispose des onglets Vue d'ensemble, Régie & écrans, Récompenses et 
 ## Profil : Speaker
 Rôles : speaker
 
+### En bref : ce que vous avez à faire
+
+1. Saisissez votre code personnel et touchez « Accéder à la compétition ».
+2. Dans **Régie & écrans**, touchez « Ouvrir l'écran speaker » (voir « Suivre le plateau »).
+3. Lisez le tableau « Conduite et prononciations » : dossard, athlète, prononciation du nom, club et pays des athlètes appelés sur le plateau.
+4. N'annoncez que ce qui est affiché : la régie pilote les scènes, le chef valide les résultats.
+
 Le speaker dispose des onglets Vue d'ensemble, Régie & écrans et Aide.
 
 ### Suivre le plateau
@@ -366,6 +441,14 @@ Le speaker dispose des onglets Vue d'ensemble, Régie & écrans et Aide.
 
 ## Profil : Commission
 Rôles : commission
+
+### En bref : ce que vous avez à faire
+
+1. Saisissez votre code personnel et touchez « Accéder à la compétition ».
+2. Dans **Examens**, panneau « Planifier et décider », choisissez le stagiaire, cochez les manches, puis « Enregistrer le programme d'examen » (voir « Programmer et décider un examen »).
+3. Après les manches examinées, lisez le rapport de concordance du stagiaire dans **Examens**.
+4. Saisissez la décision et son motif, puis « Consigner la décision signée » ; « Imprimer le rapport » produit la version papier.
+5. Dans **Collectifs**, consultez les classements par club ou par pays et consignez un « Départage documenté » si nécessaire (voir « Classements collectifs »).
 
 La commission dispose des onglets Vue d'ensemble, Collectifs, Examens, Documents et Aide.
 
@@ -381,6 +464,15 @@ La commission dispose des onglets Vue d'ensemble, Collectifs, Examens, Documents
 
 ## Tous les profils
 Rôles : tous
+
+### En bref : ce que vous avez à faire
+
+1. Avant la compétition, vérifiez que les « Bulletins vierges » de chaque catégorie sont imprimés depuis **Documents** (voir « Plan papier de secours »).
+2. Après chaque action, attendez « Modification enregistrée sur le serveur » ou « Bulletin reçu et verrouillé par le serveur » : sans ce message, rien n'est enregistré.
+3. Si la connexion se coupe, gardez la page ouverte, rétablissez le réseau et attendez « Connecté au serveur » (voir « Perte de connexion »).
+4. Si « L'état a changé sur un autre appareil » apparaît, relisez votre saisie puis relancez l'action ; si « Session expirée » apparaît, reconnectez-vous avec le même code.
+5. Si le réseau reste coupé pendant une manche, appliquez le plan papier : feuille remplie, signée et remise au chef (voir « Plan papier de secours »).
+6. En cas de doute, appelez la personne compétente (voir « Qui appeler »).
 
 ### Plan papier de secours
 

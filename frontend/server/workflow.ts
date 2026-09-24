@@ -552,8 +552,10 @@ function applySportInner(state: any, actor: User, kind: string, p: any, users: U
     return { round_id: r.id, champions: ids.length };
   }
   if (kind === "overall.final") {
-    // Décision PO du 23/09/2026 : les champions overall de chaque discipline s'affrontent pour un
-    // champion définitif. Un seul tour par section, jugé par le panel comme un overall ordinaire.
+    // Décision PO du 24/09/2026 : un overall par discipline et par sexe, pas de finale entre
+    // disciplines. La commande est conservée mais désactivée : elle ne doit plus pouvoir bloquer une clôture.
+    throw new Problem("Overall final toutes disciplines désactivé : un overall par discipline (décision du 24/09/2026).");
+    // eslint-disable-next-line no-unreachable
     const section: string = p.section;
     if (state.status !== "running") throw new Problem("La compétition n’est pas en cours.");
     if (currentDiscipline(state) !== null) throw new Problem("Toutes les disciplines doivent être terminées avant l’overall final.");

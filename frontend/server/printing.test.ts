@@ -529,7 +529,7 @@ test("fiche d'inscription : partie athlète puis partie juges, 9 champs, lignes 
   assert.deepEqual(all.map((f) => f.person_id), ["p", "q"], "ordre des catégories puis des dossards");
   assert.equal(all[0].title, "Fiche d'inscription - KONÉ Awa");
   // Partie athlète : six champs, dans l'ordre du modèle du PO ; le téléphone est le contact privé.
-  assert.deepEqual(all[0].athlete.map(([k]) => k), ["Nom", "Prénoms", "Date de naissance", "Téléphone", "Club", "Nationalité"]);
+  assert.deepEqual(all[0].athlete.map(([k]) => k), ["Nom", "Prénoms", "Date de naissance", "Téléphone (WhatsApp)", "Club", "Nationalité"]);
   assert.deepEqual(all[0].athlete.map(([, v]) => v), ["KONÉ", "Awa", "1995-06-15", "+225 07 00 00 00 <script>", "Club <b>Abidjan</b>", "CI, FR"]);
   // Partie juges : trois champs ; la catégorie vient des inscriptions.
   assert.deepEqual(all[0].judges, [["Taille cm", "165"], ["Poids kg", "58.0"], ["Catégorie", "Senior"]]);
@@ -540,7 +540,7 @@ test("fiche d'inscription : partie athlète puis partie juges, 9 champs, lignes 
   assert.deepEqual(all[1].athlete.slice(3).map(([, v]) => v), ["", "", "CI"]);
   assert.equal(all[1].judges[1][1], "");
   const rows = all[1].rows();
-  assert.deepEqual(rows.map((r) => r[0]), ["Nom", "Prénoms", "Date de naissance", "Téléphone", "Club", "Nationalité", JUDGES_PART, "Taille cm", "Poids kg", "Catégorie"]);
+  assert.deepEqual(rows.map((r) => r[0]), ["Nom", "Prénoms", "Date de naissance", "Téléphone (WhatsApp)", "Club", "Nationalité", JUDGES_PART, "Taille cm", "Poids kg", "Catégorie"]);
   assert.equal(rows[3][1], BLANK_LINE);
   assert.equal(rows[4][1], BLANK_LINE);
   assert.equal(rows[8][1], BLANK_LINE);

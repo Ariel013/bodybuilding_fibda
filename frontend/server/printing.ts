@@ -131,7 +131,7 @@ export type Fiche = {
 };
 
 // Les colonnes de l'export tabulaire (csv, xlsx) : une ligne par athlète, valeurs brutes.
-export const ATHLETE_FIELDS = ["Nom", "Prénoms", "Date de naissance", "Téléphone", "Club", "Nationalité"];
+export const ATHLETE_FIELDS = ["Nom", "Prénoms", "Date de naissance", "Téléphone (WhatsApp)", "Club", "Nationalité"];
 export const JUDGES_FIELDS = ["Taille cm", "Poids kg", "Catégorie"];
 export const FICHE_COLUMNS = [...ATHLETE_FIELDS, ...JUDGES_FIELDS];
 
@@ -196,7 +196,7 @@ export function fiches(state: any, filters: Filters = {}): Fiche[] {
         ["Nom", text(person.last_name)],
         ["Prénoms", text(person.first_name)],
         ["Date de naissance", text(person.birth_date)],
-        ["Téléphone", text(person.private_contact)],
+        ["Téléphone (WhatsApp)", text(person.private_contact)],
         ["Club", text(person.club)],
         ["Nationalité", Array.isArray(person.nationalities) ? person.nationalities.map(text).join(", ") : text(person.nationalities)],
       ],

@@ -9,7 +9,7 @@ Ce mode d'emploi décrit ce que l'application fait réellement, profil par profi
 **Connexion interrompue.** Si l'application affiche « Connexion interrompue » ou « Reconnexion… », gardez la page ouverte, vérifiez le réseau mobile ou le Wi-Fi du téléphone, puis attendez le retour de « Connecté au serveur ». L'état se rafraîchit automatiquement toutes les quelques secondes. Ce que vous aviez saisi reste un brouillon sur votre appareil ; rien n'est envoyé sans votre action explicite.
 
 ## Profil : Déroulé complet d'une compétition
-Rôles : chief, responsable
+Rôles : chief, responsable, director, secretariat
 
 ### En bref : ce que vous avez à faire
 
@@ -121,7 +121,7 @@ Cette section suit une compétition du début à la fin, dans l'ordre que le ser
 6. Calculé, validé, diffusé : calculé signifie que le serveur a fait la somme ; validé que le chef l'a arrêtée ; diffusé que la régie l'a mise sur un écran public. Rien ne s'affiche en salle sans les deux dernières étapes.
 7. Une fois la manche validée, la manche suivante prête s'ouvre d'elle-même ; « Passer à la manche suivante » force ce passage et répond « Des bulletins officiels ou stagiaires sont encore attendus. » s'il est trop tôt.
 8. Incident : « Suspendre et consigner » bloque la manche avec un motif ; « Résoudre l'incident » la rouvre. Réseau tombé : « Saisie papier et correction contrôlée » (chef uniquement) saisit une feuille signée à la place du bulletin d'un juge, avec « Signature de la feuille papier » et « Motif de saisie ou correction ». Erreur après validation : « Soumettre la correction » recalcule aussitôt si le résultat n'a pas été diffusé ; s'il l'a été, elle attend « Signer la correction en attente » par un directeur, et les écrans publics repassent à l'accueil avec « Résultat en cours de mise à jour ».
-9. Absent à l'appel : dans le dossier de la manche (en attente ou ouverte, avant le premier bulletin), le panneau « Présence à l'appel » liste les athlètes ; indiquez le « Motif de l'absence » puis « Déclarer absent ». L'athlète est retiré de cette manche et des manches suivantes de la catégorie, et ne rapporte aucun point à son club (décision du 24/09/2026 : un absent ne compte aucun point). « Rétablir » annule l'absence tant qu'aucun bulletin n'est reçu ; après un bulletin, le serveur refuse (« Un bulletin a déjà été reçu : traitez l'absence par un incident. ») et l'absence se traite par « Suspendre et consigner ».
+9. Absent à l'appel : dans le dossier de la manche (en attente ou ouverte, avant le premier bulletin), le panneau « Présence à l'appel » liste les athlètes ; indiquez le « Motif de l'absence » puis « Déclarer absent ». L'athlète est retiré de cette manche et des manches suivantes de la catégorie, et ne rapporte aucun point à son club s'il n'a été aligné dans aucune manche validée (décision du 24/09/2026 : un absent ne compte aucun point) ; un athlète absent après une éliminatoire déjà validée garde le point de participation de cette éliminatoire. « Rétablir » annule l'absence tant qu'aucun bulletin n'est reçu ; après un bulletin, le serveur refuse (« Un bulletin a déjà été reçu : traitez l'absence par un incident. ») et l'absence se traite par « Suspendre et consigner ».
 
 ### 11. Diffuser sur l'écran public
 
@@ -405,7 +405,7 @@ Rôles : secretariat
 2. Enregistrez chaque athlète sur une seule fiche (identité, contrôles, taille, poids) : la catégorie et l'inscription sont créées automatiquement ; cochez « Statut approuvé », « Licence contrôlée », « Paiement reçu » et « Mesures confirmées » seulement après contrôle réel, l'inscription est alors confirmée (voir « Inscrire les athlètes »).
 3. Importez les photos une par une et touchez « Autoriser la diffusion publique » seulement avec le consentement en main (voir « Photographies »).
 4. La taille et le poids se saisissent sur la fiche athlète ; la rubrique **Mesures** sert de vue d'ensemble (voir « Saisir les mesures »).
-5. Renseignez les officiels (rubrique **Officiels**) et imprimez les documents, dont les « Bulletins vierges » (fiches de notation papier) et la liste « Officiels » avec le jury, depuis la rubrique **Documents** (voir « Officiels et documents »).
+5. Renseignez les officiels (rubrique **Officiels**) et imprimez les documents, dont les « Fiches de notation (bulletins vierges) » (fiches de notation papier) et la liste « Officiels » avec le jury, depuis la rubrique **Documents** (voir « Officiels et documents »).
 6. Pendant la cérémonie, dans **Récompenses** : « Récompense préparée », « Récompense remise », puis « Enregistrer la remise » (voir « Récompenses »).
 
 Le secrétariat dispose des onglets Vue d'ensemble, Préparation, Récompenses, Documents et Aide.
@@ -434,8 +434,8 @@ Le secrétariat dispose des onglets Vue d'ensemble, Préparation, Récompenses, 
 ### Officiels et documents
 
 - Rubrique **Officiels** : fiche de présentation des officiels (nom, parcours). Elle ne donne aucun droit de connexion.
-- Rubrique **Documents** : impressions (Fiches d'inscription, Ordre de passage, Inscriptions, Mesures, Bulletins vierges…) et exports « Résultats CSV », « Résultats XLSX » (tableur) et « Résultats PDF » (mise en page simple, une catégorie par page). Vérifiez la catégorie et la manche choisies avant d'imprimer.
-- « Bulletins vierges » : la fiche de notation papier, une page par manche (voir « Plan papier de secours » dans « Tous les profils »). En-tête « Catégorie <discipline> — Sous-catégorie <catégorie> — <phase> », tableau « Dossard | Position (1 à n) » sans nom d'athlète, ligne « Juge : ______ Signature : ______ ». Pour une éliminatoire, colonne « Sélectionné ☐ » et quota rappelé dans l'en-tête. Une manche choisie donne sa fiche ; une catégorie choisie, toutes ses manches ; sans choix, toutes les manches non encore validées.
+- Rubrique **Documents** : impressions (Fiches d'inscription, Ordre de passage, Inscriptions, Mesures, Fiches de notation…) et exports « Résultats CSV », « Résultats XLSX » (tableur) et « Résultats PDF » (mise en page simple, une catégorie par page). Vérifiez la catégorie et la manche choisies avant d'imprimer.
+- « Fiches de notation (bulletins vierges) » : la fiche de notation papier, une page par manche (voir « Plan papier de secours » dans « Tous les profils »). En-tête « Catégorie <discipline> — Sous-catégorie <catégorie> — <phase> », tableau « Dossard | Position (1 à n) » sans nom d'athlète, ligne « Juge : ______ Signature : ______ ». Pour une éliminatoire, colonne « Sélectionné ☐ » et quota rappelé dans l'en-tête. Une manche choisie donne sa fiche ; une catégorie choisie, toutes ses manches ; sans choix, toutes les manches non encore validées.
 - « Officiels » : la liste des officiels (nom, fonction, organisation, pays, parcours) suivie de la section « Jury » : les comptes approuvés du chef de jury, du responsable, des juges et des stagiaires avec leur rôle. Formats HTML, CSV, XLSX et PDF ; jamais de code personnel dans le document.
 - « Fiches d'inscription » : une page par athlète en deux parties. En haut, la partie remplie par l'athlète : Nom, Prénoms, Date de naissance, Téléphone (WhatsApp de préférence), Club, Nationalité ; en bas, la « Partie réservée aux juges » : Taille, Poids, Catégorie ; puis les zones de signature « Athlète », « Juge » et « Date ». Toute valeur absente est imprimée comme une ligne à compléter à la main. Pour toute la compétition, une catégorie ou un athlète ; des fiches vierges s'impriment en ajoutant `?blank=10` (de 1 à 50 fiches, une par page) à l'adresse du document. Réservée à la préparation : elle contient le téléphone et la date de naissance des athlètes. Les contrôles administratifs, dossards et photos restent dans « Inscriptions » et « Mesures ».
 - « Ordre de passage » : sans filtre, l'ordre général de toutes les catégories ; avec une catégorie ou une manche, l'ordre détaillé des athlètes encore en lice, dans l'ordre tiré au sort.
@@ -523,7 +523,7 @@ Rôles : tous
 
 ### En bref : ce que vous avez à faire
 
-1. Avant la compétition, vérifiez que les « Bulletins vierges » de chaque catégorie sont imprimés depuis **Documents** (voir « Plan papier de secours »).
+1. Avant la compétition, vérifiez que les « Fiches de notation (bulletins vierges) » de chaque catégorie sont imprimés depuis **Documents** (voir « Plan papier de secours »).
 2. Après chaque action, attendez « Modification enregistrée sur le serveur » ou « Bulletin reçu et verrouillé par le serveur » : sans ce message, rien n'est enregistré.
 3. Si la connexion se coupe, gardez la page ouverte, rétablissez le réseau et attendez « Connecté au serveur » (voir « Perte de connexion »).
 4. Si « L'état a changé sur un autre appareil » apparaît, relisez votre saisie puis relancez l'action ; si « Session expirée » apparaît, reconnectez-vous avec le même code.
@@ -532,7 +532,7 @@ Rôles : tous
 
 ### Plan papier de secours
 
-- Avant la compétition, le secrétariat ou le chef imprime les « Bulletins vierges » depuis l'onglet **Documents** : une fiche de notation par manche et par page, lisible telle quelle, avec la catégorie, la sous-catégorie et la phase en en-tête, les dossards dans l'ordre croissant et une colonne « Position (1 à n) » à remplir (colonne « Sélectionné ☐ » et quota pour une éliminatoire), sans nom d'athlète, puis la ligne « Juge : ______ Signature : ______ ». Sans choix de catégorie ni de manche, le document contient toutes les manches non encore validées. Prévoir un exemplaire par juge et par manche.
+- Avant la compétition, le secrétariat ou le chef imprime les « Fiches de notation (bulletins vierges) » depuis l'onglet **Documents** : une fiche de notation par manche et par page, lisible telle quelle, avec la catégorie, la sous-catégorie et la phase en en-tête, les dossards dans l'ordre croissant et une colonne « Position (1 à n) » à remplir (colonne « Sélectionné ☐ » et quota pour une éliminatoire), sans nom d'athlète, puis la ligne « Juge : ______ Signature : ______ ». Sans choix de catégorie ni de manche, le document contient toutes les manches non encore validées. Prévoir un exemplaire par juge et par manche.
 - Si le réseau tombe pendant une manche, le chef distribue les feuilles ; chaque juge remplit, signe et remet sa feuille. Le chef saisit ensuite chaque feuille dans **Compétition**, « Saisie papier et correction contrôlée », avec le nom du juge, la signature et le motif. Les feuilles signées sont conservées.
 
 ### Perte de connexion

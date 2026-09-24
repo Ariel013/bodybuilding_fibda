@@ -980,7 +980,7 @@ function Categories({ s, command }: Props) {
         />
         {canCommand(s.me.roles, "category.fuse") && (
           <section className="fusion">
-            <h3>Fusion de catégories (chef, avant attribution des dossards)</h3>
+            <h3>Fusion de catégories (chef ou responsable, avant attribution des dossards)</h3>
             <p className="muted">
               Réunit plusieurs catégories de même discipline, sexe, section et
               groupe d'âge (par exemple deux tranches de poids trop peu
@@ -1892,7 +1892,7 @@ export function Documents({ s, refresh }: Props) {
     judge_id: personalOnly ? s.me.id : judge,
   });
   const kinds: Record<string, string> = {
-    blank: "Bulletins vierges",
+    blank: "Fiches de notation (bulletins vierges)",
     ballot: "Bulletin individuel",
     recap: "Récapitulatif jury",
     registrations: "Inscriptions",

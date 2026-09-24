@@ -479,7 +479,7 @@ function apply(state: Dict, actor: Actor, kind: string, payload: Dict): any {
     return { category_ids: ids };
   }
   if (kind === "category.fuse") {
-    requireRole(actor, ["chief"]);
+    requireRole(actor, SPORT); // chef ou responsable, comme category.save (aligné le 24/09/2026)
     if (truthy(get(state, "bibs_distributed"))) throw new Problem("Fusion interdite après attribution des dossards.");
     const ids: string[] = req(payload, "category_ids");
     if (ids.length < 2 || new Set(ids).size !== ids.length) throw new Problem("Au moins deux catégories distinctes requises.");

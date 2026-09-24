@@ -128,23 +128,14 @@ test("démonstration nationale, trois catégories jusqu'à la clôture", async (
   await deliver("overall");
   await command("rewards.complete", { discipline: "bikini", kind: "overall" });
   await command("discipline.advance", { discipline: "bikini" });
-  // Overall final toutes disciplines (décision PO du 23/09) : les champions overall de chaque
-  // discipline s'affrontent ; la clôture attend sa validation.
-  state = await command("overall.final", { section: "amateur" });
-  const grand = state.rounds[state.rounds.length - 1];
-  assert.equal(grand.grand_final, true);
-  assert.equal(grand.participant_ids.length, 2);
-  assert.equal(grand.status, "open");
-  await command("event.finish", {}, chief, 422);
+  // Décision PO du 24/09 : un overall par discipline, pas de finale entre disciplines ; la commande
+  // overall.final est désactivée et ne peut plus bloquer la clôture.
   await command("overall.final", { section: "amateur" }, chief, 422);
-  await judgeActive();
-  await deliver("overall");
   state = await command("event.finish");
   assert.equal(state.status, "finished");
-  assert.equal(state.rounds.length, 9);
+  assert.equal(state.rounds.length, 8);
   assert.ok(state.rounds.every((x: any) => x.status === "validated"));
   assert.equal(state.rewards.filter((x: any) => x.kind === "final").length, 9);
-  assert.equal(state.rewards.filter((x: any) => x.kind === "overall").length, 3);
-  assert.equal(state.rewards.filter((x: any) => x.title === "Champion overall toutes disciplines").length, 1);
+  assert.equal(state.rewards.filter((x: any) => x.kind === "overall").length, 2);
   assert.ok(state.rewards.filter((x: any) => ["final", "overall"].includes(x.kind)).every((x: any) => x.delivered));
 });

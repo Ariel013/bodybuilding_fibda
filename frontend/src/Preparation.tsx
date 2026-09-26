@@ -966,6 +966,24 @@ function Measures({ s, command }: Props) {
     </Panel>
   );
 }
+const CUSTOM = "__custom__";
+type CustomForm = { discipline: string; division: string; metric: string; lower_exclusive: string; upper_inclusive: string; age_min: string; age_max: string };
+const customDefault = (cat: Entity): CustomForm => ({
+  discipline: cat.discipline || "bodybuilding", division: cat.division || "senior", metric: "", lower_exclusive: "", upper_inclusive: "", age_min: "", age_max: "",
+});
+const customDepuisRegle = (rule: Entity): CustomForm => ({
+  discipline: rule.discipline, division: rule.division, metric: rule.lower_exclusive || rule.upper_inclusive ? rule.metric : "",
+  lower_exclusive: rule.lower_exclusive ?? "", upper_inclusive: rule.upper_inclusive ?? "", age_min: rule.age_min ?? "", age_max: rule.age_max ?? "",
+});
+/** Champs vides → absents ; âges en entiers ; le nom de la règle est le nom affiché de la catégorie. */
+function customPayload(c: CustomForm, name?: string): Record<string, any> {
+  const out: Record<string, any> = { discipline: c.discipline, division: c.division, name: name ?? "" };
+  if (c.metric) out.metric = c.metric;
+  for (const k of ["lower_exclusive", "upper_inclusive"] as const) if (String(c[k]).trim()) out[k] = String(c[k]).trim();
+  for (const k of ["age_min", "age_max"] as const) if (String(c[k]).trim()) out[k] = Number(c[k]);
+  return out;
+}
+
 function Categories({ s, command }: Props) {
   const [catalogue, setCatalogue] = useState<any>({ rules: [] });
   useEffect(() => {
@@ -990,6 +1008,10 @@ function Categories({ s, command }: Props) {
     active: true,
   });
   const [merge, setMerge] = useState<string[]>([]);
+  const personnalisee = cat.rule_id === CUSTOM || (typeof cat.rule_id === "string" && cat.rule_id.startsWith("custom-"));
+  const majCustom = (patch: Record<string, any>) => setCat({ ...cat, custom: { ...cat.custom, ...patch } });
+  /** Charge une catégorie dans le formulaire ; une règle personnalisée retrouve ses champs depuis `rule`. */
+  const editer = (c: Entity) => setCat(c.rule && c.rule.custom ? { ...c, custom: customDepuisRegle(c.rule) } : { ...c, custom: undefined });
   /** Une catégorie commencée (manche ouverte ou jouée) ne peut plus être activée ni désactivée (règle serveur). */
   const commencee = (id: string) =>
     s.rounds.some(
@@ -1003,14 +1025,18 @@ function Categories({ s, command }: Props) {
           <form
             onSubmit={async (e) => {
               e.preventDefault();
-              await command("category.save", { category: cat }).catch(() => {});
+              await command("category.save", { category: personnalisee ? { ...cat, rule_id: undefined, custom: customPayload(cat.custom, cat.name) } : cat }).catch(() => {});
             }}
           >
             <Field label="Règle du catalogue">
               <select
                 required
-                value={cat.rule_id}
+                value={personnalisee ? CUSTOM : cat.rule_id}
                 onChange={(e) => {
+                  if (e.target.value === CUSTOM) {
+                    setCat({ ...cat, rule_id: CUSTOM, custom: cat.custom ?? customDefault(cat) });
+                    return;
+                  }
                   const rule = catalogue.rules.find(
                     (r: any) => r.id === e.target.value,
                   );
@@ -1018,6 +1044,7 @@ function Categories({ s, command }: Props) {
                     setCat({
                       ...cat,
                       rule_id: rule.id,
+                      custom: undefined,
                       name: rule.name,
                       discipline: rule.discipline,
                       sex: rule.sex,
@@ -1028,6 +1055,7 @@ function Categories({ s, command }: Props) {
                 }}
               >
                 <option value="">Choisir une règle vérifiable…</option>
+                <option value={CUSTOM}>Règle personnalisée (hors référentiel)</option>
                 {(catalogue.rules || []).map((r: any) => (
                   <option key={r.id} value={r.id}>
                     {r.name} · {r.division} · {r.id}
@@ -1035,6 +1063,72 @@ function Categories({ s, command }: Props) {
                 ))}
               </select>
             </Field>
+            {personnalisee && (
+              <div className="form-grid">
+                {/* Règle personnalisée (PO, 26/09/2026) : les classes de l'ordre de passage FIBDA (Men's Physique
+                    −176 / 176–182 / +182, Bodybuilding −80 / +80…) n'existent pas dans le référentiel IFBB. */}
+                <Field label="Discipline">
+                  <select
+                    value={cat.custom.discipline}
+                    onChange={(e) => majCustom({ discipline: e.target.value })}
+                  >
+                    {(catalogue.disciplines || []).map((d: any) => (
+                      <option key={d.id} value={d.id}>
+                        {d.name} ({d.sex === "F" ? "dames" : "hommes"})
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+                <Field label="Division">
+                  <select
+                    value={cat.custom.division}
+                    onChange={(e) => majCustom({ division: e.target.value })}
+                  >
+                    <option value="senior">Senior</option>
+                    <option value="junior">Junior</option>
+                    <option value="masters">Masters</option>
+                  </select>
+                </Field>
+                <Field label="Mesure" hint="Aucune = classe ouverte, sans borne.">
+                  <select
+                    value={cat.custom.metric}
+                    onChange={(e) =>
+                      majCustom(
+                        e.target.value
+                          ? { metric: e.target.value }
+                          : { metric: "", lower_exclusive: "", upper_inclusive: "" },
+                      )
+                    }
+                  >
+                    <option value="">Aucune (classe ouverte)</option>
+                    <option value="height_cm">Taille (cm)</option>
+                    <option value="weight_kg">Poids (kg)</option>
+                  </select>
+                </Field>
+                <Field label="Au-dessus de (exclu)" hint="Vide = pas de minimum. Ex. 176 pour « plus de 176 cm »">
+                  <input
+                    inputMode="decimal"
+                    disabled={!cat.custom.metric}
+                    value={cat.custom.lower_exclusive}
+                    onChange={(e) => majCustom({ lower_exclusive: e.target.value })}
+                  />
+                </Field>
+                <Field label="Jusqu'à (inclus)" hint="Vide = pas de maximum. Ex. 182 pour « 182 cm ou moins »">
+                  <input
+                    inputMode="decimal"
+                    disabled={!cat.custom.metric}
+                    value={cat.custom.upper_inclusive}
+                    onChange={(e) => majCustom({ upper_inclusive: e.target.value })}
+                  />
+                </Field>
+                <Field label="Âge minimum (facultatif)">
+                  <input inputMode="numeric" value={cat.custom.age_min} onChange={(e) => majCustom({ age_min: e.target.value })} />
+                </Field>
+                <Field label="Âge maximum (facultatif)">
+                  <input inputMode="numeric" value={cat.custom.age_max} onChange={(e) => majCustom({ age_max: e.target.value })} />
+                </Field>
+              </div>
+            )}
             <div className="form-grid">
               <Field label="Nom affiché">
                 <input
@@ -1138,7 +1232,7 @@ function Categories({ s, command }: Props) {
                 s.entries.filter((e) => e.category_id === c.id).length,
                 <Status value={active ? "categorie_active" : "categorie_inactive"} />,
                 <ActionMenu label={"Actions sur " + c.name}>
-                  <button className="ghost" type="button" onClick={() => setCat(c)}>
+                  <button className="ghost" type="button" onClick={() => editer(c)}>
                     Modifier
                   </button>
                   <AsyncButton

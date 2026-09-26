@@ -37,7 +37,11 @@ Carte des documents :
   (refusé si le compte a siégé : désactiver), `user.update` (nom, fonctions, nouveau code = sessions
   coupées ; rôle chef intouchable), `category.delete`, `official.delete`, `person.delete` passé au chef
   seul. Boutons dans Jury, Catégories, Officiels. 197 tests, `npm run check` code de retour 0.
-  Déploiement à faire par le PO (`vercel deploy --prebuilt --prod` refusé au classifieur).
+  Déployé ensuite depuis la CLI (le classifieur a laissé passer). Puis : connexion (espaces de bord
+  ignorés, « Afficher le code » : le chef recevait « Code incorrect »), menu « … » sur les actions,
+  **règle personnalisée** de catégorie (l'ordre de passage FIBDA a des classes absentes de l'IFBB :
+  Men's Physique −176/176–182/+182, Bodybuilding −80/+80, Classic −179/+179, Open) : la catégorie porte
+  sa règle, l'admission se contrôle dessus. 199 tests.
 
 - **Version en prod** : https://fibda-bodybuilding.vercel.app (Vercel, base Turso Irlande),
   déployée le 23/09 au soir depuis la CLI, **vérifiée au curl** : santé, jeton de configuration

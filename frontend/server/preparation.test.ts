@@ -284,3 +284,29 @@ test("category.delete : chef seulement, inscriptions et manches en attente retir
   state.rounds = [{ id: "r3", category_id: other.id, status: "open", ballots: {} }];
   rejects(() => run("category.delete", { category_id: other.id }));
 });
+
+test("règle personnalisée : catégorie hors référentiel, admission contrôlée sur ses bornes, classe ouverte, validations", () => {
+  // Men's Physique 176–182 cm (ordre de passage FIBDA du 26/09), absent du référentiel IFBB.
+  const cat = run("category.save", { category: { section: "amateur", custom: { discipline: "mens_physique", division: "senior", metric: "height_cm", lower_exclusive: "176", upper_inclusive: "182", name: "Men's Physique 176–182 cm" } } });
+  assert.match(cat.rule_id, /^custom-/);
+  assert.equal(cat.rule.custom, true);
+  assert.deepEqual([cat.discipline, cat.sex, cat.name], ["mens_physique", "M", "Men's Physique 176–182 cm"]);
+  const dedans = run("person.save", { person: { id: "d", first_name: "A", last_name: "B", birth_date: "1995-01-01", sex: "M", section: "amateur", country: "CI", nationalities: ["CI"], height_cm: "180", weight_kg: "80", measurements_confirmed: true, status_approved: true, licence_ok: true, payment_ok: true, crossover_approved: true } });
+  const dehors = run("person.save", { person: { id: "h", first_name: "C", last_name: "D", birth_date: "1995-01-01", sex: "M", section: "amateur", country: "CI", nationalities: ["CI"], height_cm: "176", weight_kg: "80", measurements_confirmed: true, status_approved: true, licence_ok: true, payment_ok: true, crossover_approved: true } });
+  run("entry.save", { entry: { person_id: dedans.id, category_id: cat.id, confirmed: true } });
+  rejects(() => run("entry.save", { entry: { person_id: dehors.id, category_id: cat.id, confirmed: true } })); // 176 exactement : hors (> 176 requis)
+  // Modification : l'identifiant de règle reste, les bornes changent.
+  const cat2 = run("category.save", { category: { id: cat.id, section: "amateur", custom: { discipline: "mens_physique", metric: "height_cm", lower_exclusive: "175", upper_inclusive: "182", name: "MP 175–182" } } });
+  assert.equal(cat2.rule_id, cat.rule_id);
+  run("entry.save", { entry: { person_id: dehors.id, category_id: cat.id, confirmed: true } });
+  // Classe ouverte (sans mesure) : tout athlète du bon sexe admis.
+  const open = run("category.save", { category: { section: "amateur", custom: { discipline: "wellness", name: "Wellness Open" } } });
+  assert.equal(open.sex, "F");
+  assert.deepEqual([open.rule.lower_exclusive, open.rule.upper_inclusive], [null, null]);
+  // Validations.
+  rejects(() => run("category.save", { category: { section: "amateur", custom: { discipline: "inconnue", name: "X" } } }));
+  rejects(() => run("category.save", { category: { section: "amateur", custom: { discipline: "bikini", name: "" } } }));
+  rejects(() => run("category.save", { category: { section: "amateur", custom: { discipline: "bikini", name: "X", upper_inclusive: "160" } } })); // borne sans mesure
+  rejects(() => run("category.save", { category: { section: "amateur", custom: { discipline: "bikini", name: "X", metric: "height_cm", lower_exclusive: "170", upper_inclusive: "160" } } }));
+  rejects(() => run("category.save", { category: { section: "amateur", custom: { discipline: "bikini", name: "X", metric: "age" } } }));
+});

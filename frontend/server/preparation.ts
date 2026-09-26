@@ -183,7 +183,11 @@ function admission(state: Dict, person: Dict, category: Dict): string[] {
     }
   }
   if (age < 18 && !truthy(get(person, "minor_authorization"))) reasons.push("Autorisation du représentant légal requise.");
-  const proposals = eligibility(person, req(state, "date"), null, req(category, "division"), req(category, "discipline"), catalogue) as Dict[];
+  // Règle personnalisée (PO, 26/09/2026) : la catégorie porte sa propre règle, évaluée comme une règle
+  // du référentiel ; sinon la règle du référentiel désignée par rule_id (ou les règles d'origine d'une fusion).
+  const custom = get(category, "rule");
+  const rulesFor = truthy(custom) ? { ...catalogue, rules: [custom] } : catalogue;
+  const proposals = eligibility(person, req(state, "date"), null, req(category, "division"), req(category, "discipline"), rulesFor) as Dict[];
   const origins = new Set<string>(get(category, "source_rule_ids", [req(category, "rule_id")]));
   const matching = proposals.filter((p) => origins.has(p.rule_id));
   if (matching.length === 0) reasons.push("Âge ou mesures hors catégorie.");
@@ -390,6 +394,51 @@ export function applyPreparation(state: Dict, actor: Actor, kind: string, payloa
   }
 }
 
+const DIVISIONS = new Set(["senior", "junior", "masters"]);
+const METRICS = new Set(["height_cm", "weight_kg"]);
+
+/**
+ * Règle personnalisée (PO, 26/09/2026) : quand le référentiel IFBB n'a pas la classe voulue (par exemple
+ * Men's Physique −176 / 176–182 / +182), la catégorie porte sa propre règle, de même forme qu'une règle
+ * du référentiel, pour que l'admission des athlètes se contrôle de la même façon. Bornes : `lower_exclusive`
+ * (strictement au-dessus) et `upper_inclusive` (jusqu'à, inclus), décimales à un chiffre ; vides = classe ouverte.
+ */
+function customRule(spec: Dict, id: string): Dict {
+  const disciplines = loadCatalogue().disciplines as Dict[];
+  const discipline = disciplines.find((d) => d.id === get(spec, "discipline"));
+  if (!discipline) throw new Problem("Discipline inconnue.");
+  const division = get(spec, "division", "senior");
+  if (!DIVISIONS.has(division)) throw new Problem("Division invalide.");
+  const metricIn = get(spec, "metric");
+  const metric = truthy(metricIn) ? metricIn : "height_cm";
+  if (!METRICS.has(metric)) throw new Problem("Mesure invalide : taille ou poids.");
+  const bound = (key: string): string | null => {
+    const v = get(spec, key);
+    if (v === null || v === undefined || v === "") return null;
+    if (!truthy(metricIn)) throw new Problem("Une borne exige une mesure (taille ou poids).");
+    return measureText(v);
+  };
+  const lower = bound("lower_exclusive");
+  const upper = bound("upper_inclusive");
+  if (lower !== null && upper !== null && Number(lower) >= Number(upper)) throw new Problem("Borne basse inférieure à la borne haute requise.");
+  const age = (key: string): number | null => {
+    const v = get(spec, key);
+    if (v === null || v === undefined || v === "") return null;
+    if (!isPyInt(v) || v < 10 || v > 99) throw new Problem("Âge entier requis.");
+    return v;
+  };
+  const ageMin = age("age_min");
+  const ageMax = age("age_max");
+  if (ageMin !== null && ageMax !== null && ageMin > ageMax) throw new Problem("Âges incohérents.");
+  const name = pyStr(get(spec, "name", "")).trim();
+  if (!name) throw new Problem("Nom de la règle obligatoire.");
+  return {
+    id, discipline: discipline.id, name, sex: discipline.sex, division, sections: ["amateur", "pro"], age_min: ageMin, age_max: ageMax,
+    metric, lower_exclusive: lower, upper_inclusive: upper, source_id: "FIBDA-local", source_pages: [], decision: "Règle locale FIBDA (organisateur)",
+    age_uncertain_at: [], classic_limit: null, normalization_ids: [], custom: true,
+  };
+}
+
 function apply(state: Dict, actor: Actor, kind: string, payload: Dict): any {
   if (kind === "event.update") {
     requireRole(actor, ADMIN);
@@ -444,9 +493,13 @@ function apply(state: Dict, actor: Actor, kind: string, payload: Dict): any {
     const incoming: Dict = req(payload, "category");
     const rules = new Map<string, Dict>();
     for (const r of loadCatalogue().rules as Dict[]) rules.set(r.id, r);
-    const rule = rules.get(get(incoming, "rule_id"));
-    if (rule === undefined) throw new Problem("Règle de catégorie inconnue.");
     const old: Dict = (state.categories as Dict[]).find((c) => c.id === get(incoming, "id")) ?? {};
+    // Règle personnalisée : `custom` décrit la règle, l'identifiant reste stable d'une modification à l'autre.
+    const customIn = get(incoming, "custom");
+    const rule: Dict | undefined = truthy(customIn)
+      ? customRule(customIn, typeof get(old, "rule_id") === "string" && old.rule_id.startsWith("custom-") ? old.rule_id : "custom-" + uid())
+      : rules.get(get(incoming, "rule_id"));
+    if (rule === undefined) throw new Problem("Règle de catégorie inconnue.");
     if (truthy(old)) {
       beforeRound(state, old.id);
       if (truthy(get(old, "entry_ids")) && (req(old, "rule_id") !== rule.id || get(incoming, "section", req(old, "section")) !== req(old, "section"))) {
@@ -476,6 +529,7 @@ function apply(state: Dict, actor: Actor, kind: string, payload: Dict): any {
       merged_from: get(old, "merged_from", []),
       archived: false,
       active,
+      rule: truthy(customIn) ? rule : null,
     };
     if (["quota", "elimination_quota"].some((k) => !isPyInt(category[k]) || category[k] < 1)) throw new Problem("Quotas entiers positifs requis.");
     const saved = upsert(state, "categories", category);

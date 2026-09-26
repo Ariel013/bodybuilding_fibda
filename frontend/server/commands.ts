@@ -8,11 +8,11 @@ import { applySport, applyCorrection, motif } from "./workflow";
 import { exams, collective } from "./projections";
 
 // Dispatch des commandes : copie de commands.py. Chaque commande vérifie ses droits côté serveur.
-const PREP = new Set(["event.update", "person.save", "person.delete", "entry.save", "entry.remove", "measurement.save", "category.save", "category.activate", "category.fuse", "programme.reorder", "bibs.assign", "entry.late", "official.save"]);
+const PREP = new Set(["event.update", "person.save", "person.delete", "category.delete", "entry.save", "entry.remove", "measurement.save", "category.save", "category.activate", "category.fuse", "programme.reorder", "bibs.assign", "entry.late", "official.save"]);
 // Commandes qui écrivent ailleurs que dans l'état (comptes, sessions, photos, aperçus) : elles
 // s'exécutent dans une transaction explicite. Toutes les autres ne touchent que l'état et passent
 // par l'écriture optimiste en un seul lot (app.ts, route /api/v1/command).
-export const TRANSACTIONAL = new Set(["person.delete", "event.purge", "user.invite", "user.approve", "user.deactivate"]);
+export const TRANSACTIONAL = new Set(["person.delete", "official.delete", "event.purge", "user.invite", "user.approve", "user.deactivate", "user.delete", "user.update"]);
 const SPORTS = new Set(["jury.configure", "programme.generate", "event.start", "event.finish", "event.reset", "round.configure", "round.open", "round.next", "round.validate", "round.correct", "round.incident", "round.resolve", "round.absent", "round.present", "round.draw", "panel.reduce", "overall.create", "overall.final", "overall.confirm", "discipline.advance", "ballot.submit", "paper.submit", "rewards.complete"]);
 
 // `users` : comptes déjà lus par l'appelant dans le même instantané que l'état (un aller-retour de
@@ -69,6 +69,45 @@ export async function applyCommand(store: Store, conn: Conn, state: any, actor: 
     await conn.execute({ sql: "UPDATE users SET active = 0 WHERE id = ?", args: [user.id] });
     await conn.execute({ sql: "DELETE FROM sessions WHERE user_id = ?", args: [user.id] });
     return {};
+  }
+  if (kind === "user.update") {
+    // Modification d'un compte (PO, 26/09/2026, chef seulement) : nom, fonctions, code réinitialisé si fourni.
+    // Un compte qui a siégé garde ses fonctions de vote (les rapports et manches le citent).
+    require(actor, ["chief"]);
+    const user = find(users, p.user_id, "Utilisateur");
+    const roles: string[] = Array.isArray(p.roles) ? p.roles : user.roles;
+    const sat = (state.rounds as any[]).some((r) => [...(r.panel ?? []), ...(r.trainees ?? []), ...Object.keys(r.ballots ?? {})].includes(user.id));
+    if (sat && intersects(user.roles, ["judge", "trainee", "responsable"]) && !intersects(roles, ["judge", "trainee", "responsable"])) throw new Problem("Ce compte a siégé : sa fonction de vote ne peut être retirée, désactivez-le plutôt.");
+    const updated = await store.updateUser(conn, user.id, p.name ?? user.name, roles, p.code);
+    return { user: updated };
+  }
+  if (kind === "user.delete") {
+    // Suppression d'un compte (PO, 26/09/2026 : « CRUD sur presque tout, seul le chef »). Refusée si le
+    // compte a siégé (jury d'un tour, bulletin, signature) : les rapports le nomment encore ; désactiver
+    // alors. Sinon le compte, ses sessions et sa place dans le jury général disparaissent.
+    require(actor, ["chief"]);
+    const user = find(users, p.user_id, "Utilisateur");
+    if (user.id === actor.id) throw new Problem("Le chef ne peut pas supprimer son propre compte.");
+    const cited = (state.rounds as any[]).some((r) => [...(r.panel ?? []), ...(r.trainees ?? []), ...Object.keys(r.ballots ?? {}), ...(r.correction?.signatures ?? [])].includes(user.id))
+      || (state.exam_programs as any[]).some((x) => x.user_id === user.id) || (state.exam_decisions as any[]).some((x) => x.user_id === user.id);
+    if (cited) throw new Problem("Ce compte a siégé ou voté : désactivez-le plutôt que de le supprimer.");
+    const jury = state.jury ?? { panel: [], trainees: [], withdrawal_order: [] };
+    for (const key of ["panel", "trainees", "withdrawal_order"]) jury[key] = (jury[key] ?? []).filter((id: string) => id !== user.id);
+    await conn.execute({ sql: "DELETE FROM sessions WHERE user_id = ?", args: [user.id] });
+    await conn.execute({ sql: "DELETE FROM users WHERE id = ?", args: [user.id] });
+    return { user_id: user.id };
+  }
+  if (kind === "official.delete") {
+    // Suppression d'un officiel (chef) : fiche, photo et présence sur les écrans publics.
+    require(actor, ["chief"]);
+    const official = find(state.officials, p.official_id, "Officiel");
+    state.officials = (state.officials as any[]).filter((o) => o.id !== official.id);
+    for (const screen of Object.keys(state.public ?? {})) {
+      const scene = state.public[screen] ?? {};
+      if (scene.official_id === official.id || (scene.official_ids ?? []).includes(official.id)) state.public[screen] = { kind: "idle" };
+    }
+    await conn.execute({ sql: "DELETE FROM photos WHERE owner_type = 'official' AND owner_id = ?", args: [official.id] });
+    return { official_id: official.id };
   }
   if (kind === "correction.sign") {
     require(actor, ["chief", "director"]);

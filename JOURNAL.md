@@ -33,6 +33,11 @@ Carte des documents :
   12 → 2 allers-retours par bulletin, gain en secondes **non mesuré**). Relecture sécurité : aucun
   bloquant, 3 corrections appliquées. Plusieurs juges sur un même ordinateur = navigation privée ou
   profils de navigateur (documenté). Les points 1 à 4 du PO sont traités ; le PO déploie et vide.
+- **26/09 (suite)** : base vidée par le PO. CRUD complet réservé au chef pour supprimer : `user.delete`
+  (refusé si le compte a siégé : désactiver), `user.update` (nom, fonctions, nouveau code = sessions
+  coupées ; rôle chef intouchable), `category.delete`, `official.delete`, `person.delete` passé au chef
+  seul. Boutons dans Jury, Catégories, Officiels. 197 tests, `npm run check` code de retour 0.
+  Déploiement à faire par le PO (`vercel deploy --prebuilt --prod` refusé au classifieur).
 
 - **Version en prod** : https://fibda-bodybuilding.vercel.app (Vercel, base Turso Irlande),
   déployée le 23/09 au soir depuis la CLI, **vérifiée au curl** : santé, jeton de configuration

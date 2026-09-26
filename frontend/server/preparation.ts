@@ -596,12 +596,24 @@ function apply(state: Dict, actor: Actor, kind: string, payload: Dict): any {
     state.entries = (state.entries as Dict[]).filter((e) => e.id !== entry.id);
     return { entry_id: entry.id, person_id: req(entry, "person_id"), category_id: req(entry, "category_id") };
   }
+  if (kind === "category.delete") {
+    // Suppression d'une catégorie (PO, 26/09/2026, chef seulement) : refusée si elle a commencé ; ses
+    // inscriptions et ses manches en attente disparaissent, les fiches des athlètes restent.
+    requireRole(actor, ["chief"]);
+    const category = getItem(state, "categories", get(payload, "category_id"));
+    beforeRound(state, category.id);
+    const removed = (state.entries as Dict[]).filter((e) => req(e, "category_id") === category.id).length;
+    state.entries = (state.entries as Dict[]).filter((e) => req(e, "category_id") !== category.id);
+    state.rounds = (state.rounds as Dict[]).filter((r) => r.category_id !== category.id);
+    state.categories = (state.categories as Dict[]).filter((c) => c.id !== category.id);
+    return { category_id: category.id, inscriptions_retirees: removed };
+  }
   if (kind === "person.delete") {
     // Suppression d'athlètes (PO, 26/09/2026) : un ou plusieurs à la fois, direction seulement. Refusée dès
     // qu'une catégorie de la personne a commencé (même garde que la modification d'une fiche). Les
     // inscriptions disparaissent des catégories et des manches encore en attente ; les photos sont
     // retirées de la base par le dispatch (commands.ts), qui a accès à la connexion.
-    requireRole(actor, ADMIN);
+    requireRole(actor, ["chief"]); // chef seul depuis le 26/09 (règle unique : supprimer = chef)
     const ids: unknown = get(payload, "person_ids");
     if (!Array.isArray(ids) || ids.length === 0 || !ids.every((x) => typeof x === "string")) throw new Problem("Liste d’athlètes requise.");
     const people = dedupe(ids as string[]).map((id) => getItem(state, "people", id));

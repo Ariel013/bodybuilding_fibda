@@ -140,7 +140,7 @@ test("la transition temporisée est écrite en base par GET /state et jamais ren
 test("une commande classée « état seul » qui écrirait ailleurs est arrêtée, jamais écrite hors lot", async () => {
   // Les commandes qui touchent comptes, sessions ou photos sont listées ; toute autre commande
   // reçoit une connexion qui refuse d'exécuter du SQL (garde-fou contre un oubli).
-  assert.deepEqual([...TRANSACTIONAL].sort(), ["event.purge", "person.delete", "user.approve", "user.deactivate", "user.invite"]);
+  assert.deepEqual([...TRANSACTIONAL].sort(), ["event.purge", "official.delete", "person.delete", "user.approve", "user.deactivate", "user.delete", "user.invite", "user.update"]);
   const t = await openRound();
   // user.invite passe par la transaction explicite : le compte est créé et visible dans l'état renvoyé.
   const out = await t.command("user.invite", { name: "Nouveau", roles: ["speaker"], code: "speak001" });

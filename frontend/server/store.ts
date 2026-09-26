@@ -181,6 +181,24 @@ export class Store {
     return user;
   }
 
+  // Modification d'un compte (chef) : nom, fonctions, et nouveau code si fourni. Mêmes contrôles qu'à la
+  // création ; le rôle chef ne se donne ni ne se retire ici. Un nouveau code coupe les sessions du compte.
+  async updateUser(conn: Conn, id: string, name: string, roles: string[], code: unknown): Promise<User> {
+    const rows = (await conn.execute("SELECT * FROM users")).rows as unknown as UserRow[];
+    const row = rows.find((r) => r.id === id);
+    if (!row) throw new Problem("Utilisateur introuvable.", 404);
+    const wasChief = (JSON.parse(row.roles) as string[]).includes("chief");
+    const valid = validateNewUser(name, roles, code === undefined || code === null || code === "" ? "x".repeat(8) : code);
+    if (wasChief !== valid.roles.includes("chief")) throw new Problem("Le rôle de chef ne se modifie pas ici.");
+    if (typeof code === "string" && code) {
+      const holder = await findByCode(code, rows);
+      if (holder && holder.id !== id) throw new Problem("Ce code personnel est déjà utilisé.", 409);
+      await conn.execute({ sql: "UPDATE users SET name = ?, roles = ?, code_hash = ? WHERE id = ?", args: [valid.name, dump(valid.roles), await hashCodeAsync(code), id] });
+      await conn.execute({ sql: "DELETE FROM sessions WHERE user_id = ?", args: [id] });
+    } else await conn.execute({ sql: "UPDATE users SET name = ?, roles = ? WHERE id = ?", args: [valid.name, dump(valid.roles), id] });
+    return { id, name: valid.name, roles: valid.roles, approved: Boolean(row.approved), active: Boolean(row.active) };
+  }
+
   async newSession(conn: Conn, userId: string): Promise<string> {
     const token = newToken();
     await conn.execute({ sql: "INSERT INTO sessions (id, user_id, expires) VALUES (?, ?, ?)", args: [sessionId(token), userId, this.clock() + SESSION_SECONDS] });

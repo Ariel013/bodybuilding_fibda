@@ -76,7 +76,7 @@ Cette section suit une compétition du début à la fin, dans l'ordre que le ser
 - « Inscription à contrôler : Âge ou mesures hors catégorie. » : la fiche (âge, taille, poids) ne correspond à aucune borne de la règle de la catégorie choisie. Corrigez la fiche, choisissez une autre catégorie, ou (chef uniquement) saisissez un « Motif de dérogation, réservé au chef (facultatif) » avant de confirmer : la dérogation est signée du chef et conservée avec ses motifs.
 - « Inscription à contrôler : Crossover Junior/Masters vers Senior à autoriser par le chef. » : l'athlète a l'âge d'une division junior ou masters de cette discipline mais s'inscrit en senior. Seul le chef peut cocher « Crossover Junior/Masters vers Senior autorisé par le chef » sur la fiche.
 - « Inscription à contrôler : Contrôle requis : … » : une case de contrôle manque ; « measurements_confirmed » désigne « Mesures confirmées ».
-- Supprimer des athlètes (chef, responsable, directeur) : dans la liste « … personnes », cochez une ou plusieurs fiches (ou « Tout sélectionner ») puis « Supprimer la sélection » ; sur une fiche ouverte, « Supprimer cette fiche ». Une confirmation nomme les personnes concernées. La suppression retire la fiche, ses inscriptions, son dossard et ses photos ; elle est refusée dès qu'une catégorie de la personne a commencé (« La catégorie a déjà commencé. »). Définitif : seule une sauvegarde antérieure (étape 14) permet de revenir en arrière.
+- Supprimer des athlètes (chef seulement) : dans la liste « … personnes », cochez une ou plusieurs fiches (ou « Tout sélectionner ») puis « Supprimer la sélection » ; sur une fiche ouverte, « Supprimer cette fiche ». Une confirmation nomme les personnes concernées. La suppression retire la fiche, ses inscriptions, son dossard et ses photos ; elle est refusée dès qu'une catégorie de la personne a commencé (« La catégorie a déjà commencé. »). Définitif : seule une sauvegarde antérieure (étape 14) permet de revenir en arrière.
 - Inscription tardive : dès que les dossards sont attribués ou la compétition démarrée, un bandeau l'annonce dans la rubrique et « Enregistrer » crée automatiquement une inscription tardive par catégorie cochée (chef et responsable), confirmée, avec un nouveau dossard ; le « Motif d'inscription tardive » est pré-rempli « Inscription tardive » et modifiable. Limite serveur : avant le premier tour de la catégorie (« La catégorie a déjà commencé. ») et dans une catégorie existante (« Catégories figées après attribution des dossards. »). Le secrétariat enregistre la fiche ; l'inscription tardive lui est signalée comme réservée au chef et au responsable.
 
 ### 5. Mesures et confirmation des inscriptions
@@ -178,7 +178,7 @@ Suivez l'onglet **Parcours** : il indique l'étape à faire maintenant, ce qui b
 7. Après les finales d'une discipline : remises dans **Récompenses**, « Créer le toutes catégories » dans **Compétition**, puis « Terminer cette discipline » (voir « Récompenses et toutes catégories »).
 8. Téléchargez la sauvegarde finale et les documents dans **Documents**, puis « Terminer la compétition » dans la rubrique **Événement** (voir « Clôturer la compétition »).
 
-Le chef de jury et le responsable disposent des onglets Parcours, Vue d'ensemble, Préparation, Mon jugement, Compétition, Régie & écrans, Récompenses, Collectifs, Examens, Documents et Aide. Le chef voit aussi Traçabilité. Certaines actions sont réservées au seul chef : approuver un accès, fusionner des catégories, valider une manche, saisir un bulletin papier, corriger, confirmer un toutes catégories, réduire un jury, résoudre un incident.
+Le chef de jury et le responsable disposent des onglets Parcours, Vue d'ensemble, Préparation, Mon jugement, Compétition, Régie & écrans, Récompenses, Collectifs, Examens, Documents et Aide. Le chef voit aussi Traçabilité. Certaines actions sont réservées au seul chef : approuver un accès, fusionner des catégories, valider une manche, saisir un bulletin papier, corriger, confirmer un toutes catégories, réduire un jury, résoudre un incident, supprimer ou désactiver (voir « Supprimer (chef seulement) »).
 
 ### Créer les accès de l'équipe
 
@@ -186,6 +186,7 @@ Le chef de jury et le responsable disposent des onglets Parcours, Vue d'ensemble
 2. Saisissez le nom, un code personnel et cochez les rôles. Un code compte de 4 à 128 caractères ; pour un chef, un responsable ou un directeur, il doit compter **au moins 8 caractères**. Touchez « Créer l'accès ».
 3. Dans « Accès et approbations », touchez « Approuver » pour chaque compte qui doit travailler (chef uniquement). Un compte non approuvé ne peut rien faire.
 4. Remettez chaque code séparément à son titulaire. Un directeur ne vote jamais, même s'il cumule le rôle de juge.
+5. Modifier un compte (chef seulement) : dans « Accès et approbations », « Modifier » sur la ligne du compte (jamais le vôtre ni un chef) : le panneau de gauche passe en « Modifier le compte de … » avec le nom, les fonctions et « Nouveau code (laisser vide pour conserver) », puis « Enregistrer le compte ». Le rôle de chef ne se donne ni ne se retire ici ; un compte qui a siégé garde sa fonction de vote (refus serveur affiché tel quel). Un nouveau code déconnecte l'appareil du juge : il devra se reconnecter avec le nouveau code.
 
 ### Renseigner l'événement
 
@@ -277,6 +278,15 @@ Le chef de jury et le responsable disposent des onglets Parcours, Vue d'ensemble
 
 - Décision de la fédération pour cette compétition : chaque discipline a son propre toutes catégories (3 chez les dames : bikini, wellness, bodyfitness ; 4 chez les hommes). Il n'y a pas de finale entre disciplines.
 - Le toutes catégories d'une discipline réunit les vainqueurs de chacune de ses catégories (étape précédente). Une discipline à une seule catégorie donne un champion unique, à confirmer depuis son dossier.
+
+### Supprimer (chef seulement)
+
+Créer, consulter et modifier sont ouverts aux rôles de préparation ; supprimer est réservé au chef, toujours après une confirmation qui nomme ce qui va disparaître, et toujours définitif (seule une sauvegarde antérieure permet de revenir en arrière, voir « Sauvegarder »).
+
+- Un compte : rubrique **Jury**, panneau « Accès et approbations », colonne « Action », bouton « Supprimer le compte » ; jamais sur votre propre compte. Un compte qui a siégé ou voté ne se supprime pas (« Ce compte a siégé ou voté : désactivez-le plutôt que de le supprimer. ») : touchez « Désactiver » à côté, ses sessions sont fermées et son code ne donne plus accès, mais ses bulletins et sa place dans les rapports restent (état « Désactivé »).
+- Une catégorie : rubrique **Catégories**, tableau « Catégories engagées », bouton « Supprimer » ; la confirmation indique le nombre d'inscrits. Ses inscriptions et ses manches en attente disparaissent, les fiches des athlètes restent. Une catégorie commencée ne se supprime pas (refus serveur affiché tel quel).
+- Un officiel : rubrique **Officiels**, bouton « Supprimer » sous chaque fiche ; la fiche et sa photo disparaissent, l'écran public revient à l'attente s'il l'affichait. Le compte d'accès de la même personne n'est pas touché.
+- Un athlète : rubrique **Athlètes**, « Supprimer cette fiche » ou « Supprimer la sélection » ; refusé si une de ses catégories a commencé. Pour ne retirer qu'une inscription, « Retirer de cette catégorie » (ouvert aux rôles de préparation).
 
 ### Sauvegarder
 

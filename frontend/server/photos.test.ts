@@ -357,3 +357,55 @@ test("person.delete retire la photo de la base ; event.purge vide tout sauf les 
   // La session du juge survit : les comptes ne sont pas touchés.
   assert.equal((await app.request("/api/v1/state", { headers: { cookie: judge } })).status, 200);
 });
+
+test("user.delete et official.delete : chef seulement ; compte ayant siégé refusé ; photo d'officiel effacée", async () => {
+  const { app, store, cookie, judge } = await setup();
+  let s = await body(app.request("/api/v1/state", { headers: { cookie } }));
+  const judgeId = s.users.find((u: any) => u.roles.includes("judge")).id;
+  const chiefId = s.me.id;
+  const cmd = async (id: string, type: string, payload: any, c = cookie) => {
+    const v = (await body(app.request("/api/v1/state", { headers: { cookie } }))).version;
+    return app.request("/api/v1/command", json({ id, version: v, type, payload }, { cookie: c }));
+  };
+  // Officiel avec photo.
+  let r = await cmd("o1", "official.save", { official: { id: "off1", first_name: "Ali", last_name: "Koné", post: "Président" } });
+  assert.equal(r.status, 200, await r.text());
+  assert.equal((await upload(app, cookie, JPEG, "p.jpg", { owner_type: "official", owner_id: "off1", kind: "portrait" })).status, 200);
+  assert.equal((await store.execute("SELECT id FROM photos WHERE owner_type = 'official'")).length, 1);
+  assert.equal((await cmd("o2", "official.delete", { official_id: "off1" }, judge)).status, 403);
+  r = await cmd("o3", "official.delete", { official_id: "off1" });
+  assert.equal(r.status, 200, await r.text());
+  assert.deepEqual(await store.execute("SELECT id FROM photos WHERE owner_type = 'official'"), []);
+  s = await body(app.request("/api/v1/state", { headers: { cookie } }));
+  assert.deepEqual(s.officials, []);
+  // Compte : le juge ne peut pas, le chef ne peut pas se supprimer, un compte vierge se supprime et perd sa session.
+  assert.equal((await cmd("u1", "user.delete", { user_id: chiefId }, judge)).status, 403);
+  assert.equal((await cmd("u2", "user.delete", { user_id: chiefId })).status, 422);
+  r = await cmd("u3", "user.delete", { user_id: judgeId });
+  assert.equal(r.status, 200, await r.text());
+  assert.equal((await app.request("/api/v1/state", { headers: { cookie: judge } })).status, 401);
+  s = await body(app.request("/api/v1/state", { headers: { cookie } }));
+  assert.equal(s.users.length, 1);
+  // Compte ayant siégé : refusé.
+  r = await cmd("u4", "user.invite", { name: "Juge B", roles: ["judge"], code: "juge0002" });
+  const jb = (await body(r)).result.user.id;
+  // Modification : nom et fonctions, nouveau code (ancien code refusé), rôle chef intouchable.
+  r = await cmd("m1", "user.update", { user_id: jb, name: "Juge Bé", roles: ["judge", "speaker"], code: "juge0003" });
+  const updated = await body(r);
+  assert.equal(r.status, 200, JSON.stringify(updated));
+  assert.deepEqual(updated.result.user.roles, ["judge", "speaker"]);
+  assert.equal((await app.request("/api/v1/auth/login", json({ code: "juge0002" }))).status, 401);
+  assert.equal((await app.request("/api/v1/auth/login", json({ code: "juge0003" }))).status, 200);
+  assert.equal((await cmd("m2", "user.update", { user_id: jb, roles: ["chief"] })).status, 422);
+  assert.equal((await cmd("m3", "user.update", { user_id: jb, name: "X" }, judge)).status, 401);
+  s = await body(app.request("/api/v1/state", { headers: { cookie } }));
+  s.rounds = [];
+  await store.transact(async (tx: any) => {
+    const st = await store.read(tx);
+    st.rounds = [{ id: "r", category_id: "cat1", phase: "final", status: "pending", panel: [jb], trainees: [], ballots: {} }];
+    await store.write(tx, st, st.version);
+  });
+  r = await cmd("u5", "user.delete", { user_id: jb });
+  assert.equal(r.status, 422);
+  assert.match(await r.text(), /siégé/);
+});

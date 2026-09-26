@@ -237,6 +237,7 @@ test("person.delete : plusieurs athlètes, inscriptions et dossards retirés, di
   entry(a, cat); entry(b, cat);
   state.rounds = [{ id: "r", category_id: cat.id, status: "pending", participant_ids: state.entries.map((e: any) => e.id) }];
   rejects(() => run("person.delete", { person_ids: ["a"] }, sec));
+  rejects(() => run("person.delete", { person_ids: ["a"] }, responsable));
   rejects(() => run("person.delete", { person_ids: [] }));
   rejects(() => run("person.delete", { person_ids: ["inconnu"] }));
   const r = run("person.delete", { person_ids: ["a", "b", "a"] });
@@ -267,4 +268,19 @@ test("entry.remove : l'athlète quitte la catégorie, sa fiche reste ; refusé a
   assert.equal(state.rounds[0].participant_ids.length, 1);
   state.rounds = [{ id: "r2", category_id: cat.id, status: "open", ballots: {} }];
   rejects(() => run("entry.remove", { entry_id: state.entries[0].id }));
+});
+
+test("category.delete : chef seulement, inscriptions et manches en attente retirées, fiches conservées, refusé après le début", () => {
+  const cat = category(); const other = category("75");
+  const a = person("a", "69"); entry(a, cat);
+  state.rounds = [{ id: "r", category_id: cat.id, status: "pending", participant_ids: [] }, { id: "r2", category_id: other.id, status: "pending" }];
+  rejects(() => run("category.delete", { category_id: cat.id }, responsable));
+  rejects(() => run("category.delete", { category_id: "inconnue" }));
+  assert.deepEqual(run("category.delete", { category_id: cat.id }), { category_id: cat.id, inscriptions_retirees: 1 });
+  assert.deepEqual(state.categories.map((c: any) => c.id), [other.id]);
+  assert.deepEqual(state.entries, []);
+  assert.deepEqual(state.rounds.map((r: any) => r.id), ["r2"]);
+  assert.equal(state.people.length, 1);
+  state.rounds = [{ id: "r3", category_id: other.id, status: "open", ballots: {} }];
+  rejects(() => run("category.delete", { category_id: other.id }));
 });

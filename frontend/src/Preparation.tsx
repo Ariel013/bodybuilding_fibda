@@ -1148,6 +1148,23 @@ function Categories({ s, command }: Props) {
                   >
                     {active ? "Désactiver" : "Activer"}
                   </AsyncButton>
+                  <AsyncButton
+                    allowed={canCommand(s.me.roles, "category.delete")}
+                    className="ghost danger"
+                    action={async () => {
+                      const inscrits = s.entries.filter((e) => e.category_id === c.id).length;
+                      if (
+                        !window.confirm(
+                          `Supprimer la catégorie ${c.name} et ses ${inscrits} inscription${inscrits > 1 ? "s" : ""} ? Les fiches des athlètes restent. Refusé si la catégorie a commencé.`,
+                        )
+                      )
+                        return;
+                      await command("category.delete", { category_id: c.id });
+                      if (cat.id === c.id) setCat({ ...cat, id: uid(), name: "", entry_ids: [], merged_from: [] });
+                    }}
+                  >
+                    Supprimer
+                  </AsyncButton>
                 </div>,
               ];
             })}
@@ -1370,23 +1387,41 @@ function Officials({ s, command, refresh }: Props) {
       <Panel title="Personnalités et officiels">
         <div className="official-grid">
           {s.officials.map((o) => (
-            <button
-              className="official-card ghost"
-              key={o.id}
-              onClick={() => setF(o)}
-            >
-              {o.photo_id ? (
-                <img src={"/api/v1/photos/" + o.photo_id} alt="" />
-              ) : (
-                <div className="photo-empty">FIBDA</div>
-              )}
-              <strong>{personName(o)}</strong>
-              <span>{o.post}</span>
-              <small>
-                {o.organization} ·{" "}
-                {o.photo_approved ? "Photo approuvée" : "Photo à contrôler"}
-              </small>
-            </button>
+            <div className="official-item" key={o.id}>
+              <button
+                className="official-card ghost"
+                type="button"
+                onClick={() => setF(o)}
+              >
+                {o.photo_id ? (
+                  <img src={"/api/v1/photos/" + o.photo_id} alt="" />
+                ) : (
+                  <div className="photo-empty">FIBDA</div>
+                )}
+                <strong>{personName(o)}</strong>
+                <span>{o.post}</span>
+                <small>
+                  {o.organization} ·{" "}
+                  {o.photo_approved ? "Photo approuvée" : "Photo à contrôler"}
+                </small>
+              </button>
+              <AsyncButton
+                allowed={canCommand(s.me.roles, "official.delete")}
+                className="ghost danger"
+                action={async () => {
+                  if (
+                    !window.confirm(
+                      `Supprimer la fiche officiel de ${personName(o)} (${o.post || "sans fonction"}) et sa photo ? Son compte d'accès, s'il existe, n'est pas touché.`,
+                    )
+                  )
+                    return;
+                  await command("official.delete", { official_id: o.id });
+                  if (f.id === o.id) setF(blank());
+                }}
+              >
+                Supprimer
+              </AsyncButton>
+            </div>
           ))}
         </div>
       </Panel>
@@ -1411,6 +1446,20 @@ function Jury({ s, command }: Props) {
   const [name, setName] = useState(""),
     [code, setCode] = useState(""),
     [roles, setRoles] = useState<string[]>(["judge"]);
+  // Compte en cours de modification (chef seul) : le formulaire d'invitation passe en mode édition.
+  const [edition, setEdition] = useState<Entity>();
+  const ouvrirEdition = (u: Entity) => {
+    setEdition(u);
+    setName(u.name);
+    setRoles(u.roles);
+    setCode("");
+  };
+  const fermerEdition = () => {
+    setEdition(undefined);
+    setName("");
+    setRoles(["judge"]);
+    setCode("");
+  };
   const [panel, setPanel] = useState<string[]>(s.jury?.panel || []),
     [trainees, setTrainees] = useState<string[]>(s.jury?.trainees || []),
     [withdrawal, setWithdrawal] = useState<string>(
@@ -1419,15 +1468,25 @@ function Jury({ s, command }: Props) {
   return (
     <>
       <div className="split">
-        <Panel title="Inviter un membre">
+        <Panel title={edition ? `Modifier le compte de ${edition.name}` : "Inviter un membre"}>
           {canCommand(s.me.roles, "user.invite") ? (
             <form
               onSubmit={async (e) => {
                 e.preventDefault();
                 try {
-                  await command("user.invite", { name, code, roles });
-                  setCode("");
-                  setName("");
+                  if (edition) {
+                    await command("user.update", {
+                      user_id: edition.id,
+                      name,
+                      roles,
+                      ...(code ? { code } : {}),
+                    });
+                    fermerEdition();
+                  } else {
+                    await command("user.invite", { name, code, roles });
+                    setCode("");
+                    setName("");
+                  }
                 } catch {}
               }}
             >
@@ -1438,9 +1497,9 @@ function Jury({ s, command }: Props) {
                   onChange={(e) => setName(e.target.value)}
                 />
               </Field>
-              <Field label="Code personnel">
+              <Field label={edition ? "Nouveau code (laisser vide pour conserver)" : "Code personnel"}>
                 <input
-                  required
+                  required={!edition}
                   type="password"
                   autoComplete="new-password"
                   minLength={4}
@@ -1469,11 +1528,25 @@ function Jury({ s, command }: Props) {
                       s.me.roles.includes("chief") ||
                       !["chief", "responsable", "director"].includes(id),
                   )
+                  .filter((id) => !edition || id !== "chief")
                   .map((id) => ({ id, name: labels[id] }))}
                 value={roles}
                 onChange={setRoles}
               />
-              <button>Créer l’accès</button>
+              <div className="actions">
+                <button>{edition ? "Enregistrer le compte" : "Créer l’accès"}</button>
+                {edition && (
+                  <button type="button" className="ghost" onClick={fermerEdition}>
+                    Annuler
+                  </button>
+                )}
+              </div>
+              {edition && (
+                <small>
+                  Le rôle de chef ne se modifie pas ici. Un nouveau code ferme les sessions de ce
+                  compte : son titulaire devra se reconnecter.
+                </small>
+              )}
             </form>
           ) : (
             <Notice>Consultation uniquement pour votre rôle.</Notice>
@@ -1481,11 +1554,13 @@ function Jury({ s, command }: Props) {
         </Panel>
         <Panel title="Accès et approbations">
           <DataTable
-            columns={["Membre", "Rôles", "État", "Fiche officiel"]}
+            columns={["Membre", "Rôles", "État", "Fiche officiel", "Action"]}
             rows={s.users.map((u) => [
               u.name,
               u.roles.map((r: string) => labels[r]).join(", "),
-              u.approved ? (
+              u.active === false ? (
+                <Status value="Désactivé" />
+              ) : u.approved ? (
                 <Status value="Approuvé" />
               ) : (
                 <AsyncButton
@@ -1510,6 +1585,48 @@ function Jury({ s, command }: Props) {
                 </AsyncButton>
               ) : (
                 <small>Nom du compte en un seul mot : créez la fiche dans « Officiels ».</small>
+              ),
+              u.id === s.me.id ? (
+                <small>Votre compte</small>
+              ) : (
+                <div className="actions">
+                  {canCommand(s.me.roles, "user.update") && !u.roles.includes("chief") && (
+                    <button type="button" className="ghost" onClick={() => ouvrirEdition(u)}>
+                      Modifier
+                    </button>
+                  )}
+                  <AsyncButton
+                    allowed={canCommand(s.me.roles, "user.deactivate")}
+                    className="ghost"
+                    disabled={u.active === false}
+                    action={async () => {
+                      if (
+                        !window.confirm(
+                          `Désactiver le compte de ${u.name} ? Ses sessions sont fermées et son code ne donne plus accès ; ses bulletins et sa place dans les rapports restent.`,
+                        )
+                      )
+                        return;
+                      await command("user.deactivate", { user_id: u.id });
+                    }}
+                  >
+                    Désactiver
+                  </AsyncButton>
+                  <AsyncButton
+                    allowed={canCommand(s.me.roles, "user.delete")}
+                    className="ghost danger"
+                    action={async () => {
+                      if (
+                        !window.confirm(
+                          `Supprimer définitivement le compte de ${u.name} (${u.roles.map((r: string) => labels[r]).join(", ")}) ? Refusé s'il a siégé ou voté : désactivez-le alors.`,
+                        )
+                      )
+                        return;
+                      await command("user.delete", { user_id: u.id });
+                    }}
+                  >
+                    Supprimer le compte
+                  </AsyncButton>
+                </div>
               ),
             ])}
           />

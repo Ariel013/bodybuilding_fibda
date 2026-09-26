@@ -676,6 +676,14 @@ button.danger {
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   gap: 14px;
 }
+.official-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.official-item .official-card {
+  flex: 1;
+}
 .official-card {
   display: flex;
   flex-direction: column;

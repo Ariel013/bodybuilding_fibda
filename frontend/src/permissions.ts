@@ -43,6 +43,7 @@ export function canCommand(roles: string[], kind: string): boolean {
     "programme.generate",
     "programme.reorder",
     "bibs.assign",
+    "bibs.reset",
     "category.save",
     "category.activate",
     "entry.late",

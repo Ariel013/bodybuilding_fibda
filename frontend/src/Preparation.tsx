@@ -1357,6 +1357,17 @@ function Programme({ s, command }: Props) {
               Attribuer les dossards
             </AsyncButton>
             <AsyncButton
+              allowed={canCommand(s.me.roles, "bibs.reset")}
+              className="ghost danger"
+              disabled={!s.bibs_distributed}
+              action={async () => {
+                if (!window.confirm("Annuler l’attribution des dossards ? Tous les numéros sont effacés ; refusé si une manche a été ouverte. Vous pourrez ensuite attribuer de nouveau.")) return;
+                await command("bibs.reset");
+              }}
+            >
+              Annuler les dossards
+            </AsyncButton>
+            <AsyncButton
               allowed={canCommand(s.me.roles, "programme.generate")}
               action={() => command("programme.generate")}
             >
@@ -2286,7 +2297,8 @@ export function Documents({ s, refresh }: Props) {
     blank: "Fiches de notation (bulletins vierges)",
     ballot: "Bulletin individuel",
     recap: "Récapitulatif jury",
-    registrations: "Inscriptions",
+    athletes: "Liste des athlètes",
+    registrations: "Catégories et athlètes",
     fiche: "Fiches d’inscription",
     programme: "Ordre de passage",
     measures: "Mesures",

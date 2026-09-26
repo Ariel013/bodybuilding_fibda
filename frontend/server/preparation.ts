@@ -602,6 +602,15 @@ function apply(state: Dict, actor: Actor, kind: string, payload: Dict): any {
   if (kind === "bibs.assign") {
     requireRole(actor, SPORT);
     if (truthy(get(state, "bibs_distributed"))) throw new Problem("Dossards déjà attribués.");
+    // PO, 26/09/2026 : tous les inscrits des catégories actives doivent être confirmés avant les dossards,
+    // sinon refus nominatif (un athlète sans dossard était passé inaperçu).
+    const nonConfirmes = (state.entries as Dict[])
+      .filter((e) => !truthy(get(e, "confirmed")) && categoryActive(getItem(state, "categories", req(e, "category_id"))))
+      .map((e) => {
+        const person = (state.people as Dict[]).find((x) => x.id === req(e, "person_id")) ?? {};
+        return `${get(person, "first_name", "")} ${get(person, "last_name", "")}`.trim() + " (" + req(getItem(state, "categories", req(e, "category_id")), "name") + ")";
+      });
+    if (nonConfirmes.length) throw new Problem("Inscriptions à confirmer avant les dossards : " + nonConfirmes.join(", ") + ".");
     let number = 0;
     const categories = [...(state.categories as Dict[])].sort((a, b) => get(a, "order", 0) - get(b, "order", 0));
     for (const category of categories) {
@@ -615,6 +624,17 @@ function apply(state: Dict, actor: Actor, kind: string, payload: Dict): any {
     if (number === 0) throw new Problem("Aucune inscription confirmée : attribution des dossards impossible.");
     state.bibs_distributed = true;
     return { count: number };
+  }
+  if (kind === "bibs.reset") {
+    // Annulation de l'attribution des dossards (PO, 26/09/2026) : possible tant qu'aucune manche n'a
+    // été ouverte ; tous les numéros sont effacés, l'attribution se refait ensuite proprement.
+    requireRole(actor, SPORT);
+    if (!truthy(get(state, "bibs_distributed"))) throw new Problem("Aucune attribution de dossards à annuler.");
+    for (const c of state.categories as Dict[]) beforeRound(state, c.id);
+    let cleared = 0;
+    for (const e of state.entries as Dict[]) if (truthy(get(e, "bib"))) { e.bib = null; cleared += 1; }
+    state.bibs_distributed = false;
+    return { cleared };
   }
   if (kind === "entry.late") {
     requireRole(actor, SPORT);

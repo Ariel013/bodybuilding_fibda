@@ -125,7 +125,7 @@ test("export pdf : structure valide, texte relisible avec accents, une section p
   assert.equal(info.mediaBoxes[0], "0 0 595.28 841.89", "A4 portrait");
   // Le texte replié dans une cellule est recollé pour la comparaison (repli aux espaces).
   let text = extractText(data).replace(/\n/g, " ");
-  assert.ok(text.includes("Inscriptions - Coupe d'Abidjan – œuvre « été » - Senior"), text);
+  assert.ok(text.includes("Catégories et athlètes - Coupe d'Abidjan – œuvre « été » - Senior"), text);
   assert.ok(text.includes("Aïcha Kouamé (Côte d'Ivoire) \\"), text);
   assert.ok(text.includes("Dossard") && text.includes("Athlète") && text.includes("Confirmé"));
   assert.ok(text.includes("Version événement 2 - page 1") && text.includes("Nom et signature"));
@@ -138,7 +138,7 @@ test("export pdf : structure valide, texte relisible avec accents, une section p
   info = checkPdf(exportDocument(event, "registrations", "pdf").data);
   assert.equal(info.pages, 3);
   text = extractText(exportDocument(event, "registrations", "pdf").data).replace(/\n/g, " ");
-  assert.equal(text.split("Inscriptions - ").length - 1, 3, "titre rappelé sur la page de suite");
+  assert.equal(text.split("Catégories et athlètes - ").length - 1, 3, "titre rappelé sur la page de suite");
   assert.ok(text.includes("Prénom79"));
   // Diplôme : paysage, une page par lauréat, texte du diplôme.
   const diploma = exportDocument(event, "diploma", "pdf");
@@ -447,7 +447,7 @@ test("parcours : fiche de notation par catégorie, bulletin du juge, export csv,
   checkPdf(pdf);
   const pdfText = extractText(pdf).replace(/\n/g, " ");
   // « ≤ » n'a pas de code WinAnsi : rendu « <= » dans le PDF.
-  assert.ok(pdfText.includes("Inscriptions - ") && pdfText.includes(category.name.replace(/≤/g, "<=")), pdfText);
+  assert.ok(pdfText.includes("Catégories et athlètes - ") && pdfText.includes(category.name.replace(/≤/g, "<=")), pdfText);
   const someone = people[others[0].person_id];
   assert.ok(pdfText.includes(someone.first_name + " " + someone.last_name), someone.first_name);
   r = await app.request("/api/v1/export/registrations", { headers: { cookie: chief } });

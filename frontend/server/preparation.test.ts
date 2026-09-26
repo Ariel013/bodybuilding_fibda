@@ -320,3 +320,24 @@ test("catégorie créée ou modifiée après les dossards (assouplissement PO 26
   assert.equal(state.categories[1].name, "Renommée");
   rejects(() => run("category.fuse", { category_ids: [a.id, b.id] }));
 });
+
+test("dossards : refus nominatif si une inscription active n'est pas confirmée ; bibs.reset efface et permet de recommencer", () => {
+  const cat = category();
+  const a = person("a", "69"); entry(a, cat);
+  const b = person("b", "68");
+  const brouillon = run("entry.save", { entry: { person_id: b.id, category_id: cat.id, confirmed: false } });
+  const err = (() => { try { run("bibs.assign", {}); } catch (e) { return e as Error; } return null; })();
+  assert.ok(err instanceof Problem);
+  assert.match(err!.message, /Inscriptions à confirmer avant les dossards : Jean Test \(/);
+  assert.equal(state.bibs_distributed, false);
+  run("entry.save", { entry: { id: brouillon.id, person_id: b.id, category_id: cat.id, confirmed: true } });
+  assert.equal(run("bibs.assign", {}).count, 2);
+  rejects(() => run("bibs.reset", {}, sec));
+  assert.deepEqual(run("bibs.reset", {}), { cleared: 2 });
+  assert.equal(state.bibs_distributed, false);
+  assert.deepEqual(state.entries.map((e: any) => e.bib), [null, null]);
+  rejects(() => run("bibs.reset", {}));
+  assert.equal(run("bibs.assign", {}).count, 2);
+  state.rounds = [{ id: "r", category_id: cat.id, status: "open", ballots: {} }];
+  rejects(() => run("bibs.reset", {}));
+});

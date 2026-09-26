@@ -10,12 +10,13 @@ import { loadCatalogue } from "../domain/catalogue";
 // XLSX et PDF sont produits par les écrivains maison xlsx.ts et pdf.ts (ni openpyxl ni reportlab
 // en serverless) ; l'impression passe aussi par la boîte de dialogue du navigateur sur le HTML.
 
-export const KINDS = new Set(["blank", "ballot", "recap", "registrations", "programme", "measures", "results", "rewards", "diploma", "exams", "officials", "fiche"]);
+export const KINDS = new Set(["blank", "ballot", "recap", "registrations", "athletes", "programme", "measures", "results", "rewards", "diploma", "exams", "officials", "fiche"]);
 export const TITLES: Record<string, string> = {
   blank: "Fiche de notation",
   ballot: "Bulletin individuel",
   recap: "Récapitulatif des bulletins",
-  registrations: "Inscriptions",
+  registrations: "Catégories et athlètes",
+  athletes: "Liste des athlètes",
   programme: "Ordre de passage",
   measures: "Mesures",
   results: "Résultats",
@@ -343,6 +344,16 @@ export function documentSections(state: any, kind: string, filters: Filters = {}
         sections.push([title, PASSAGE_HEADERS, passageRows(current)]);
       }
     }
+  } else if (kind === "athletes") {
+    // Liste des athlètes (PO, 26/09/2026) : une ligne par inscription, ordre alphabétique du nom.
+    const catName = (id: string) => (state.categories ?? []).find((c: any) => c.id === id)?.name ?? "";
+    const rows: Cell[][] = Object.values(entries)
+      .map((entry) => {
+        const person = people[entry.person_id] ?? {};
+        return [person.last_name ?? "", person.first_name ?? "", person.club ?? "", catName(entry.category_id), entry.bib ?? "", entry.confirmed ? "Oui" : "Non"] as Cell[];
+      })
+      .sort((a, b) => String(a[0]).localeCompare(String(b[0]), "fr") || String(a[1]).localeCompare(String(b[1]), "fr") || String(a[3]).localeCompare(String(b[3]), "fr"));
+    sections.push(["Liste des athlètes", ["Nom", "Prénoms", "Club", "Catégorie", "Dossard", "Confirmé"], rows]);
   } else if (["registrations", "measures"].includes(kind)) {
     for (const category of categories) {
       const rows: Cell[][] = [];

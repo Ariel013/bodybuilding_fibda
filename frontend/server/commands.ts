@@ -8,7 +8,7 @@ import { applySport, applyCorrection, motif } from "./workflow";
 import { exams, collective } from "./projections";
 
 // Dispatch des commandes : copie de commands.py. Chaque commande vérifie ses droits côté serveur.
-const PREP = new Set(["event.update", "person.save", "person.delete", "category.delete", "entry.save", "entry.remove", "measurement.save", "category.save", "category.activate", "category.fuse", "programme.reorder", "bibs.assign", "entry.late", "official.save"]);
+const PREP = new Set(["event.update", "person.save", "person.delete", "category.delete", "entry.save", "entry.remove", "measurement.save", "category.save", "category.activate", "category.fuse", "programme.reorder", "bibs.assign", "bibs.reset", "entry.late", "official.save"]);
 // Commandes qui écrivent ailleurs que dans l'état (comptes, sessions, photos, aperçus) : elles
 // s'exécutent dans une transaction explicite. Toutes les autres ne touchent que l'état et passent
 // par l'écriture optimiste en un seul lot (app.ts, route /api/v1/command).

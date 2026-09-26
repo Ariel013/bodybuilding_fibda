@@ -2543,7 +2543,7 @@ dialog.athlete-card::backdrop {
 }
 .lineup-list li {
   display: grid;
-  grid-template-columns: 64px 120px 1fr auto;
+  grid-template-columns: 64px 84px 120px 1fr auto;
   align-items: center;
   gap: 18px;
   padding: 14px 20px;
@@ -2565,6 +2565,21 @@ dialog.athlete-card::backdrop {
   background: #e6f4ec;
   box-shadow: 0 0 0 3px #1f7a4d44;
   transform: scale(1.02);
+}
+.lineup-photo {
+  width: 84px;
+  height: 84px;
+  border-radius: 12px;
+  object-fit: cover;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.lineup-photo.photo-empty img {
+  width: 60%;
+  opacity: 0.5;
 }
 .lineup-pos {
   font-weight: 800;
@@ -2595,10 +2610,14 @@ dialog.athlete-card::backdrop {
 }
 @media (max-width: 600px) {
   .lineup-list li {
-    grid-template-columns: 44px 84px 1fr;
+    grid-template-columns: 44px 56px 84px 1fr;
     font-size: 18px;
   }
+  .lineup-photo {
+    width: 56px;
+    height: 56px;
+  }
   .lineup-state {
-    grid-column: 2 / 4;
+    grid-column: 3 / 5;
   }
 }

@@ -515,6 +515,13 @@ export function ScreenContent({
               return (
                 <li key={id} className={state}>
                   <span className="lineup-pos">{drawn.length ? i + 1 : ""}</span>
+                  {photoFor(p, "portrait", preview) ? (
+                    <img className="lineup-photo" src={"/api/v1/photos/" + photoFor(p, "portrait", preview)} alt={personName(p)} />
+                  ) : (
+                    <span className="lineup-photo photo-empty">
+                      <img src="/assets/fibda-embleme.png" alt="" />
+                    </span>
+                  )}
                   <span className="lineup-bib">{entry?.bib ? "N° " + entry.bib : "—"}</span>
                   <span className="lineup-name">
                     {personName(p)}

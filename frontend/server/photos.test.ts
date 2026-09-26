@@ -400,12 +400,23 @@ test("user.delete et official.delete : chef seulement ; compte ayant siégé ref
   assert.equal((await cmd("m3", "user.update", { user_id: jb, name: "X" }, judge)).status, 401);
   s = await body(app.request("/api/v1/state", { headers: { cookie } }));
   s.rounds = [];
+  // Manche en attente (copie du jury) : le compte se supprime et sort du panel de la manche (PO 26/09).
   await store.transact(async (tx: any) => {
     const st = await store.read(tx);
-    st.rounds = [{ id: "r", category_id: "cat1", phase: "final", status: "pending", panel: [jb], trainees: [], ballots: {} }];
+    st.rounds = [{ id: "r", category_id: "cat1", phase: "final", status: "pending", panel: [jb, "x1", "x2", "x3", "x4"], trainees: [], withdrawal_order: [jb], ballots: {} }];
     await store.write(tx, st, st.version);
   });
-  r = await cmd("u5", "user.delete", { user_id: jb });
+  r = await cmd("u4b", "user.invite", { name: "Juge C", roles: ["judge"], code: "juge0004" });
+  const jc = (await body(r)).result.user.id;
+  r = await cmd("u5", "user.delete", { user_id: jc });
+  assert.equal(r.status, 200, await r.text());
+  // Manche ouverte : refusé.
+  await store.transact(async (tx: any) => {
+    const st = await store.read(tx);
+    st.rounds[0].status = "open"; st.rounds[0].opened_at = 5;
+    await store.write(tx, st, st.version);
+  });
+  r = await cmd("u6", "user.delete", { user_id: jb });
   assert.equal(r.status, 422);
   assert.match(await r.text(), /siégé/);
 });

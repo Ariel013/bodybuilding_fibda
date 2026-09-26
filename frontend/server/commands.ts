@@ -76,7 +76,7 @@ export async function applyCommand(store: Store, conn: Conn, state: any, actor: 
     require(actor, ["chief"]);
     const user = find(users, p.user_id, "Utilisateur");
     const roles: string[] = Array.isArray(p.roles) ? p.roles : user.roles;
-    const sat = (state.rounds as any[]).some((r) => [...(r.panel ?? []), ...(r.trainees ?? []), ...Object.keys(r.ballots ?? {})].includes(user.id));
+    const sat = (state.rounds as any[]).some((r) => ((r.status !== "pending" || r.opened_at) && [...(r.panel ?? []), ...(r.trainees ?? [])].includes(user.id)) || Object.keys(r.ballots ?? {}).includes(user.id));
     if (sat && intersects(user.roles, ["judge", "trainee", "responsable"]) && !intersects(roles, ["judge", "trainee", "responsable"])) throw new Problem("Ce compte a siégé : sa fonction de vote ne peut être retirée, désactivez-le plutôt.");
     const updated = await store.updateUser(conn, user.id, p.name ?? user.name, roles, p.code);
     return { user: updated };
@@ -88,11 +88,15 @@ export async function applyCommand(store: Store, conn: Conn, state: any, actor: 
     require(actor, ["chief"]);
     const user = find(users, p.user_id, "Utilisateur");
     if (user.id === actor.id) throw new Problem("Le chef ne peut pas supprimer son propre compte.");
-    const cited = (state.rounds as any[]).some((r) => [...(r.panel ?? []), ...(r.trainees ?? []), ...Object.keys(r.ballots ?? {}), ...(r.correction?.signatures ?? [])].includes(user.id))
+    // Une manche en attente porte une copie du jury : elle ne compte pas comme « avoir siégé » (PO, 26/09).
+    // Seules une manche ouverte ou jugée, un bulletin, une signature ou un examen protègent le compte.
+    const engaged = (r: any) => r.status !== "pending" || r.opened_at || Object.keys(r.ballots ?? {}).length;
+    const cited = (state.rounds as any[]).some((r) => (engaged(r) && [...(r.panel ?? []), ...(r.trainees ?? [])].includes(user.id)) || [...Object.keys(r.ballots ?? {}), ...(r.correction?.signatures ?? [])].includes(user.id))
       || (state.exam_programs as any[]).some((x) => x.user_id === user.id) || (state.exam_decisions as any[]).some((x) => x.user_id === user.id);
     if (cited) throw new Problem("Ce compte a siégé ou voté : désactivez-le plutôt que de le supprimer.");
     const jury = state.jury ?? { panel: [], trainees: [], withdrawal_order: [] };
     for (const key of ["panel", "trainees", "withdrawal_order"]) jury[key] = (jury[key] ?? []).filter((id: string) => id !== user.id);
+    for (const r of state.rounds as any[]) if (!engaged(r)) for (const key of ["panel", "trainees", "withdrawal_order"]) r[key] = (r[key] ?? []).filter((id: string) => id !== user.id);
     await conn.execute({ sql: "DELETE FROM sessions WHERE user_id = ?", args: [user.id] });
     await conn.execute({ sql: "DELETE FROM users WHERE id = ?", args: [user.id] });
     return { user_id: user.id };

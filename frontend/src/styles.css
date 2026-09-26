@@ -630,6 +630,9 @@ td small {
   align-items: center;
   margin: 8px 0;
 }
+span.danger {
+  color: #a4232b;
+}
 button.danger {
   color: #a4232b;
   border-color: #a4232b;

@@ -1,5 +1,6 @@
 import { drapeau, paysAvecDrapeau } from "./pays";
 import { canCommand } from "./permissions";
+import { reconnaitrePhoto, type Reconnaissance } from "./photosLot";
 import {
   categorieActive,
   categoriesAInscrire,
@@ -2434,16 +2435,69 @@ export function Documents({ s, refresh }: Props) {
     </>
   );
 }
-function BatchPhotos(_props: { s: State; refresh: () => Promise<void> }) {
-  // L'import par archive ZIP (POST /photos/batch) répond 501 sur cette version serverless :
-  // chaque photo s'ajoute depuis la fiche individuelle, avec son consentement.
+function BatchPhotos({ s, refresh }: { s: State; refresh: () => Promise<void> }) {
+  // Import en lot sans archive (PO, 26/09/2026) : plusieurs fichiers choisis d'un coup, chacun
+  // réduit par le navigateur et envoyé par la route unitaire ; le consentement reste à cocher sur la fiche.
+  const [lot, setLot] = useState<Reconnaissance[]>([]);
+  const [resultats, setResultats] = useState<Record<string, string>>({});
+  const reconnus = lot.filter((r) => r.owner);
   return (
     <Panel title="Importer un lot de photographies">
       <Notice kind="info">
-        L’import par archive ZIP n’est pas disponible sur cette version :
-        ajoutez les photos une par une depuis la fiche de chaque personne ou
-        officiel, puis contrôlez le consentement de diffusion sur la fiche.
+        Choisissez plusieurs fichiers d’un coup. Chaque fichier est rattaché à un athlète par son nom :
+        « 12.jpg » = dossard 12, ou « Prenom Nom.jpg ». Ajoutez « plein » pour une photo en pied
+        (« 12-plein.jpg »), sinon c’est le portrait. Les photos sont réduites par le téléphone avant l’envoi.
+        Le consentement de diffusion se coche ensuite sur chaque fiche.
       </Notice>
+      <Field label="Fichiers">
+        <input
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          multiple
+          onChange={(e) => {
+            const files = Array.from(e.target.files ?? []);
+            setLot(files.map((f) => reconnaitrePhoto(f, s)));
+            setResultats({});
+          }}
+        />
+      </Field>
+      {lot.length > 0 && (
+        <DataTable
+          columns={["Fichier", "Personne", "Type", "Résultat"]}
+          rows={lot.map((r) => [
+            r.file.name,
+            r.owner ? `${personName(r.owner)} (${r.motif})` : <span className="danger">{r.motif}</span>,
+            r.kind === "full" ? "Plein pied" : "Portrait",
+            resultats[r.file.name] ?? (r.owner ? "à envoyer" : "ignoré"),
+          ])}
+        />
+      )}
+      <div className="actions">
+        <AsyncButton
+          disabled={reconnus.length === 0}
+          action={async () => {
+            const out: Record<string, string> = {};
+            for (const r of reconnus) {
+              try {
+                const reduced = await reducePhoto(r.file, null);
+                const fd = new FormData();
+                fd.append("file", reduced, "photo.jpg");
+                fd.append("owner_type", "person");
+                fd.append("owner_id", r.owner!.id);
+                fd.append("kind", r.kind);
+                await api("/photos", { method: "POST", body: fd });
+                out[r.file.name] = "envoyée";
+              } catch (e) {
+                out[r.file.name] = "refusée : " + (e as Error).message;
+              }
+              setResultats({ ...out });
+            }
+            await refresh();
+          }}
+        >
+          Importer {reconnus.length} photo{reconnus.length > 1 ? "s" : ""}
+        </AsyncButton>
+      </div>
     </Panel>
   );
 }

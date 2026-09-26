@@ -374,3 +374,23 @@ test("event.reset : retour en préparation, chef seulement, confirmation exigée
   assert.deepEqual(f.s.jury.panel, ["0", "1", "2", "3", "4"]);
   throwsProblem(() => applySport(f.s, f.chief, "event.reset", { confirm: "REINITIALISER" }, f.users, 301));
 });
+
+test("programme.generate ignore les catégories désactivées comme les archivées (PO, 26/09/2026)", () => {
+  const f = new Fixture();
+  f.s.status = "preparation";
+  f.s.bibs_distributed = true;
+  f.s.rounds = [];
+  f.s.categories.push(
+    { id: "off", name: "Désactivée", discipline: "bodybuilding", section: "amateur", order: 1, archived: false, active: false },
+    { id: "old", name: "Archivée", discipline: "bodybuilding", section: "amateur", order: 2, archived: true },
+    { id: "legacy", name: "Sans champ active", discipline: "bikini", section: "amateur", order: 3, archived: false },
+  );
+  f.s.entries.push(
+    { id: "d", person_id: "a", category_id: "off", bib: 4, confirmed: true },
+    { id: "e", person_id: "b", category_id: "old", bib: 5, confirmed: true },
+    { id: "g", person_id: "c", category_id: "legacy", bib: 6, confirmed: true },
+  );
+  const planned = applySport(f.s, f.chief, "programme.generate", {}, f.users, 0);
+  assert.equal(planned.count, 2);
+  assert.deepEqual(f.s.rounds.map((r: any) => r.category_id), ["cat", "legacy"]);
+});

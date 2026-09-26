@@ -22,6 +22,8 @@ export type CategorieEvenement = {
   rule_id?: string;
   section?: string;
   archived?: boolean;
+  /** Catégories modulables (PO, 26/09/2026) : absent = active. */
+  active?: boolean;
   source_rule_ids?: string[];
 };
 
@@ -32,6 +34,8 @@ export type Alternative = {
   discipline: string;
   division: string;
   category_id: string | null;
+  /** Vrai quand la catégorie existe mais est désactivée : ni présélection, ni création. */
+  desactivee: boolean;
   motifs: string[];
 };
 
@@ -48,18 +52,44 @@ export type Choix = {
   message: string;
 };
 
-/** Catégorie active de l'événement portant cette règle (directement ou par fusion) dans cette section. */
+/** Forme minimale d'une catégorie ou d'une inscription (accepte `Entity` grâce à la signature d'index). */
+type Etiquetable = { archived?: boolean; active?: boolean; [key: string]: unknown };
+
+/** Catégorie jouée : ni archivée ni désactivée (`active` absent vaut actif). */
+export function categorieActive(c: Etiquetable): boolean {
+  return !c.archived && c.active !== false;
+}
+
+/** Catégories qui peuvent recevoir un athlète (mêmes critères que le serveur pour entry.save). */
+export function categoriesInscriptibles<T extends Etiquetable>(categories: T[]): T[] {
+  return categories.filter(categorieActive);
+}
+
+/** Catégories cochées où la personne n'est pas encore inscrite : une commande entry.save par élément. */
+export function categoriesAInscrire(
+  choisies: string[],
+  inscriptions: { category_id?: unknown; [key: string]: unknown }[],
+): string[] {
+  const deja = new Set(inscriptions.map((e) => String(e.category_id)));
+  return [...new Set(choisies)].filter((id) => !deja.has(id));
+}
+
+/**
+ * Catégorie non archivée de l'événement portant cette règle (directement ou par fusion) dans cette
+ * section, active de préférence ; une catégorie désactivée n'est renvoyée qu'à défaut d'active.
+ */
 export function categoriePourRegle(
   categories: CategorieEvenement[],
   ruleId: string,
   section: string,
 ): CategorieEvenement | undefined {
-  return categories.find(
+  const porteuses = categories.filter(
     (c) =>
       !c.archived &&
       c.section === section &&
       (c.rule_id === ruleId || (c.source_rule_ids ?? []).includes(ruleId)),
   );
+  return porteuses.find(categorieActive) ?? porteuses[0];
 }
 
 /**
@@ -74,14 +104,18 @@ export function choisirCategorie(
   section: string,
 ): Choix {
   const retenues = propositions.filter((p) => p.section === section);
-  const alternatives: Alternative[] = retenues.map((p) => ({
-    rule_id: p.rule_id,
-    nom: p.name,
-    discipline: p.discipline,
-    division: p.division,
-    category_id: categoriePourRegle(categories, p.rule_id, section)?.id ?? null,
-    motifs: p.reasons ?? [],
-  }));
+  const alternatives: Alternative[] = retenues.map((p) => {
+    const existante = categoriePourRegle(categories, p.rule_id, section);
+    return {
+      rule_id: p.rule_id,
+      nom: p.name,
+      discipline: p.discipline,
+      division: p.division,
+      category_id: existante?.id ?? null,
+      desactivee: existante !== undefined && !categorieActive(existante),
+      motifs: p.reasons ?? [],
+    };
+  });
   if (alternatives.length === 0) {
     return {
       category_id: null,
@@ -92,14 +126,26 @@ export function choisirCategorie(
         "Aucune catégorie du référentiel ne correspond à cette fiche (sexe, âge, taille, poids, section). Choisissez une catégorie dans la liste ; le serveur demandera une dérogation du chef si elle est hors critères.",
     };
   }
-  const existante = alternatives.find((a) => a.category_id !== null);
-  const principale = existante ?? alternatives[0];
+  // Une catégorie désactivée n'est jamais présélectionnée ni recréée : elle attend sa réactivation.
+  const existante = alternatives.find((a) => a.category_id !== null && !a.desactivee);
+  const aCreer = alternatives.find((a) => a.category_id === null);
+  const principale = existante ?? aCreer ?? alternatives[0];
   const ordonnees = [principale, ...alternatives.filter((a) => a !== principale)];
   const autres = ordonnees.slice(1);
   const detail =
     autres.length > 0
-      ? " Autres catégories possibles : " + autres.map((a) => a.nom).join(", ") + "."
+      ? " Autres catégories possibles : " + autres.map((a) => a.nom + (a.desactivee ? " (désactivée)" : "")).join(", ") + "."
       : "";
+  if (principale.desactivee) {
+    return {
+      category_id: null,
+      rule_id: null,
+      nom: principale.nom,
+      alternatives: ordonnees,
+      message:
+        "Catégorie proposée : " + principale.nom + ", mais elle est désactivée. Réactivez-la dans la rubrique Catégories ou cochez une autre catégorie." + detail,
+    };
+  }
   return {
     category_id: principale.category_id,
     rule_id: principale.category_id === null ? principale.rule_id : null,

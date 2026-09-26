@@ -1,4 +1,4 @@
-import { createClient as createWebClient, type Client, type Transaction, type InValue } from "@libsql/client/web";
+import { createClient as createWebClient, type Client, type Transaction, type InValue, type InStatement, type ResultSet } from "@libsql/client/web";
 import { Problem } from "./problem";
 import { newState, type User } from "./state";
 import { findByCode, hashCodeAsync, newToken, safeUser, sessionId, validateNewUser, SESSION_SECONDS, type UserRow } from "./auth";
@@ -20,6 +20,12 @@ const SCHEMA = [
 ];
 
 export type Conn = Transaction | Client;
+
+// Coût réseau (client HTTP Turso) : chaque `execute`, chaque `batch` et chaque `COMMIT` est un
+// aller-retour vers la base ; le `BEGIN` part regroupé avec la première instruction. Les routes
+// chaudes (état, commande) lisent donc tout en un seul `batch` et écrivent tout en un seul
+// `batch` atomique, sans transaction ouverte à travers le réseau.
+export type Snapshot = { user: User; state: any; users: User[]; prior: { user_id: string; fingerprint: string; result: string } | null };
 
 export type StoreOptions = { url: string; authToken?: string; demo?: boolean; clock?: Clock };
 
@@ -52,21 +58,69 @@ export class Store {
 
   private async bootstrap(): Promise<void> {
     const client = await this.db();
-    for (const sql of SCHEMA) await client.execute(sql);
-    const tx = await client.transaction("write");
-    try {
-      const row = (await tx.execute("SELECT id, data FROM events LIMIT 1")).rows[0];
-      if (!row) {
-        const state = newState(this.demo);
-        await tx.execute({ sql: "INSERT INTO events (id, version, data) VALUES (?, 0, ?)", args: [state.id, dump(state)] });
-      } else if (Boolean(JSON.parse(String(row.data)).demo) !== this.demo) {
-        throw new Error("Cette base contient une autre nature de données : démonstration et officiel doivent rester séparés.");
-      }
-      await tx.commit();
-    } catch (e) {
-      await tx.rollback().catch(() => undefined);
-      throw e;
+    // Schéma et événement initial en une seule requête atomique : l'insertion ne se fait que si la
+    // table est vide, deux instances démarrant en même temps ne créent donc pas deux événements.
+    const state = newState(this.demo);
+    await client.batch([...SCHEMA, { sql: "INSERT INTO events (id, version, data) SELECT ?, 0, ? WHERE NOT EXISTS (SELECT 1 FROM events)", args: [state.id, dump(state)] }], "write");
+    const row = (await client.execute("SELECT data FROM events LIMIT 1")).rows[0];
+    if (!row || Boolean(JSON.parse(String(row.data)).demo) !== this.demo) {
+      throw new Error("Cette base contient une autre nature de données : démonstration et officiel doivent rester séparés.");
     }
+  }
+
+  // Un lot d'instructions en une seule requête, atomique (annulé entièrement si l'une échoue).
+  // Sur une transaction ouverte, le lot s'exécute dedans ; sinon dans sa propre transaction.
+  async batch(stmts: InStatement[], mode: "read" | "write", conn?: Conn): Promise<ResultSet[]> {
+    await this.init();
+    if (conn && "commit" in conn) return conn.batch(stmts);
+    return (conn ?? (await this.db())).batch(stmts, mode);
+  }
+
+  private static readonly SESSION_SQL = "SELECT users.* FROM users JOIN sessions ON sessions.user_id = users.id WHERE sessions.id = ? AND sessions.expires > ? AND users.active = 1";
+  private static readonly STATE_SQL = "SELECT data FROM events LIMIT 1";
+  private static readonly USERS_SQL = "SELECT * FROM users ORDER BY created_at";
+
+  // Session, état et comptes en un seul aller-retour ; `commandId` ajoute la commande déjà
+  // exécutée sous cet identifiant (idempotence). Mêmes contrôles que `authenticate`.
+  async snapshot(token: string | undefined, commandId?: string, conn?: Conn): Promise<Snapshot> {
+    if (!token) throw new Problem("Connectez-vous avec votre code personnel.", 401);
+    const stmts: InStatement[] = [{ sql: Store.SESSION_SQL, args: [sessionId(token), this.clock()] }, Store.STATE_SQL, Store.USERS_SQL];
+    if (commandId !== undefined) stmts.push({ sql: "SELECT user_id, fingerprint, result FROM commands WHERE id = ?", args: [commandId] });
+    const [session, event, users, commands] = await this.batch(stmts, "read", conn);
+    const row = session.rows[0] as unknown as UserRow | undefined;
+    if (!row) throw new Problem("Session expirée. Reconnectez-vous.", 401);
+    if (!row.approved) throw new Problem("Votre accès attend la validation du chef des juges.", 403);
+    const prior = commands?.rows[0];
+    return {
+      user: safeUser(row),
+      state: JSON.parse(String(event.rows[0]!.data)),
+      users: users.rows.map((r) => safeUser(r as unknown as UserRow)),
+      prior: prior ? { user_id: String(prior.user_id), fingerprint: String(prior.fingerprint), result: String(prior.result) } : null,
+    };
+  }
+
+  // État et comptes en un seul aller-retour, sans session (santé du serveur).
+  async readAll(): Promise<{ state: any; users: User[] }> {
+    const [event, users] = await this.batch([Store.STATE_SQL, Store.USERS_SQL], "read");
+    return { state: JSON.parse(String(event.rows[0]!.data)), users: users.rows.map((r) => safeUser(r as unknown as UserRow)) };
+  }
+
+  // Écriture sous version optimiste en un seul lot atomique : les insertions (`extra`, écrites
+  // sous la forme `INSERT ... SELECT ... WHERE <gate>`) ne prennent effet que si la version lue
+  // est encore la version en base, puis l'état est remplacé à la même condition. Renvoie faux si
+  // quelqu'un a écrit entre-temps : rien n'a alors été écrit, l'appelant relit et recommence.
+  async commit(state: any, expectedVersion: number, extra: Array<{ sql: string; args: InValue[] }>, conn?: Conn): Promise<boolean> {
+    const gate = [state.id, expectedVersion];
+    const stmts: InStatement[] = extra.map((x) => ({ sql: x.sql, args: [...x.args, ...gate] }));
+    stmts.push({ sql: "UPDATE events SET version = ?, data = ? WHERE id = ? AND version = ?", args: [state.version, dump(state), state.id, expectedVersion] });
+    const results = await this.batch(stmts, "write", conn);
+    return results[results.length - 1]!.rowsAffected === 1;
+  }
+
+  // Erreur d'unicité (identifiant de commande déjà inscrit par un rejeu simultané) : le lot a été annulé.
+  static isConstraintError(e: unknown): boolean {
+    const text = String((e as any)?.code ?? "") + " " + String((e as any)?.message ?? e);
+    return /SQLITE_CONSTRAINT|UNIQUE constraint failed/i.test(text);
   }
 
   async read(conn?: Conn): Promise<any> {
@@ -102,10 +156,15 @@ export class Store {
     }
   }
 
-  // Journal d'audit : codes, jetons et fichiers n'y entrent jamais.
-  async record(conn: Conn, state: any, userId: string, action: string, data: Record<string, unknown>): Promise<void> {
+  // Journal d'audit : codes, jetons et fichiers n'y entrent jamais. Forme conditionnelle, pour `commit`.
+  auditStatement(state: any, userId: string, action: string, data: Record<string, unknown>): { sql: string; args: InValue[] } {
     const redacted = Object.fromEntries(Object.entries(data).filter(([k]) => !["code", "token", "password", "file"].includes(k)));
-    await conn.execute({ sql: "INSERT INTO audit (id, event_id, user_id, action, at, data) VALUES (?, ?, ?, ?, ?, ?)", args: [uid(), state.id, userId, action, this.clock(), dump(redacted)] });
+    return { sql: "INSERT INTO audit (id, event_id, user_id, action, at, data) SELECT ?, ?, ?, ?, ?, ? WHERE (SELECT version FROM events WHERE id = ?) = ?", args: [uid(), state.id, userId, action, this.clock(), dump(redacted)] };
+  }
+  // Forme inconditionnelle, pour les transactions explicites (configuration, démonstration, imports, photos, restauration).
+  async record(conn: Conn, state: any, userId: string, action: string, data: Record<string, unknown>): Promise<void> {
+    const a = this.auditStatement(state, userId, action, data);
+    await conn.execute({ sql: "INSERT INTO audit (id, event_id, user_id, action, at, data) VALUES (?, ?, ?, ?, ?, ?)", args: a.args });
   }
 
   // `auth.add_user` : contrôles puis insertion, hachage PBKDF2 identique au Python.
@@ -157,15 +216,33 @@ export class Store {
 
   // Limitation des tentatives de connexion : 15 échecs par adresse sur 5 minutes.
   async loginAllowed(address: string): Promise<boolean> {
-    await this.init();
     const now = this.clock();
-    await (await this.db()).execute({ sql: "DELETE FROM attempts WHERE at < ?", args: [now - 300] });
-    // Purge des sessions expirées au passage : la table ne grossit pas indéfiniment.
-    await (await this.db()).execute({ sql: "DELETE FROM sessions WHERE expires < ?", args: [now] });
-    // Purge des aperçus d'import expirés (données personnelles) au passage également.
-    await (await this.db()).execute({ sql: "DELETE FROM import_previews WHERE created_at < ?", args: [now - 3600] });
-    const n = Number((await (await this.db()).execute({ sql: "SELECT COUNT(*) AS n FROM attempts WHERE address = ?", args: [address] })).rows[0]!.n);
-    return n < 15;
+    const results = await this.batch(
+      [
+        { sql: "DELETE FROM attempts WHERE at < ?", args: [now - 300] },
+        // Purge des sessions expirées au passage : la table ne grossit pas indéfiniment.
+        { sql: "DELETE FROM sessions WHERE expires < ?", args: [now] },
+        // Purge des aperçus d'import expirés (données personnelles) au passage également.
+        { sql: "DELETE FROM import_previews WHERE created_at < ?", args: [now - 3600] },
+        { sql: "SELECT COUNT(*) AS n FROM attempts WHERE address = ?", args: [address] },
+      ],
+      "write",
+    );
+    return Number(results[3]!.rows[0]!.n) < 15;
+  }
+  // Connexion réussie : session ouverte, compteur d'échecs de l'adresse remis à zéro, identifiant
+  // de l'événement lu, en un seul aller-retour.
+  async loginSession(userId: string, address: string): Promise<{ token: string; eventId: string }> {
+    const token = newToken();
+    const results = await this.batch(
+      [
+        { sql: "INSERT INTO sessions (id, user_id, expires) VALUES (?, ?, ?)", args: [sessionId(token), userId, this.clock() + SESSION_SECONDS] },
+        { sql: "DELETE FROM attempts WHERE address = ?", args: [address] },
+        "SELECT id FROM events LIMIT 1",
+      ],
+      "write",
+    );
+    return { token, eventId: String(results[2]!.rows[0]!.id) };
   }
   async loginFailed(address: string): Promise<void> {
     await (await this.db()).execute({ sql: "INSERT INTO attempts (address, at) VALUES (?, ?)", args: [address, this.clock()] });

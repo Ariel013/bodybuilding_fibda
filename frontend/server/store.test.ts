@@ -28,6 +28,27 @@ test("état initial créé, lecture et écriture versionnée", async () => {
     (e: any) => e instanceof Problem && e.status === 409,
   );
   assert.equal((await store.read()).name, "Coupe");
+  // Lot optimiste (`commit`) : état, audit et journal des commandes en une seule écriture atomique ;
+  // sur version dépassée, rien n'est écrit, ni l'état ni les lignes conditionnées.
+  const fresh = await store.read();
+  fresh.name = "Coupe 2";
+  fresh.version = 2;
+  const cmd = { sql: "INSERT INTO commands (id, user_id, fingerprint, result, version) SELECT ?, ?, ?, ?, ? WHERE (SELECT version FROM events WHERE id = ?) = ?", args: ["c-ok", "u", "f", "{}", 2] };
+  assert.equal(await store.commit(fresh, 1, [store.auditStatement(fresh, "u", "event.update", { name: "Coupe 2" }), cmd]), true);
+  assert.equal((await store.read()).name, "Coupe 2");
+  assert.equal((await store.execute("SELECT id FROM commands WHERE id = 'c-ok'")).length, 1);
+  assert.equal(Number((await store.execute("SELECT COUNT(*) AS n FROM audit WHERE action = 'event.update'"))[0].n), 1);
+  const stale = { ...fresh, name: "Perdu", version: 3 };
+  const late = { ...cmd, args: ["c-perdu", "u", "f", "{}", 3] };
+  assert.equal(await store.commit(stale, 1, [store.auditStatement(stale, "u", "event.update", { name: "Perdu" }), late]), false);
+  assert.equal((await store.read()).name, "Coupe 2");
+  assert.equal((await store.read()).version, 2);
+  assert.equal((await store.execute("SELECT id FROM commands WHERE id = 'c-perdu'")).length, 0);
+  assert.equal(Number((await store.execute("SELECT COUNT(*) AS n FROM audit WHERE action = 'event.update'"))[0].n), 1);
+  // Identifiant de commande déjà inscrit : le lot entier est annulé et l'erreur est reconnue comme telle.
+  const again = { ...fresh, name: "Coupe 3", version: 3 };
+  await assert.rejects(store.commit(again, 2, [{ ...cmd, args: ["c-ok", "u", "f", "{}", 3] }]), (e: unknown) => Store.isConstraintError(e));
+  assert.equal((await store.read()).name, "Coupe 2");
 });
 
 test("comptes : hachage, doublon de code, chef unique, session et authentification", async () => {

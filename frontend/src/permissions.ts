@@ -29,6 +29,7 @@ export function canCommand(roles: string[], kind: string): boolean {
     "person.save": [...admin, "secretariat"],
     "person.delete": admin,
     "entry.save": [...admin, "secretariat"],
+    "entry.remove": [...admin, "secretariat"],
     "measurement.save": [...admin, "secretariat"],
     "official.save": [...admin, "secretariat"],
   };
@@ -38,6 +39,7 @@ export function canCommand(roles: string[], kind: string): boolean {
     "programme.reorder",
     "bibs.assign",
     "category.save",
+    "category.activate",
     "entry.late",
     "event.start",
     "event.finish",

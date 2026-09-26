@@ -18,6 +18,8 @@ body {
     radial-gradient(ellipse at 85% 0, #cae8da 0, transparent 55%),
     radial-gradient(ellipse at 5% 70%, #d1eee7 0, transparent 45%), #edf5f0;
   min-height: 100vh;
+  /* Zones sûres (iPhone en plein écran, viewport-fit=cover) : rien sous la barre d'état. */
+  padding-top: env(safe-area-inset-top, 0px);
 }
 button,
 input,
@@ -181,7 +183,7 @@ dd {
   flex-shrink: 0;
   position: fixed;
   inset: 0 auto 0 0;
-  padding: 23px 18px 20px;
+  padding: calc(23px + env(safe-area-inset-top, 0px)) 18px 20px;
   background: #ffffff65;
   border-right: 1px solid #fff;
   backdrop-filter: blur(28px);
@@ -953,7 +955,7 @@ button.danger {
 }
 .ballot-footer {
   position: sticky;
-  bottom: 12px;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 12px);
   padding: 18px 22px;
   display: flex;
   align-items: center;
@@ -1087,7 +1089,7 @@ button.danger {
 }
 .saving-bar {
   position: fixed;
-  top: 0;
+  top: env(safe-area-inset-top, 0px);
   left: 250px;
   right: 0;
   background: #20573c;
@@ -1489,7 +1491,7 @@ footer {
     margin-right: 5px;
   }
   .ballot-footer {
-    bottom: 5px;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 5px);
     padding: 14px;
     flex-wrap: wrap;
   }
@@ -1695,6 +1697,26 @@ footer {
 .entry-row button {
   margin-top: 9px;
   font-size: 11px;
+}
+/* Catégorie désactivée (PO 26/09/2026) : gardée dans les listes, visiblement hors jeu. */
+.categorie-inactive {
+  opacity: 0.55;
+}
+.categorie-inactive strong {
+  text-decoration: line-through;
+  text-decoration-thickness: 1px;
+}
+.badge.categorie_active {
+  background: #d9f3df;
+  color: #176333;
+}
+.badge.categorie_inactive {
+  background: #eef1ed;
+  color: #5c695e;
+}
+.categories-inscription .check input:disabled + * ,
+.categories-inscription .check:has(input:disabled) {
+  color: #647b6f;
 }
 .batch-row {
   display: grid;
@@ -1981,7 +2003,10 @@ footer {
     padding: 0;
   }
   .judge-page .ballot-footer {
-    position: static;
+    /* Collée au bas de la fenêtre tant que sa place naturelle est hors écran (aucun ancêtre ne
+       défile ni ne masque son débordement) ; recule devant la barre d'accueil iPhone. */
+    position: sticky;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 5px);
     padding: 8px;
     gap: 7px;
     border-radius: 12px;
@@ -2216,7 +2241,7 @@ dialog.athlete-card::backdrop {
   position: fixed;
   left: 12px;
   right: 12px;
-  bottom: 12px;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 12px);
   z-index: 60;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
   font-size: 15px;
@@ -2355,9 +2380,10 @@ dialog.athlete-card::backdrop {
     height: 36px;
     font-size: 18px;
   }
-  .judge-only .judge-page .judge-layout > .panel {
-    max-height: max(260px, calc(100dvh - 520px));
-  }
+  /* Plus de plafond de hauteur sur les panneaux (retour du PO du 26/09, iPhone) : sans
+     débordement masqué, les dossards sortaient du panneau et passaient sous la barre d'actions.
+     Les panneaux prennent leur hauteur naturelle ; la barre d'actions reste collée en bas
+     (règle `.judge-page .ballot-footer` plus haut). */
 }
 
 /* Écran d'attente après réception du bulletin : grand, lisible de loin. */

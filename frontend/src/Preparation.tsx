@@ -1,6 +1,9 @@
 import { drapeau, paysAvecDrapeau } from "./pays";
 import { canCommand } from "./permissions";
 import {
+  categorieActive,
+  categoriesAInscrire,
+  categoriesInscriptibles,
   choisirCategorie,
   confirmationPossible,
   ficheComplete,
@@ -259,7 +262,8 @@ function EventForm({ s, command }: Props) {
                   `Vider la compétition efface définitivement ${s.people.length} athlètes, ${s.categories.length} catégories, les officiels, le jury, les manches, les résultats et les photos. Les comptes et l’identité de l’événement sont conservés. Faites une sauvegarde avant. Tapez VIDER pour confirmer.`,
                 );
                 if (saisie === null) return;
-                await command("event.purge", { confirm: saisie.trim().toUpperCase() });
+                // Saisie exacte exigée (vidage irréversible) : pas de mise en majuscules côté écran.
+                await command("event.purge", { confirm: saisie.trim() });
               }}
             >
               Vider la compétition
@@ -303,6 +307,8 @@ const personDefault = (): Entity => ({
 });
 // Une seule fiche athlète : identité, contrôles, taille et poids, puis catégorie proposée
 // automatiquement par le référentiel à l'enregistrement (module pur categorieAuto.ts).
+// Multi-inscription (PO, 26/09/2026) : plusieurs catégories actives peuvent être cochées, une
+// commande entry.save (ou entry.late) part par catégorie cochée non encore inscrite.
 // Les règles d'admission restent celles du serveur (preparation.ts) : les messages serveur
 // sont affichés tels quels.
 type MessageFiche = { kind: "success" | "warning" | "error"; text: string };
@@ -310,7 +316,8 @@ const CONTROLES_CONFIRMATION =
   "« Statut approuvé », « Licence contrôlée », « Paiement reçu » et « Mesures confirmées »";
 function People({ s, command, refresh }: Props) {
   const [person, setPerson] = useState<Entity>(personDefault);
-  const [category, setCategory] = useState("");
+  /** Catégories cochées dans « Catégories d'inscription » (celles déjà inscrites y figurent, verrouillées). */
+  const [choisies, setChoisies] = useState<string[]>([]);
   const [search, setSearch] = useState("");
   const [choix, setChoix] = useState<Choix>();
   const [derogation, setDerogation] = useState("");
@@ -346,12 +353,18 @@ function People({ s, command, refresh }: Props) {
   const inscriptions = s.entries.filter((e) => e.person_id === person.id);
   const nomCategorie = (id: string) =>
     s.categories.find((c) => c.id === id)?.name ?? "la catégorie choisie";
-  const categoriesActives = s.categories.filter((c) => !c.archived);
+  // Seules les catégories actives de la section de la fiche reçoivent un athlète (règles serveur :
+  // « Catégorie désactivée. », « Le cumul amateur/pro est interdit. »).
+  const categoriesProposees = categoriesInscriptibles(s.categories).filter(
+    (c) => c.section === person.section,
+  );
+  const cocherCategorie = (id: string, on: boolean) =>
+    setChoisies((cur) => (on ? [...new Set([...cur, id])] : cur.filter((x) => x !== id)));
 
   function ouvrir(p: Entity) {
     setPerson({ ...personDefault(), ...p });
     setChoix(undefined);
-    setCategory("");
+    setChoisies(s.entries.filter((e) => e.person_id === p.id).map((e) => e.category_id));
     setMessage(undefined);
   }
 
@@ -369,51 +382,62 @@ function People({ s, command, refresh }: Props) {
   }
 
   /**
-   * Crée ou déplace l'inscription de la fiche enregistrée dans la catégorie cible.
+   * Crée l'inscription de la fiche enregistrée dans la catégorie cible et renvoie le compte rendu.
    * Avant les dossards : `entry.save`, confirmée si les contrôles sont cochés, sinon brouillon.
    * Après les dossards ou compétition démarrée : `entry.late` (chef et responsable).
+   * Un refus serveur non rattrapable remonte en exception (message serveur tel quel).
    */
-  async function inscrire(saved: Entity, cible: string): Promise<void> {
-    const miennes = s.entries.filter((e) => e.person_id === saved.id);
-    if (miennes.some((e) => e.category_id === cible)) {
-      setMessage({ kind: "success", text: "Fiche enregistrée. Inscription déjà présente dans " + nomCategorie(cible) + "." });
-      return;
+  async function inscrire(saved: Entity, cible: string): Promise<MessageFiche> {
+    const nom = nomCategorie(cible);
+    if (s.entries.some((e) => e.person_id === saved.id && e.category_id === cible)) {
+      return { kind: "success", text: "Inscription déjà présente dans " + nom + "." };
     }
     const derog = chief && derogation.trim() ? { reason: derogation.trim() } : undefined;
     if (tardif) {
       if (!peutInscrireTardif) {
-        setMessage({
+        return {
           kind: "warning",
-          text: "Fiche enregistrée. Les dossards sont attribués : l'inscription tardive dans " + nomCategorie(cible) + " est réservée au chef et au responsable.",
-        });
-        return;
+          text: "Les dossards sont attribués : l'inscription tardive dans " + nom + " est réservée au chef et au responsable.",
+        };
       }
       const r = await command("entry.late", { person: saved, category_id: cible, reason, derogation: derog });
-      setMessage({
+      return {
         kind: "success",
-        text: "Inscription tardive enregistrée dans " + nomCategorie(cible) + (r.result?.bib ? ", dossard n° " + r.result.bib : "") + ".",
-      });
-      return;
+        text: "Inscription tardive enregistrée dans " + nom + (r.result?.bib ? ", dossard n° " + r.result.bib : "") + ".",
+      };
     }
-    const sansDossard = miennes.find((e) => !e.bib);
     const confirmee = confirmationPossible(saved, s.mode);
-    const base = sansDossard
-      ? { ...sansDossard, category_id: cible, confirmed: confirmee, derogation: derog ?? sansDossard.derogation ?? null }
-      : { id: uid(), person_id: saved.id, category_id: cible, confirmed: confirmee, bib: null, derogation: derog ?? null };
-    const brouillon = "Inscription en brouillon dans " + nomCategorie(cible) + " : cochez " + CONTROLES_CONFIRMATION + " puis touchez « Confirmer l'inscription ».";
+    const base = { id: uid(), person_id: saved.id, category_id: cible, confirmed: confirmee, bib: null, derogation: derog ?? null };
+    const brouillon = "Inscription en brouillon dans " + nom + " : cochez " + CONTROLES_CONFIRMATION + " puis touchez « Confirmer l'inscription ».";
     try {
       await command("entry.save", { entry: base });
-      setMessage(
-        confirmee
-          ? { kind: "success", text: "Inscription confirmée dans " + nomCategorie(cible) + "." }
-          : { kind: "warning", text: brouillon },
-      );
+      return confirmee
+        ? { kind: "success", text: "Inscription confirmée dans " + nom + "." }
+        : { kind: "warning", text: brouillon };
     } catch (e) {
       if (!confirmee) throw e;
       // Le serveur refuse la confirmation (motif affiché) : l'inscription reste en brouillon.
       await command("entry.save", { entry: { ...base, confirmed: false, derogation: null } });
-      setMessage({ kind: "warning", text: brouillon + " Refus de confirmation par le serveur : " + (e as Error).message });
+      return { kind: "warning", text: brouillon + " Refus de confirmation par le serveur : " + (e as Error).message };
     }
+  }
+
+  /** Inscrit dans chaque catégorie cible, une commande par catégorie, et récapitule créations et refus. */
+  async function inscrireToutes(saved: Entity, cibles: string[], prefixe = ""): Promise<void> {
+    const resultats: MessageFiche[] = [];
+    for (const cible of cibles) {
+      try {
+        resultats.push(await inscrire(saved, cible));
+      } catch (e) {
+        resultats.push({ kind: "error", text: "Refus pour " + nomCategorie(cible) + " : " + (e as Error).message });
+      }
+    }
+    const kind = resultats.some((r) => r.kind === "error")
+      ? "error"
+      : resultats.some((r) => r.kind === "warning")
+        ? "warning"
+        : "success";
+    setMessage({ kind, text: prefixe + resultats.map((r) => r.text).join(" ") });
   }
 
   async function enregistrer() {
@@ -426,17 +450,23 @@ function People({ s, command, refresh }: Props) {
       Object.assign(saved, r.result ?? { measurements_confirmed: true });
     }
     setPerson({ ...personDefault(), ...saved });
-    let cible = category;
-    if (!cible && ficheComplete(saved)) {
+    const actuelles = s.entries.filter((e) => e.person_id === saved.id);
+    const admissibles = new Set(
+      categoriesInscriptibles(s.categories).filter((c) => c.section === saved.section).map((c) => c.id),
+    );
+    let cibles = categoriesAInscrire(choisies, actuelles).filter((id) => admissibles.has(id));
+    // Rien de coché et aucune inscription : catégorie proposée automatiquement par le référentiel.
+    if (cibles.length === 0 && actuelles.length === 0 && ficheComplete(saved)) {
       const proposition = choisirCategorie(await propositionsServeur(saved.id), s.categories, saved.section);
       setChoix(proposition);
+      let cible = "";
       if (proposition.category_id) cible = proposition.category_id;
       else if (proposition.rule_id) {
         if (peutCreerCategorie) cible = await creerCategorie(proposition.rule_id);
         else {
           setMessage({
             kind: "warning",
-            text: "Fiche enregistrée. " + proposition.message + " Aucune catégorie n'a été créée : " + (s.bibs_distributed ? "les catégories sont figées après attribution des dossards" : "la création est réservée au chef et au responsable") + ". Choisissez une catégorie existante dans « Sélectionner une catégorie » puis touchez « Enregistrer ».",
+            text: "Fiche enregistrée. " + proposition.message + " Aucune catégorie n'a été créée : " + (s.bibs_distributed ? "les catégories sont figées après attribution des dossards" : "la création est réservée au chef et au responsable") + ". Cochez une catégorie existante dans « Catégories d'inscription » puis touchez « Enregistrer ».",
           });
           return;
         }
@@ -444,16 +474,21 @@ function People({ s, command, refresh }: Props) {
         setMessage({ kind: "warning", text: "Fiche enregistrée. " + proposition.message });
         return;
       }
-      setCategory(cible);
+      cocherCategorie(cible, true);
+      cibles = [cible];
     }
-    if (!cible) {
-      setMessage({
-        kind: "warning",
-        text: "Fiche enregistrée sans inscription : renseignez sexe, date de naissance, taille et poids pour une catégorie automatique, ou choisissez une catégorie dans « Sélectionner une catégorie » puis touchez « Enregistrer ».",
-      });
+    if (cibles.length === 0) {
+      setMessage(
+        actuelles.length > 0
+          ? { kind: "success", text: "Fiche enregistrée. Inscriptions inchangées : cochez une catégorie supplémentaire dans « Catégories d'inscription » pour en ajouter une." }
+          : {
+              kind: "warning",
+              text: "Fiche enregistrée sans inscription : renseignez sexe, date de naissance, taille et poids pour une catégorie automatique, ou cochez une ou plusieurs catégories dans « Catégories d'inscription » puis touchez « Enregistrer ».",
+            },
+      );
       return;
     }
-    await inscrire(saved, cible);
+    await inscrireToutes(saved, cibles, "Fiche enregistrée. ");
   }
 
   return (
@@ -574,22 +609,35 @@ function People({ s, command, refresh }: Props) {
                 />
               ))}
             </div>
-            <Field
-              label="Sélectionner une catégorie"
-              hint="Laissez « Catégorie proposée automatiquement » : à l'enregistrement, le référentiel propose la catégorie d'après sexe, âge, taille et poids, et la crée si elle n'existe pas. Choisissez-en une pour l'imposer ; une inscription sans dossard est déplacée."
-            >
-              <select
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-              >
-                <option value="">Catégorie proposée automatiquement</option>
-                {categoriesActives.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name} · {labels[c.section]}
-                  </option>
-                ))}
-              </select>
-            </Field>
+            <fieldset className="categories-inscription">
+              <legend>Catégories d'inscription</legend>
+              <p className="muted">
+                Cochez une ou plusieurs catégories actives ({labels[person.section]}) : une
+                inscription est créée dans chacune à « Enregistrer ». Rien de coché sur une fiche
+                sans inscription : le référentiel propose la catégorie d'après sexe, âge, taille et
+                poids, et la crée si elle n'existe pas. Une catégorie désactivée n'est pas proposée.
+              </p>
+              {categoriesProposees.length === 0 && (
+                <p className="muted">Aucune catégorie active en section {labels[person.section]} pour le moment.</p>
+              )}
+              <div className="checks">
+                {categoriesProposees.map((c) => {
+                  const inscrite = inscriptions.some((e) => e.category_id === c.id);
+                  return (
+                    <label className="check" key={c.id}>
+                      <input
+                        type="checkbox"
+                        checked={inscrite || choisies.includes(c.id)}
+                        disabled={inscrite}
+                        onChange={(e) => cocherCategorie(c.id, e.target.checked)}
+                      />
+                      {c.name}
+                      {inscrite ? " · déjà inscrit" : ""}
+                    </label>
+                  );
+                })}
+              </div>
+            </fieldset>
             {chief && (
               <Field
                 label="Motif de dérogation, réservé au chef (facultatif)"
@@ -654,16 +702,16 @@ function People({ s, command, refresh }: Props) {
                 <div className="entry-row" key={a.rule_id}>
                   <strong>{a.nom}</strong>
                   <small>
-                    {a.category_id ? "Catégorie existante" : "Catégorie à créer"}
+                    {a.desactivee ? "Catégorie désactivée (à réactiver dans Catégories)" : a.category_id ? "Catégorie existante" : "Catégorie à créer"}
                     {a.motifs.length > 0 ? " · " + a.motifs.join(" ") : ""}
                   </small>
-                  {existing && a.category_id && (
+                  {existing && a.category_id && !a.desactivee && (
                     <AsyncButton
                       className="ghost"
                       allowed={canCommand(s.me.roles, tardif ? "entry.late" : "entry.save")}
                       action={async () => {
-                        setCategory(a.category_id!);
-                        await inscrire(person, a.category_id!).catch((e) => setMessage({ kind: "error", text: e.message }));
+                        cocherCategorie(a.category_id!, true);
+                        await inscrireToutes(person, [a.category_id!]);
                       }}
                     >
                       Inscrire dans {nomCategorie(a.category_id)}
@@ -677,8 +725,8 @@ function People({ s, command, refresh }: Props) {
                       action={async () => {
                         try {
                           const id = await creerCategorie(a.rule_id);
-                          setCategory(id);
-                          await inscrire(person, id);
+                          cocherCategorie(id, true);
+                          await inscrireToutes(person, [id]);
                         } catch (e) {
                           setMessage({ kind: "error", text: (e as Error).message });
                         }
@@ -699,12 +747,16 @@ function People({ s, command, refresh }: Props) {
               <h3>Inscriptions de cette personne</h3>
               <p className="muted">
                 Confirmez après les contrôles et les mesures. Déconfirmez avant
-                une correction incompatible. Pour changer de catégorie avant les
-                dossards : choisissez-la dans « Sélectionner une catégorie » puis
-                « Enregistrer ».
+                une correction incompatible. Pour ajouter une catégorie : cochez-la
+                dans « Catégories d'inscription » puis « Enregistrer ». « Retirer de
+                cette catégorie » supprime l'inscription seule : la fiche de l'athlète
+                reste (« Supprimer cette fiche » efface l'athlète de l'application).
               </p>
-              {inscriptions.map((entry) => (
-                <div className="entry-row" key={entry.id}>
+              {inscriptions.map((entry) => {
+                const cat = s.categories.find((c) => c.id === entry.category_id);
+                const inactive = cat !== undefined && !categorieActive(cat);
+                return (
+                <div className={"entry-row" + (inactive ? " categorie-inactive" : "")} key={entry.id}>
                   <strong>{nomCategorie(entry.category_id)}</strong>
                   <small>
                     {entry.bib ? "N° " + entry.bib : "Sans dossard"} ·{" "}
@@ -712,6 +764,7 @@ function People({ s, command, refresh }: Props) {
                       ? "Inscription confirmée"
                       : "À contrôler"}
                     {entry.late_reason ? " · tardive : " + entry.late_reason : ""}
+                    {inactive ? " · catégorie désactivée, non jouée" : ""}
                   </small>
                   <AsyncButton
                     allowed={canCommand(s.me.roles, "entry.save")}
@@ -732,8 +785,26 @@ function People({ s, command, refresh }: Props) {
                       ? "Déconfirmer"
                       : "Confirmer l'inscription"}
                   </AsyncButton>
+                  <AsyncButton
+                    allowed={canCommand(s.me.roles, "entry.remove")}
+                    className="ghost danger"
+                    action={async () => {
+                      if (
+                        !window.confirm(
+                          `Retirer ${personName(person)} de la catégorie ${nomCategorie(entry.category_id)} ? L'inscription${entry.bib ? " et son dossard n° " + entry.bib : ""} sont supprimés ; la fiche de l'athlète reste. Refusé si la catégorie a commencé.`,
+                        )
+                      )
+                        return;
+                      await command("entry.remove", { entry_id: entry.id });
+                      setChoisies((cur) => cur.filter((id) => id !== entry.category_id));
+                      setMessage({ kind: "success", text: "Inscription retirée de " + nomCategorie(entry.category_id) + ". La fiche reste enregistrée." });
+                    }}
+                  >
+                    Retirer de cette catégorie
+                  </AsyncButton>
                 </div>
-              ))}
+                );
+              })}
               {inscriptions.length === 0 && <p className="muted">Sans inscription.</p>}
             </>
           )}{" "}
@@ -915,8 +986,14 @@ function Categories({ s, command }: Props) {
     entry_ids: [],
     merged_from: [],
     archived: false,
+    active: true,
   });
   const [merge, setMerge] = useState<string[]>([]);
+  /** Une catégorie commencée (manche ouverte ou jouée) ne peut plus être activée ni désactivée (règle serveur). */
+  const commencee = (id: string) =>
+    s.rounds.some(
+      (r) => r.category_id === id && (r.status !== "pending" || (r.opened_at !== null && r.opened_at !== undefined)),
+    );
   const [mergeName, setMergeName] = useState("");
   return (
     <div className="split">
@@ -1038,22 +1115,42 @@ function Categories({ s, command }: Props) {
         </small>
       </Panel>
       <Panel title="Catégories engagées">
+        <p className="muted">
+          Créez autant de catégories que nécessaire. Seules les catégories actives reçoivent des
+          athlètes et sont jouées ; une catégorie désactivée garde ses inscriptions mais n'a ni
+          manche ni dossard. Activer ou désactiver reste possible tant que la catégorie n'a pas
+          commencé.
+        </p>
         <DataTable
-          columns={["Catégorie", "Inscrits", "Action"]}
+          columns={["Catégorie", "Inscrits", "État", "Action"]}
           rows={s.categories
             .filter((c) => !c.archived)
-            .map((c) => [
-              <>
-                <strong>{c.name}</strong>
-                <small>
-                  {labels[c.section]} · {c.division}
-                </small>
-              </>,
-              s.entries.filter((e) => e.category_id === c.id).length,
-              <button className="ghost" onClick={() => setCat(c)}>
-                Modifier
-              </button>,
-            ])}
+            .map((c) => {
+              const active = categorieActive(c);
+              return [
+                <span className={active ? undefined : "categorie-inactive"}>
+                  <strong>{c.name}</strong>
+                  <small>
+                    {labels[c.section]} · {c.division}
+                  </small>
+                </span>,
+                s.entries.filter((e) => e.category_id === c.id).length,
+                <Status value={active ? "categorie_active" : "categorie_inactive"} />,
+                <div className="actions">
+                  <button className="ghost" type="button" onClick={() => setCat(c)}>
+                    Modifier
+                  </button>
+                  <AsyncButton
+                    allowed={canCommand(s.me.roles, "category.activate")}
+                    className="ghost"
+                    disabled={commencee(c.id)}
+                    action={() => command("category.activate", { category_id: c.id, active: !active })}
+                  >
+                    {active ? "Désactiver" : "Activer"}
+                  </AsyncButton>
+                </div>,
+              ];
+            })}
         />
         {canCommand(s.me.roles, "category.fuse") && (
           <section className="fusion">
@@ -1074,8 +1171,7 @@ function Categories({ s, command }: Props) {
                 <fieldset>
                   <legend>Catégories à fusionner (au moins deux)</legend>
                   <div className="checks">
-                    {s.categories
-                      .filter((c) => !c.archived)
+                    {categoriesInscriptibles(s.categories)
                       .map((c) => (
                         <Check
                           key={c.id}
@@ -1163,10 +1259,13 @@ function Programme({ s, command }: Props) {
           columns={["Ordre", "Catégorie", "Inscrits", "Déplacer"]}
           rows={cats.map((c, i) => [
             i + 1,
-            <>
+            <span className={categorieActive(c) ? undefined : "categorie-inactive"}>
               <strong>{c.name}</strong>
-              <small>{labels[c.section]}</small>
-            </>,
+              <small>
+                {labels[c.section]}
+                {categorieActive(c) ? "" : " · désactivée, non jouée"}
+              </small>
+            </span>,
             s.entries.filter((e) => e.category_id === c.id).length,
             <div className="actions">
               <AsyncButton

@@ -21,7 +21,18 @@ Carte des documents :
 
 ## 📍 État actuel & prochaine action
 
-*(Mis à jour le 2026-09-25, 1 h.)*
+*(Mis à jour le 2026-09-26, jour de la compétition.)*
+
+- **26/09 (matin)** : suppression d'athlètes (`person.delete`, direction), retrait d'une inscription
+  (`entry.remove`, préparation), vidage de la compétition (`event.purge`, chef, saisie VIDER, comptes
+  conservés) ; catégories activables (`category.activate`, inactives sans manche ni dossard, inscriptions
+  conservées : tranché par le PO) ; multi-inscription à la création de l'athlète (cases à cocher, un
+  `entry.save` par catégorie) ; concordance des juges avec le bulletin du chef (`GET /concordance`,
+  chef et responsable, même formule que l'examen des stagiaires, P13) ; barre du bulletin réparée sur
+  téléphone (plafond de hauteur CSS, reproduit en headless) ; écriture optimiste en un lot (ADR 0003,
+  12 → 2 allers-retours par bulletin, gain en secondes **non mesuré**). Relecture sécurité : aucun
+  bloquant, 3 corrections appliquées. Plusieurs juges sur un même ordinateur = navigation privée ou
+  profils de navigateur (documenté). Les points 1 à 4 du PO sont traités ; le PO déploie et vide.
 
 - **Version en prod** : https://fibda-bodybuilding.vercel.app (Vercel, base Turso Irlande),
   déployée le 23/09 au soir depuis la CLI, **vérifiée au curl** : santé, jeton de configuration

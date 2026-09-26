@@ -408,11 +408,11 @@ export function fraction(num: bigint | number, den: bigint | number = 1n): Fract
   return g === 0n ? { num: 0n, den: 1n } : { num: n / g, den: d / g };
 }
 
-function fractionAdd(a: Fraction, b: Fraction): Fraction {
+export function fractionAdd(a: Fraction, b: Fraction): Fraction {
   return fraction(a.num * b.den + b.num * a.den, a.den * b.den);
 }
 
-function fractionDiv(a: Fraction, b: Fraction): Fraction {
+export function fractionDiv(a: Fraction, b: Fraction): Fraction {
   return fraction(a.num * b.den, a.den * b.num);
 }
 
@@ -438,7 +438,7 @@ function formatTwoDecimals(x: number): string {
   return x.toFixed(2);
 }
 
-function fractionJson(value: Fraction): FractionJson {
+export function fractionJson(value: Fraction): FractionJson {
   return {
     numerator: Number(value.num),
     denominator: Number(value.den),

@@ -138,6 +138,21 @@ function beforeRound(state: Dict, categoryId: unknown): void {
   }
 }
 
+/**
+ * Catégorie prise en compte par la compétition (PO, 26/09/2026) : ni archivée par une fusion,
+ * ni désactivée. Les états antérieurs n'ont pas le champ `active` : absent = active.
+ */
+export function categoryActive(category: Dict): boolean {
+  return !truthy(get(category, "archived")) && get(category, "active", true) !== false;
+}
+
+/** Désactivation : les manches encore en attente (sans bulletin) de la catégorie sont retirées. */
+function deactivateCategory(state: Dict, category: Dict): void {
+  beforeRound(state, category.id);
+  state.rounds = (state.rounds as Dict[]).filter((r) => r.category_id !== category.id);
+  category.active = false;
+}
+
 function country(value: unknown): boolean {
   return typeof value === "string" && /^[A-Z]{2}$/.test(value);
 }
@@ -150,6 +165,7 @@ function admission(state: Dict, person: Dict, category: Dict): string[] {
     reasons.push("Sexe ou section incompatible.");
   }
   if (truthy(get(category, "archived"))) reasons.push("Catégorie archivée.");
+  else if (!categoryActive(category)) reasons.push("Catégorie désactivée.");
   for (const flag of ["status_approved", "licence_ok", "payment_ok", "measurements_confirmed"]) {
     if (!truthy(get(person, flag))) reasons.push("Contrôle requis : " + flag);
   }
@@ -184,6 +200,8 @@ export function validateConfirmedEntries(state: Dict): true {
     if (!truthy(get(entry, "confirmed"))) continue;
     const person = getItem(state, "people", req(entry, "person_id"));
     const category = getItem(state, "categories", req(entry, "category_id"));
+    // Une catégorie désactivée ne concourt pas : ses inscriptions ne sont pas recontrôlées.
+    if (!truthy(get(category, "archived")) && !categoryActive(category)) continue;
     let reasons: string[];
     try {
       reasons = admission(state, person, category);
@@ -272,6 +290,7 @@ function saveEntry(state: Dict, actor: Actor, incoming: Dict, late = false): Dic
   const category = getItem(state, "categories", get(incoming, "category_id"));
   beforeRound(state, category.id);
   if (truthy(get(category, "archived"))) throw new Problem("Catégorie archivée.");
+  if (!categoryActive(category)) throw new Problem("Catégorie désactivée.");
   const old: Dict = (state.entries as Dict[]).find((e) => e.id === get(incoming, "id")) ?? {};
   if (truthy(old) && get(old, "bib") !== null && get(old, "bib") !== undefined && req(old, "category_id") !== category.id) {
     throw new Problem("Inscription figée après attribution du dossard.");
@@ -281,7 +300,8 @@ function saveEntry(state: Dict, actor: Actor, incoming: Dict, late = false): Dic
   }
   const others = (state.entries as Dict[]).filter((e) => req(e, "person_id") === person.id && e.id !== get(old, "id"));
   if (others.some((e) => req(e, "category_id") === category.id)) throw new Problem("Personne déjà inscrite dans cette catégorie.");
-  if (others.length > 0) requireRole(actor, ["chief"]);
+  // Multi-inscription (PO, 26/09/2026) : un athlète peut concourir dans plusieurs catégories actives,
+  // sans validation du chef ; restent interdits le doublon de catégorie et le cumul amateur/pro.
   const reasons = truthy(get(incoming, "confirmed", false)) ? admission(state, person, category) : [];
   let derogation: any = get(incoming, "derogation");
   if (truthy(derogation)) {
@@ -435,6 +455,8 @@ function apply(state: Dict, actor: Actor, kind: string, payload: Dict): any {
     }
     const section = get(incoming, "section", "amateur");
     if (!["amateur", "pro"].includes(section)) throw new Problem("Section invalide.");
+    const active = get(incoming, "active", get(old, "active", true));
+    if (typeof active !== "boolean") throw new Problem("Indicateur d’activation invalide.");
     const category: Dict = {
       ...old,
       id: [get(old, "id"), get(incoming, "id")].find(truthy) ?? uid(),
@@ -453,9 +475,26 @@ function apply(state: Dict, actor: Actor, kind: string, payload: Dict): any {
       phase_override: get(incoming, "phase_override", get(old, "phase_override")),
       merged_from: get(old, "merged_from", []),
       archived: false,
+      active,
     };
     if (["quota", "elimination_quota"].some((k) => !isPyInt(category[k]) || category[k] < 1)) throw new Problem("Quotas entiers positifs requis.");
-    return upsert(state, "categories", category);
+    const saved = upsert(state, "categories", category);
+    if (!active) deactivateCategory(state, saved);
+    return saved;
+  }
+  if (kind === "category.activate") {
+    // Catégories modulables (PO, 26/09/2026) : seules les catégories actives reçoivent des athlètes et
+    // donnent lieu à des manches. Autorisé après les dossards et pendant la compétition tant que la
+    // catégorie n'a pas commencé ; désactiver retire ses manches en attente, réactiver n'en recrée pas.
+    requireRole(actor, SPORT);
+    const category = getItem(state, "categories", req(payload, "category_id"));
+    const active = req(payload, "active");
+    if (typeof active !== "boolean") throw new Problem("Indicateur d’activation invalide.");
+    if (truthy(get(category, "archived"))) throw new Problem("Catégorie archivée.");
+    beforeRound(state, category.id);
+    if (active) category.active = true;
+    else deactivateCategory(state, category);
+    return category;
   }
   if (kind === "programme.reorder") {
     requireRole(actor, SPORT);
@@ -511,7 +550,7 @@ function apply(state: Dict, actor: Actor, kind: string, payload: Dict): any {
     let number = 0;
     const categories = [...(state.categories as Dict[])].sort((a, b) => get(a, "order", 0) - get(b, "order", 0));
     for (const category of categories) {
-      if (truthy(get(category, "archived"))) continue;
+      if (!categoryActive(category)) continue;
       for (const entry of state.entries as Dict[]) {
         if (req(entry, "category_id") !== category.id || !truthy(get(entry, "confirmed"))) continue;
         number += 1;
@@ -544,6 +583,18 @@ function apply(state: Dict, actor: Actor, kind: string, payload: Dict): any {
     if (!["first_name", "last_name", "post"].every((k) => pyStr(get(official, k, "")).trim())) throw new Problem("Identité et poste obligatoires.");
     if (truthy(get(official, "country")) && !country(official.country)) throw new Problem("Code pays invalide.");
     return upsert(state, "officials", official);
+  }
+  if (kind === "entry.remove") {
+    // Retrait d'une inscription (PO, 26/09/2026) : l'athlète quitte une catégorie, sa fiche reste. Rôles de
+    // préparation, refusé dès que la catégorie a commencé ; l'inscription disparaît de la catégorie et des
+    // manches encore en attente. Un dossard libéré n'est pas réattribué.
+    requireRole(actor, PREPARATION);
+    const entry = getItem(state, "entries", get(payload, "entry_id"));
+    beforeRound(state, req(entry, "category_id"));
+    for (const c of state.categories as Dict[]) if (Array.isArray(c.entry_ids)) c.entry_ids = (c.entry_ids as string[]).filter((id) => id !== entry.id);
+    for (const r of state.rounds as Dict[]) if (Array.isArray(r.participant_ids)) r.participant_ids = (r.participant_ids as string[]).filter((id) => id !== entry.id);
+    state.entries = (state.entries as Dict[]).filter((e) => e.id !== entry.id);
+    return { entry_id: entry.id, person_id: req(entry, "person_id"), category_id: req(entry, "category_id") };
   }
   if (kind === "person.delete") {
     // Suppression d'athlètes (PO, 26/09/2026) : un ou plusieurs à la fois, direction seulement. Refusée dès

@@ -3,12 +3,13 @@ import { getCookie, setCookie, deleteCookie } from "hono/cookie";
 import { createHash, timingSafeEqual } from "node:crypto";
 import { ADMIN, PREPARATION, require, intersects, union } from "./auth";
 import { Problem, DomainError } from "./problem";
-import { Store } from "./store";
+import { Store, type Conn, type Snapshot } from "./store";
 import type { User } from "./state";
 import { dump, find, uid } from "./util";
-import { applyCommand } from "./commands";
+import { applyCommand, TRANSACTIONAL } from "./commands";
 import { projectState, publicState, exams, collective, syncCollectiveRewards } from "./projections";
 import { tick } from "./workflow";
+import { concordanceReport } from "./concordance";
 import { loadCatalogue, eligibility } from "../domain/catalogue";
 import { seedDemo } from "./demo";
 import { previewImport, savePreview, commitPreview, MAX_FILE as MAX_IMPORT } from "./transfers";
@@ -100,7 +101,12 @@ export function createApp(opts: AppOptions) {
   const scheme = (c: Context) => c.req.header("x-forwarded-proto") ?? new URL(c.req.url).protocol.replace(":", "");
   const address = (c: Context) => (c.req.header("x-forwarded-for") ?? "local").split(",")[0].trim();
   const actor = (c: Context) => store.authenticate(getCookie(c, COOKIE));
-  const view = async (state: any, u: User) => projectState(state, u, await store.allUsers(), store.clock());
+  // Session + état + comptes en un seul aller-retour (voir store.snapshot).
+  const snapshot = (c: Context, commandId?: string, conn?: Conn) => store.snapshot(getCookie(c, COOKIE), commandId, conn);
+  const view = (state: any, u: User, users: User[]) => projectState(state, u, users, store.clock());
+  // Garde-fou du chemin optimiste : une commande classée « état seul » qui tenterait d'écrire dans
+  // une autre table échoue bruyamment (500) au lieu d'écrire hors de tout lot atomique.
+  const noConn = { execute: () => Promise.reject(new Error("Commande hors transaction : à inscrire dans TRANSACTIONAL (commands.ts).")), batch: () => Promise.reject(new Error("Commande hors transaction : à inscrire dans TRANSACTIONAL (commands.ts).")) } as unknown as Conn;
   const setSession = (c: Context, token: string) => setCookie(c, COOKIE, token, { httpOnly: true, secure: scheme(c) === "https", sameSite: "Strict", maxAge: 16 * 3600, path: "/" });
   const requireSetupToken = (c: Context) => {
     // Comparaison en temps constant sur les empreintes ; aucune porte ouverte si le jeton n'est pas configuré.
@@ -109,23 +115,33 @@ export function createApp(opts: AppOptions) {
     if (!opts.setupToken || !timingSafeEqual(digest(given), digest(opts.setupToken))) throw new Problem("Cette opération exige le jeton de configuration du serveur.", 403);
   };
 
-  // Transitions temporisées (délai stagiaires) : exécutées à la demande, il n'y a pas de boucle serveur.
-  async function tickOnce(): Promise<void> {
-    await store.transact(async (tx) => {
-      const state = await store.read(tx);
-      const users = await store.allUsers(tx);
-      const before = state.version;
-      if (tick(state, users, store.clock())) {
-        state.version += 1;
-        await store.write(tx, state, before);
-        await store.record(tx, state, "server", "timer.transition", {});
-      }
-    });
+  // Transitions temporisées (délai stagiaires) : exécutées à la demande, il n'y a pas de boucle
+  // serveur. Appliquées en mémoire sur l'état lu ; si une transition a eu lieu, `statements` reçoit
+  // sa ligne d'audit et la version avance, l'appelant écrit le tout dans son propre lot.
+  function tickInMemory(state: any, users: User[], statements: Array<{ sql: string; args: any[] }>): boolean {
+    if (!tick(state, users, store.clock())) return false;
+    state.version += 1;
+    statements.push(store.auditStatement(state, "server", "timer.transition", {}));
+    return true;
+  }
+
+  // État courant pour une session : une lecture, et une écriture seulement si une transition
+  // temporisée est due. Si quelqu'un a écrit entre-temps, on relit ; on ne renvoie jamais un état
+  // dont la transition ne serait pas en base.
+  async function currentSnapshot(c: Context): Promise<Snapshot> {
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const snap = await snapshot(c);
+      const before = snap.state.version;
+      const statements: Array<{ sql: string; args: any[] }> = [];
+      if (!tickInMemory(snap.state, snap.users, statements)) return snap;
+      if (await store.commit(snap.state, before, statements)) return snap;
+    }
+    return snapshot(c);
   }
 
   app.get("/api/v1/health", async (c) => {
-    const state = await store.read();
-    return c.json({ status: "ok", version: VERSION, setup_required: (await store.allUsers()).length === 0, demo: state.demo, restore_id: state.restore_id, runtime: "serverless" });
+    const { state, users } = await store.readAll();
+    return c.json({ status: "ok", version: VERSION, setup_required: users.length === 0, demo: state.demo, restore_id: state.restore_id, runtime: "serverless" });
   });
 
   app.post("/api/v1/auth/setup", async (c) => {
@@ -158,10 +174,9 @@ export function createApp(opts: AppOptions) {
       await store.loginFailed(addr);
       throw new Problem("Accès en attente de validation du chef.", 403);
     }
-    const token = await store.transact((tx) => store.newSession(tx, row.id));
-    await store.loginSucceeded(addr);
+    const { token, eventId } = await store.loginSession(row.id, addr);
     setSession(c, token);
-    return c.json({ user: { id: row.id, name: row.name, roles: JSON.parse(row.roles), approved: true, active: true }, event_id: (await store.read()).id });
+    return c.json({ user: { id: row.id, name: row.name, roles: JSON.parse(row.roles), approved: true, active: true }, event_id: eventId });
   });
 
   app.post("/api/v1/auth/logout", async (c) => {
@@ -171,12 +186,14 @@ export function createApp(opts: AppOptions) {
     return c.json({ ok: true });
   });
 
-  app.get("/api/v1/auth/me", async (c) => c.json({ user: await actor(c), event_id: (await store.read()).id }));
+  app.get("/api/v1/auth/me", async (c) => {
+    const { user, state } = await snapshot(c);
+    return c.json({ user, event_id: state.id });
+  });
 
   app.get("/api/v1/state", async (c) => {
-    const u = await actor(c);
-    await tickOnce();
-    return c.json(await view(await store.read(), u));
+    const { user, state, users } = await currentSnapshot(c);
+    return c.json(view(state, user, users));
   });
 
   app.get("/api/v1/catalogue", async (c) => {
@@ -185,58 +202,103 @@ export function createApp(opts: AppOptions) {
   });
 
   app.get("/api/v1/eligibility/:person_id", async (c) => {
-    require(await actor(c), PREPARATION);
-    const s = await store.read();
+    const { user, state: s } = await snapshot(c);
+    require(user, PREPARATION);
     return c.json({ proposals: eligibility(find(s.people, c.req.param("person_id"), "Personne"), Number(s.date.slice(0, 4))) });
   });
 
   app.post("/api/v1/command", async (c) => {
-    const u = await actor(c);
-    const p = await c.req.json();
-    if (!p || typeof p !== "object" || typeof p.id !== "string" || !p.id || p.id.length > 100 || !Number.isInteger(p.version) || !p.payload || typeof p.payload !== "object") throw new Problem("Commande, version et paramètres requis.");
-    const kind: string = p.type ?? "";
+    // La session est contrôlée dans l'instantané (premier aller-retour) ; un corps illisible est
+    // refusé après, comme un corps incomplet.
+    const p = await c.req.json().catch(() => null);
+    const valid = p && typeof p === "object" && typeof p.id === "string" && p.id && p.id.length <= 100 && Number.isInteger(p.version) && p.payload && typeof p.payload === "object";
+    const kind: string = valid ? (p.type ?? "") : "";
     // Empreinte d'idempotence : le code personnel d'un user.invite n'y entre jamais (sinon il serait retrouvable hors ligne).
-    const fingerprinted = kind === "user.invite" ? { ...p.payload, code: undefined } : p.payload;
+    const fingerprinted = kind === "user.invite" ? { ...p.payload, code: undefined } : valid ? p.payload : null;
     const fingerprint = createHash("sha256").update(dump({ type: kind, payload: fingerprinted })).digest("hex");
-    await tickOnce();
-    const [s, result] = await store.transact(async (tx) => {
-      const prior = (await tx.execute({ sql: "SELECT user_id, fingerprint, result FROM commands WHERE id = ?", args: [p.id] })).rows[0];
-      const s = await store.read(tx);
-      if (prior) {
-        if (prior.user_id !== u.id || prior.fingerprint !== fingerprint) throw new Problem("Identifiant de commande déjà utilisé pour une autre action.", 409);
-        return [s, JSON.parse(String(prior.result))] as const;
+
+    // Une passe : sur l'instantané lu (session, état, comptes, commande antérieure), applique la
+    // transition temporisée puis la commande, et prépare le lot d'écriture. Renvoie le résultat
+    // d'une commande déjà exécutée (idempotence) sans rien écrire.
+    const pass = async (snap: Snapshot, conn: Conn): Promise<{ s: any; u: User; users: User[]; result: any; before: number; statements: Array<{ sql: string; args: any[] }> } | { replay: any; s: any; u: User; users: User[] }> => {
+      const { user: u, state: s, users } = snap;
+      if (!valid) throw new Problem("Commande, version et paramètres requis.");
+      if (snap.prior) {
+        if (snap.prior.user_id !== u.id || snap.prior.fingerprint !== fingerprint) throw new Problem("Identifiant de commande déjà utilisé pour une autre action.", 409);
+        return { replay: JSON.parse(snap.prior.result), s, u, users };
       }
+      const before = s.version;
+      const statements: Array<{ sql: string; args: any[] }> = [];
+      tickInMemory(s, users, statements);
       // Les votes concurrents portent une liste figée par tour : une mise à jour sans rapport ne bloque pas leur réception.
       if (s.version !== p.version && kind !== "ballot.submit") throw new Problem("Les données ont changé. Rechargez avant de confirmer votre action.", 409);
-      const before = s.version;
       let result: any;
       try {
-        result = (await applyCommand(store, tx, s, u, kind, p.payload)) ?? {};
+        result = (await applyCommand(store, conn, s, u, kind, p.payload, users)) ?? {};
       } catch (e: any) {
         if (e instanceof TypeError) throw new Problem("Paramètres incomplets ou invalides : " + e.message);
         throw e;
       }
       syncCollectiveRewards(s);
       s.version += 1;
-      await store.write(tx, s, before);
-      await store.record(tx, s, u.id, kind, p.payload);
-      await tx.execute({ sql: "INSERT INTO commands (id, user_id, fingerprint, result, version) VALUES (?, ?, ?, ?, ?)", args: [p.id, u.id, fingerprint, dump(result), s.version] });
-      return [s, result] as const;
-    });
-    return c.json({ state: await view(s, u), result });
+      statements.push(store.auditStatement(s, u.id, kind, p.payload));
+      statements.push({ sql: "INSERT INTO commands (id, user_id, fingerprint, result, version) SELECT ?, ?, ?, ?, ? WHERE (SELECT version FROM events WHERE id = ?) = ?", args: [p.id, u.id, fingerprint, dump(result), s.version] });
+      return { s, u, users, result, before, statements };
+    };
+
+    if (TRANSACTIONAL.has(kind)) {
+      // Commandes qui écrivent aussi dans les comptes, sessions ou photos : transaction explicite,
+      // lectures et écritures regroupées, comptes relus après coup (ils ont pu changer).
+      const [s, u, users, result] = await store.transact(async (tx) => {
+        const out = await pass(await snapshot(c, p.id, tx), tx);
+        if ("replay" in out) return [out.s, out.u, out.users, out.replay] as const;
+        if (!(await store.commit(out.s, out.before, out.statements, tx))) throw new Problem("Les données ont changé. Rechargez avant de confirmer votre action.", 409);
+        return [out.s, out.u, await store.allUsers(tx), out.result] as const;
+      });
+      return c.json({ state: view(s, u, users), result });
+    }
+
+    // Chemin courant (bulletins, tours, préparation…) : une lecture, une écriture atomique
+    // conditionnée à la version lue, sans verrou tenu à travers le réseau. Si un autre appareil a
+    // écrit entre les deux, on relit et on rejoue la commande sur l'état à jour ; un bulletin passe
+    // dans tous les cas (liste figée par tour), toute autre commande revient au contrôle de version.
+    for (let attempt = 0; attempt < 6; attempt++) {
+      const out = await pass(await snapshot(c, valid ? p.id : undefined), noConn);
+      if ("replay" in out) return c.json({ state: view(out.s, out.u, out.users), result: out.replay });
+      let written: boolean;
+      try {
+        written = await store.commit(out.s, out.before, out.statements);
+      } catch (e) {
+        // Même identifiant inscrit par un rejeu simultané : la relecture renverra son résultat.
+        if (Store.isConstraintError(e)) continue;
+        throw e;
+      }
+      if (written) return c.json({ state: view(out.s, out.u, out.users), result: out.result });
+    }
+    throw new Problem("Les données ont changé. Rechargez avant de confirmer votre action.", 409);
   });
 
   app.get("/api/v1/public/:screen", async (c) => c.json(publicState(await store.read(), c.req.param("screen"))));
 
   app.get("/api/v1/speaker", async (c) => {
-    const u = await actor(c);
-    require(u, union(ADMIN, ["speaker", "regie"]));
-    return c.json(await view(await store.read(), u));
+    const { user, state, users } = await snapshot(c);
+    require(user, union(ADMIN, ["speaker", "regie"]));
+    return c.json(view(state, user, users));
   });
-  app.get("/api/v1/exams", async (c) => c.json(exams(await store.read(), await actor(c))));
+  app.get("/api/v1/exams", async (c) => {
+    const { user, state } = await snapshot(c);
+    return c.json(exams(state, user));
+  });
+  // Concordance des juges avec le bulletin du chef : réservée au chef et au responsable (bulletins privés).
+  app.get("/api/v1/concordance", async (c) => {
+    const { user, state, users } = await snapshot(c);
+    require(user, ["chief", "responsable"]);
+    return c.json(concordanceReport(state, users));
+  });
   app.get("/api/v1/collective", async (c) => {
-    require(await actor(c), union(ADMIN, ["regie", "speaker"]));
-    return c.json(collective(await store.read()));
+    const { user, state } = await snapshot(c);
+    require(user, union(ADMIN, ["regie", "speaker"]));
+    return c.json(collective(state));
   });
   app.get("/api/v1/audit", async (c) => {
     require(await actor(c), ADMIN);
@@ -334,7 +396,8 @@ export function createApp(opts: AppOptions) {
       return [codes, chief, token] as const;
     });
     setSession(c, token);
-    return c.json({ codes, state: await view(await store.read(), chief) });
+    const { state, users } = await store.readAll();
+    return c.json({ codes, state: view(state, chief, users) });
   });
 
   // Documents imprimables et exports : habilitations copiées de `printable` (backend/fibda/app.py:333-350).
@@ -345,8 +408,7 @@ export function createApp(opts: AppOptions) {
   // potentiellement mineures) : préparation seulement (chef, responsable, directeur, secrétariat).
   // Tout le reste (inscriptions, ordre de passage, mesures, récompenses, diplômes, officiels) : préparation, régie, speaker.
   async function printable(c: Context, kind: string): Promise<[any, Filters]> {
-    const u = await actor(c);
-    const s = await store.read();
+    const { user: u, state: s, users } = await snapshot(c);
     const roles = new Set(u.roles);
     let judgeId: string | null = c.req.query("judge_id") || null;
     // `blank` (fiches d'inscription vierges, entier 1 à 50) est contrôlé après les droits, plus bas.
@@ -372,7 +434,7 @@ export function createApp(opts: AppOptions) {
     if (!KINDS.has(kind)) throw new Problem("Document inconnu");
     if (kind === "fiche") filters.blank = parseBlank(c.req.query("blank"));
     // app.py:349 : noms des comptes pour libeller les juges, rapports d'examen filtrés, horodatage.
-    s.users = await store.allUsers();
+    s.users = users;
     s.exam_reports = exams(s, u).reports;
     s.printed_at = store.clock();
     filters.judge_id = judgeId;

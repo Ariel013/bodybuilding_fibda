@@ -29,7 +29,7 @@ export async function seedDemo(store: Store, conn: Conn, state: any): Promise<Re
   const specifications: [string, string][] = [["mens_physique-senior-all-170", "169.0"], ["mens_physique-senior-all-173", "172.0"], ["bikini-senior-all-164", "163.0"]];
   specifications.forEach(([ruleId, height], order) => {
     const rule = rules[ruleId];
-    const category: any = { id: uid(), name: rule.name, discipline: rule.discipline, sex: rule.sex, section: "amateur", division: "senior", age_min: null, age_max: null, rule_id: ruleId, order, entry_ids: [], quota: 6, elimination_quota: 15, phase_override: null, merged_from: [], archived: false };
+    const category: any = { id: uid(), name: rule.name, discipline: rule.discipline, sex: rule.sex, section: "amateur", division: "senior", age_min: null, age_max: null, rule_id: ruleId, order, entry_ids: [], quota: 6, elimination_quota: 15, phase_override: null, merged_from: [], archived: false, active: true };
     state.categories.push(category);
     for (let i = 0; i < 8; i++) {
       const number = order * 8 + i + 1;

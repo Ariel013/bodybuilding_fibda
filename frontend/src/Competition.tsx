@@ -35,6 +35,7 @@ export function Competition({ s, command }: { s: State; command: Command }) {
     [section, setSection] = useState("amateur"),
     [overallExams, setOverallExams] = useState<string[]>([]);
   const examCandidates = overallExamCandidates(s.users, s.jury?.trainees || []);
+  const concordance = useConcordance(s);
   return (
     <>
       <div className="page-title">
@@ -68,7 +69,16 @@ export function Competition({ s, command }: { s: State; command: Command }) {
           ])}
         />
       </Panel>
-      {r && <RoundControl key={r.id} r={r} s={s} command={command} />}
+      {r && (
+        <RoundControl
+          key={r.id}
+          r={r}
+          s={s}
+          command={command}
+          concordance={concordance}
+        />
+      )}
+      {concordance && <ConcordanceSummary s={s} concordance={concordance} />}
       <Panel title="Toutes catégories et cycle des récompenses">
         <div className="form-grid">
           <Field label="Discipline">
@@ -290,10 +300,12 @@ function RoundControl({
   r,
   s,
   command,
+  concordance,
 }: {
   r: Round;
   s: State;
   command: Command;
+  concordance: ConcordanceReport | null;
 }) {
   const [reason, setReason] = useState(""),
     [judge, setJudge] = useState(""),
@@ -396,6 +408,9 @@ function RoundControl({
               data={r.result}
             />
           </>
+        )}
+        {concordance && (
+          <ConcordanceRoundPanel r={r} s={s} concordance={concordance} />
         )}
         <PassageOrder r={r} s={s} command={command} />
         {(r.status === "pending" || r.status === "open") &&
@@ -622,6 +637,138 @@ function RoundControl({
         )}
       </Panel>
     </>
+  );
+}
+/** Réponse de GET /api/v1/concordance (voir server/concordance.ts) : jamais servie aux juges. */
+type ConcordanceReport = {
+  chief_id: string | null;
+  rounds: {
+    round_id: string;
+    reference_source: "validated" | "ballot";
+    reference_version: unknown;
+    judges: {
+      user_id: string;
+      trainee: boolean;
+      score: { display: string } | null;
+      pairs: number;
+      comparable: boolean;
+    }[];
+  }[];
+  judges: {
+    user_id: string;
+    trainee: boolean;
+    mean: { display: string } | null;
+    rounds: number;
+    pairs: number;
+  }[];
+};
+/**
+ * Concordance des juges avec le bulletin du chef (PO, 26/09/2026) : chargée seulement pour le
+ * chef et le responsable, les autres rôles ne voient rien (le serveur répond 403 de toute façon).
+ */
+function useConcordance(s: State): ConcordanceReport | null {
+  const allowed = s.me.roles.some((role: string) =>
+    ["chief", "responsable"].includes(role),
+  );
+  const [report, setReport] = useState<ConcordanceReport | null>(null);
+  useEffect(() => {
+    if (!allowed) {
+      setReport(null);
+      return;
+    }
+    let live = true;
+    api("/concordance")
+      .then((data) => live && setReport(data))
+      .catch(() => live && setReport(null));
+    return () => {
+      live = false;
+    };
+  }, [allowed, s.version]);
+  return report;
+}
+const userName = (s: State, id: string) =>
+  s.users.find((u) => u.id === id)?.name || id;
+/** Panneau « Concordance avec le chef » d'une manche : par juge, pourcentage et paires comparées. */
+function ConcordanceRoundPanel({
+  r,
+  s,
+  concordance,
+}: {
+  r: Round;
+  s: State;
+  concordance: ConcordanceReport;
+}) {
+  const round = concordance.rounds.find((x) => x.round_id === r.id);
+  if (r.phase === "elimination") return null;
+  return (
+    <Panel title="Concordance avec le chef">
+      {!round ? (
+        <Notice kind="info">
+          En attente du bulletin du chef de jury : aucune comparaison tant
+          qu'il n'est pas reçu.
+        </Notice>
+      ) : (
+        <>
+          <p>
+            {round.reference_source === "validated"
+              ? "Référence : bulletin du chef gelé à la validation"
+              : "Référence : bulletin actuel du chef (avant validation)"}
+            {round.reference_version != null
+              ? ` (version ${String(round.reference_version)})`
+              : ""}
+            . Même calcul que l'examen des stagiaires : part des paires
+            d'athlètes classées dans le même ordre que le chef.
+          </p>
+          <DataTable
+            columns={["Juge", "Concordance", "Paires comparées", "Bulletin"]}
+            rows={round.judges.map((j) => [
+              <>
+                <strong>{userName(s, j.user_id)}</strong>
+                <small>{j.trainee ? "Stagiaire" : "Officiel"}</small>
+              </>,
+              j.score ? j.score.display + " %" : "—",
+              j.comparable ? j.pairs : "—",
+              j.comparable
+                ? "Comparé"
+                : r.ballots?.[j.user_id]
+                  ? "Non comparable"
+                  : "Non reçu",
+            ])}
+          />
+        </>
+      )}
+    </Panel>
+  );
+}
+/** Récapitulatif par juge sur toute la compétition : moyenne non pondérée des manches comparées. */
+function ConcordanceSummary({
+  s,
+  concordance,
+}: {
+  s: State;
+  concordance: ConcordanceReport;
+}) {
+  return (
+    <Panel title="Concordance avec le chef sur la compétition">
+      <p>
+        Moyenne par juge des concordances avec le bulletin du chef, sur les
+        manches où son bulletin et celui du chef sont reçus (éliminatoires
+        exclues : bulletin de sélection, pas de classement). Visible seulement
+        par le chef de jury et le responsable.
+      </p>
+      <DataTable
+        columns={["Juge", "Moyenne", "Manches comparées", "Paires comparées"]}
+        rows={concordance.judges.map((j) => [
+          <>
+            <strong>{userName(s, j.user_id)}</strong>
+            <small>{j.trainee ? "Stagiaire" : "Officiel"}</small>
+          </>,
+          j.mean ? j.mean.display + " %" : "—",
+          j.rounds,
+          j.pairs,
+        ])}
+      />
+    </Panel>
   );
 }
 export function Exams({ s, command }: { s: State; command: Command }) {

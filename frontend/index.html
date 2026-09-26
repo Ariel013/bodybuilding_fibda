@@ -2,7 +2,9 @@
 <html lang="fr">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <!-- viewport-fit=cover : en plein écran (PWA, iPhone) la page s'étend sous la barre d'état et
+         env(safe-area-inset-*) devient non nul ; les zones sûres sont réservées dans styles.css. -->
+    <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover" />
     <meta name="theme-color" content="#d8eee4" />
     <title>FIBDA · Compétition</title>
     <!-- PWA : installable sur l'écran d'accueil (manifest) ; Safari iOS lit les balises apple-* -->

@@ -49,14 +49,100 @@ test("national_hc_and_bibs_per_entry_in_programme_order", () => {
   assert.deepEqual(state.entries.map((e: any) => e.bib), [2, 1]);
 });
 
-test("cumulation_chief_and_drafts", () => {
+test("multi-inscription : plusieurs catégories actives par le secrétariat, jamais deux fois la même, brouillons admis", () => {
+  // PO, 26/09/2026 : le cumul n'exige plus le chef (règle antérieure « cumulation_chief_and_drafts »).
   const a = category(); const b = category(); let p = person();
   entry(p, a, sec);
+  const second = entry(p, b, sec);
+  assert.equal(second.category_id, b.id);
+  assert.deepEqual(state.entries.filter((e: any) => e.person_id === p.id).map((e: any) => e.category_id), [a.id, b.id]);
+  rejects(() => entry(p, a, sec)); // doublon de catégorie
   rejects(() => entry(p, b, sec));
+  assert.equal(state.entries.length, 2);
   p = person("q", "80");
   const draft = run("entry.save", { entry: { person_id: p.id, category_id: a.id, confirmed: false } }, sec);
   assert.equal(draft.confirmed, false);
-  rejects(() => entry(p, b, sec));
+  const draft2 = run("entry.save", { entry: { person_id: p.id, category_id: b.id, confirmed: false } }, sec);
+  assert.equal(draft2.confirmed, false);
+  // Le résultat de person.save reste la personne, sans inscription.
+  const saved = person("z", "69");
+  assert.equal(saved.id, "z");
+  assert.equal("category_id" in saved, false);
+});
+
+test("multi-inscription : cumul amateur/pro interdit, sexe cohérent", () => {
+  const a = category(); const p = person(); entry(p, a, sec);
+  const proRule = loadCatalogue().rules.find((r) => r.discipline === "bodybuilding" && r.division === "senior" && r.upper_inclusive === "70")!;
+  const pro = run("category.save", { category: { rule_id: proRule.id, section: "pro" } });
+  rejects(() => run("entry.save", { entry: { person_id: p.id, category_id: pro.id, confirmed: false } }, sec));
+  const womenRule = loadCatalogue().rules.find((r) => r.sex === "F")!;
+  const women = run("category.save", { category: { rule_id: womenRule.id, section: "amateur" } });
+  rejects(() => entry(p, women, sec));
+  assert.equal(state.entries.length, 1);
+});
+
+test("catégorie : active par défaut, category.save accepte active, anciens états sans le champ = actifs", () => {
+  const a = category();
+  assert.equal(a.active, true);
+  const b = run("category.save", { category: { rule_id: a.rule_id, section: "amateur", active: false } });
+  assert.equal(b.active, false);
+  rejects(() => run("category.save", { category: { rule_id: a.rule_id, section: "amateur", active: "oui" } }));
+  delete state.categories[0].active;
+  const p = person(); entry(p, state.categories[0], sec);
+  assert.equal(state.entries.length, 1);
+  const again = run("category.save", { category: { ...state.categories[0], name: "Renommée" } });
+  assert.equal(again.active, true);
+});
+
+test("category.activate : rôle SPORT, autorisé après dossards, refusé si la catégorie a commencé ou est archivée", () => {
+  const a = category(); const b = category("75"); entry(person(), a); entry(person("q", "74"), b);
+  rejects(() => run("category.activate", { category_id: a.id, active: false }, sec));
+  rejects(() => run("category.activate", { category_id: a.id, active: "non" }));
+  run("bibs.assign", {});
+  rejects(() => run("category.save", { category: { ...a, active: false } })); // figé après dossards
+  const off = run("category.activate", { category_id: a.id, active: false }, responsable);
+  assert.equal(off.active, false);
+  assert.equal(state.entries.filter((e: any) => e.category_id === a.id).length, 1); // inscriptions conservées
+  state.status = "running";
+  assert.equal(run("category.activate", { category_id: a.id, active: true }).active, true);
+  state.rounds = [{ id: "r", category_id: a.id, status: "open", ballots: {} }];
+  rejects(() => run("category.activate", { category_id: a.id, active: false }));
+  state.rounds = [{ id: "r", category_id: a.id, status: "pending", ballots: { j: {} } }];
+  rejects(() => run("category.activate", { category_id: a.id, active: false }));
+  state.rounds = []; state.status = "preparation"; state.bibs_distributed = false;
+  const merged = run("category.fuse", { category_ids: [a.id, b.id] });
+  rejects(() => run("category.activate", { category_id: a.id, active: true }));
+  assert.equal(run("category.activate", { category_id: merged.id, active: false }).active, false);
+});
+
+test("category.activate : désactiver retire les manches en attente sans bulletin, réactiver n'en recrée pas", () => {
+  const a = category(); const b = category("75"); entry(person(), a); entry(person("q", "74"), b);
+  state.rounds = [
+    { id: "ra", category_id: a.id, status: "pending", ballots: {} },
+    { id: "rb", category_id: b.id, status: "pending", ballots: {} },
+  ];
+  run("category.activate", { category_id: a.id, active: false });
+  assert.deepEqual(state.rounds.map((r: any) => r.id), ["rb"]);
+  run("category.activate", { category_id: a.id, active: true });
+  assert.deepEqual(state.rounds.map((r: any) => r.id), ["rb"]);
+});
+
+test("catégorie désactivée : entry.save et entry.late refusés, contrôle avant démarrage et dossards l'ignorent", () => {
+  const a = category(); const b = category("75");
+  const p = person(); const q = person("q", "74");
+  entry(p, a); entry(q, b);
+  run("category.activate", { category_id: b.id, active: false });
+  assert.throws(() => run("entry.save", { entry: { person_id: p.id, category_id: b.id, confirmed: false } }), /Catégorie désactivée\./);
+  assert.throws(() => run("entry.late", { person: { ...q, id: "z" }, category_id: b.id, reason: "Retard" }), /Catégorie désactivée\./);
+  // Inscription confirmée devenue invalide dans la catégorie désactivée : ignorée par le contrôle.
+  state.people[1].payment_ok = false;
+  assert.equal(validateConfirmedEntries(state), true);
+  run("category.activate", { category_id: b.id, active: true });
+  rejects(() => validateConfirmedEntries(state));
+  run("category.activate", { category_id: b.id, active: false });
+  const bibs = run("bibs.assign", {});
+  assert.equal(bibs.count, 1);
+  assert.deepEqual(state.entries.map((e: any) => [e.category_id, e.bib]), [[a.id, 1], [b.id, null]]);
 });
 
 test("derogation_and_atomic_failure", () => {
@@ -165,4 +251,20 @@ test("person.delete : plusieurs athlètes, inscriptions et dossards retirés, di
   rejects(() => run("person.delete", { person_ids: ["d"] }));
   run("person.delete", { person_ids: ["c"] });
   assert.deepEqual(state.people.map((p: any) => p.id), ["d"]);
+});
+
+test("entry.remove : l'athlète quitte la catégorie, sa fiche reste ; refusé après le début", () => {
+  const cat = category();
+  const a = person("a", "69"); const b = person("b", "68");
+  const ea = entry(a, cat); entry(b, cat);
+  state.rounds = [{ id: "r", category_id: cat.id, status: "pending", participant_ids: state.entries.map((e: any) => e.id) }];
+  rejects(() => run("entry.remove", { entry_id: "inconnu" }));
+  const r = run("entry.remove", { entry_id: ea.id }, sec);
+  assert.deepEqual(r, { entry_id: ea.id, person_id: "a", category_id: cat.id });
+  assert.deepEqual(state.people.map((p: any) => p.id), ["a", "b"]);
+  assert.deepEqual(state.entries.map((e: any) => e.person_id), ["b"]);
+  assert.equal(state.categories[0].entry_ids.length, 1);
+  assert.equal(state.rounds[0].participant_ids.length, 1);
+  state.rounds = [{ id: "r2", category_id: cat.id, status: "open", ballots: {} }];
+  rejects(() => run("entry.remove", { entry_id: state.entries[0].id }));
 });

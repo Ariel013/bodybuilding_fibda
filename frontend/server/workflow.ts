@@ -26,7 +26,7 @@ export type Now = number;
 // `preparation.validate_confirmed_entries` n'est pas encore porté : `event.start` l'appelle via ce
 // point d'accroche, que `preparation.ts` renseignera à son port. Tant qu'il est absent, `event.start`
 // refuse d'ouvrir plutôt que de sauter le recontrôle des inscriptions.
-import { validateConfirmedEntries } from "./preparation";
+import { validateConfirmedEntries, categoryActive } from "./preparation";
 import { makeRound } from "./rounds";
 export { makeRound };
 
@@ -57,7 +57,7 @@ export function officialsComplete(r: any): boolean {
 
 export function disciplines(state: any): string[] {
   const sorted = [...state.categories].sort((a: any, b: any) => a.order - b.order);
-  return [...new Set<string>(sorted.filter((c: any) => !c.archived).map((c: any) => c.discipline))];
+  return [...new Set<string>(sorted.filter((c: any) => categoryActive(c)).map((c: any) => c.discipline))];
 }
 
 export function currentDiscipline(state: any): string | null {
@@ -293,7 +293,7 @@ function applySportInner(state: any, actor: User, kind: string, p: any, users: U
     if (!state.bibs_distributed) throw new Problem("Attribuez les dossards avant de préparer les tours.");
     const rounds: any[] = [];
     for (const cat of [...state.categories].sort((a: any, b: any) => a.order - b.order)) {
-      if (cat.archived) continue;
+      if (!categoryActive(cat)) continue; // archivée ou désactivée : aucune manche
       const ids = state.entries.filter((e: any) => e.category_id === cat.id && e.confirmed).map((e: any) => e.id);
       if (!ids.length) continue;
       const n = ids.length;
@@ -508,7 +508,7 @@ function applySportInner(state: any, actor: User, kind: string, p: any, users: U
     if (rounds.some((r: any) => !["validated", "published", "no_title"].includes(r.status))) throw new Problem("Validez les résultats avant la fin des récompenses.");
     const progress = (state.discipline_progress[d] ??= {});
     if (stage === "overall") {
-      const sections = new Set<string>(state.categories.filter((c: any) => c.discipline === d && !c.archived).map((c: any) => c.section));
+      const sections = new Set<string>(state.categories.filter((c: any) => c.discipline === d && categoryActive(c)).map((c: any) => c.section));
       if (!isSubset(sections, new Set<string>(progress.overall_sections ?? []))) throw new Problem("Constituez chaque overall avant de terminer ses récompenses.");
     }
     progress[stage + "_rewards_done"] = true;

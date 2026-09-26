@@ -1,4 +1,11 @@
 export type Entity = { id: string; [key: string]: any };
+/** Catégorie de l'événement : `active` absent vaut actif (catégories modulables, PO 26/09/2026). */
+export type Category = Entity & {
+  name?: string;
+  section?: string;
+  archived?: boolean;
+  active?: boolean;
+};
 export type Round = Entity & {
   participant_ids: string[];
   panel: string[];
@@ -73,4 +80,6 @@ export const labels: Record<string, string> = {
   overall: "Toutes catégories",
   amateur: "Amateur",
   pro: "Professionnel",
+  categorie_active: "Active",
+  categorie_inactive: "Inactive",
 };

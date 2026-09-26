@@ -8,11 +8,17 @@ import { applySport, applyCorrection, motif } from "./workflow";
 import { exams, collective } from "./projections";
 
 // Dispatch des commandes : copie de commands.py. Chaque commande vérifie ses droits côté serveur.
-const PREP = new Set(["event.update", "person.save", "person.delete", "entry.save", "measurement.save", "category.save", "category.fuse", "programme.reorder", "bibs.assign", "entry.late", "official.save"]);
+const PREP = new Set(["event.update", "person.save", "person.delete", "entry.save", "entry.remove", "measurement.save", "category.save", "category.activate", "category.fuse", "programme.reorder", "bibs.assign", "entry.late", "official.save"]);
+// Commandes qui écrivent ailleurs que dans l'état (comptes, sessions, photos, aperçus) : elles
+// s'exécutent dans une transaction explicite. Toutes les autres ne touchent que l'état et passent
+// par l'écriture optimiste en un seul lot (app.ts, route /api/v1/command).
+export const TRANSACTIONAL = new Set(["person.delete", "event.purge", "user.invite", "user.approve", "user.deactivate"]);
 const SPORTS = new Set(["jury.configure", "programme.generate", "event.start", "event.finish", "event.reset", "round.configure", "round.open", "round.next", "round.validate", "round.correct", "round.incident", "round.resolve", "round.absent", "round.present", "round.draw", "panel.reduce", "overall.create", "overall.final", "overall.confirm", "discipline.advance", "ballot.submit", "paper.submit", "rewards.complete"]);
 
-export async function applyCommand(store: Store, conn: Conn, state: any, actor: User, kind: string, p: any): Promise<any> {
-  const users = await store.allUsers(conn);
+// `users` : comptes déjà lus par l'appelant dans le même instantané que l'état (un aller-retour de
+// moins) ; à défaut, ils sont lus ici.
+export async function applyCommand(store: Store, conn: Conn, state: any, actor: User, kind: string, p: any, users?: User[]): Promise<any> {
+  users ??= await store.allUsers(conn);
   const now = store.clock();
   if (kind === "person.delete") {
     const result = applyPreparation(state, actor, kind, p);
@@ -34,6 +40,9 @@ export async function applyCommand(store: Store, conn: Conn, state: any, actor: 
     for (const [key, value] of Object.entries(fresh)) if (!kept.has(key)) state[key] = value;
     await conn.execute("DELETE FROM photos");
     await conn.execute("DELETE FROM import_previews");
+    // Le cache d'idempotence garde les résultats des commandes (fiches complètes) : effacé aussi, sinon
+    // l'effacement annoncé ne serait pas total. Sans effet sur l'idempotence : la version change.
+    await conn.execute("DELETE FROM commands");
     return bilan;
   }
   if (PREP.has(kind)) return applyPreparation(state, actor, kind, p);

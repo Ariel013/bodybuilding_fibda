@@ -170,3 +170,64 @@ P11. **Barème collectif : divergence TypeScript / Python** (24/09). Décision P
    tour ne peut pas être déclaré absent (un tour vide ne devient jamais prêt, cf. `ready`) ; on passe
    par un incident. Un tour réduit à 1 participant reste jugeable, comme en Python.
 
+
+P12. **Catégories activables et multi-inscription** (26/09). Implémentées et testées en unitaire côté
+   serveur (`frontend/server/preparation.ts`, `workflow.ts`, contrat `docs/CONTRACT.md`). Points non
+   tranchés par le PO, choix provisoires à confirmer. **Tranché par le PO le 26/09** : une catégorie
+   désactivée garde ses inscriptions et se réactive sans ressaisie (c'est l'implémentation).
+   (a) **Réactivation après les dossards** : les inscriptions confirmées d'une catégorie réactivée
+   après `bibs.assign` n'ont pas de dossard (elles ont été ignorées à l'attribution) et, si la
+   compétition est démarrée, `programme.generate` ne peut plus recréer ses manches. Aucune attribution
+   automatique n'a été inventée : il faut désactiver avant les dossards, ou passer par `entry.late`
+   (dossard « plus grand + 1 ») et le programme régénéré en préparation. À trancher : faut-il un
+   dossard automatique à la réactivation ?
+   (b) `programme.reorder` attend toujours la liste exacte des catégories **non archivées**, y compris
+   les désactivées (elles gardent leur rang d'affichage) ; le contrat frontend doit envoyer les deux.
+   (c) `category.fuse` ne tient pas compte de `active` : la fusion copie l'indicateur de la première
+   catégorie. Non contractuel, laissé tel quel.
+   (d) La route `GET /eligibility/{person_id}` propose des **règles du catalogue**, pas des catégories
+   de l'état : rien à filtrer côté serveur ; le filtrage « catégories actives seulement » de la
+   proposition automatique relève du frontend (`src/categorieAuto*`).
+
+P13. **Concordance des juges avec le bulletin du chef** (26/09, demande PO). Implémentée et testée en
+   unitaire (`frontend/server/concordance.ts`, route `GET /api/v1/concordance` chef/responsable,
+   panneau « Concordance avec le chef » dans Compétition). La formule est **exactement celle de
+   l'examen des stagiaires** (`pairConcordance` / `examReport`, `frontend/domain/domain.ts`) : part des
+   paires d'athlètes classées dans le même ordre que le chef, moyenne non pondérée par manche.
+   Choix provisoires à confirmer par le PO :
+   (a) **Avant validation** de la manche, la référence est le bulletin courant du chef (l'examen, lui,
+   n'évalue qu'après validation, sur la référence gelée) ; dès la validation, on repasse sur la
+   référence gelée et versionnée, comme l'examen. Faut-il au contraire n'afficher qu'après validation ?
+   (b) **Éliminatoires exclues** : bulletin de sélection (pas de classement), la formule de l'examen
+   ne s'y applique pas et l'examen les exclut aussi. Le PO veut-il un taux de sélections communes
+   pour ces manches ? Non implémenté, aucune formule inventée.
+   (c) Le bulletin comparé est le bulletin **original** du juge (avant correction papier), comme
+   l'examen ; le chef lui-même n'apparaît pas dans la liste (100 % par construction).
+   (d) Sans chef actif unique, le rapport est vide (aucune référence) ; un bulletin portant sur
+   d'autres athlètes que la référence est signalé « non comparable », sans score.
+
+P14. **Route `/command` en écriture optimiste sans transaction tenue à travers le réseau** (26/09,
+   suite au constat PO « délai long quand tout le monde valide »). Mesuré en local (compteur d'appels
+   au client libsql, `frontend/server/concurrence.test.ts` pour la sémantique) : un `ballot.submit`
+   coûtait 12 allers-retours vers Turso (2 transactions, `tickOnce` séparé, comptes lus 3 fois), il en
+   coûte 2 (une lecture groupée : session + état + comptes + commande antérieure ; une écriture
+   groupée atomique : audit + journal des commandes + état, chaque ligne conditionnée à la version
+   lue). `GET /state` : 6 → 1 (2 si une transition temporisée est due). Gain en secondes **non
+   mesuré** : à relever par le PO sur Vercel. Choix faits sans décision PO, à confirmer :
+   (a) **Bulletins simultanés** : au lieu d'être sérialisés par le verrou d'écriture de la base (le
+   dernier des 5 reçu en 7,2 s le 24/09), un bulletin dont l'écriture trouve la version dépassée est
+   **relu et rejoué côté serveur sur l'état à jour** (6 essais au plus, puis 409 comme avant). Les
+   contrôles de tour, restauration, propriétaire et clôture s'appliquent à chaque rejeu ; toute autre
+   commande revient au contrôle de version (409) comme avant. Le contrat `docs/CONTRACT.md` (« les
+   bulletins simultanés admettent une ancienne version globale ») est inchangé.
+   (b) **Transition temporisée (délai stagiaire)** : appliquée en mémoire sur l'état lu et écrite dans
+   le même lot que la commande. Si la commande échoue (422/409), la transition n'est pas écrite et
+   se rejouera à la requête suivante (elle ne dépend que de l'horloge et de l'état) ; auparavant elle
+   était validée à part avant la commande. `GET /state` l'écrit toujours avant de la renvoyer.
+   (c) Les commandes qui écrivent aussi dans les comptes, sessions ou photos (`user.invite`,
+   `user.approve`, `user.deactivate`, `person.delete`, `event.purge`, liste `TRANSACTIONAL` dans
+   `commands.ts`) gardent une transaction explicite ; toute autre commande reçoit une connexion qui
+   refuse le SQL (500 explicite plutôt qu'une écriture hors lot).
+   (d) Non fait, à décider si le délai reste gênant : découper l'état en tables (un tour = une ligne)
+   pour ne plus réécrire ~30 ko d'état par bulletin ; interrogation périodique du téléphone toutes
+   les 6 s (`App.tsx`) à espacer pour les juges, qui reçoivent déjà l'état avec l'accusé.

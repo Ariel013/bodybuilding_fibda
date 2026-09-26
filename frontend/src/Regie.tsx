@@ -35,6 +35,7 @@ const screens: Record<string, string> = {
 const scenes: Record<string, string> = {
   idle: "Accueil",
   category: "Catégorie / mosaïque",
+  lineup: "Ordre de passage (coulisses)",
   qualifiers: "Qualifiés",
   reveal: "Révélation progressive",
   podium: "Podium",
@@ -484,6 +485,54 @@ export function ScreenContent({
         <p>Bienvenue · Welcome</p>
       </div>
     );
+  if (scene.kind === "lineup") {
+    // Ordre de passage pour les coulisses (PO, 26/09/2026) : liste lisible de loin, dans l'ordre tiré
+    // au sort (sinon par dossard), l'athlète appelé en évidence et le suivant annoncé.
+    const drawn: string[] = Array.isArray(round?.passage_order) && round.passage_order.length ? round.passage_order : [];
+    const order = drawn.length
+      ? drawn
+      : [...group].sort((a, b) => Number(entries.find((e) => e.id === a)?.bib ?? 0) - Number(entries.find((e) => e.id === b)?.bib ?? 0));
+    const calledIndex = order.indexOf(scene.called_entry_id);
+    const nextId = calledIndex >= 0 ? order[calledIndex + 1] : order[0];
+    return (
+      <div className="screen-lineup">
+        <div className="screen-title">
+          <p className="eyebrow">ORDRE DE PASSAGE · COULISSES</p>
+          <h1>{category?.name || "Plateau"}</h1>
+          <p>
+            {labels[category?.section]} {round && "· " + labels[round.phase]}
+            {!round ? " · aucune manche" : drawn.length ? "" : " · ordre non encore tiré, par dossard"}
+          </p>
+        </div>
+        {!order.length ? (
+          <Empty>Aucun athlète pour cette manche.</Empty>
+        ) : (
+          <ol className="lineup-list">
+            {order.map((id, i) => {
+              const entry = entries.find((e) => e.id === id);
+              const p = people.find((x) => x.id === entry?.person_id);
+              const state = id === scene.called_entry_id ? "called" : id === nextId ? "next" : calledIndex >= 0 && i < calledIndex ? "done" : "";
+              return (
+                <li key={id} className={state}>
+                  <span className="lineup-pos">{drawn.length ? i + 1 : ""}</span>
+                  <span className="lineup-bib">{entry?.bib ? "N° " + entry.bib : "—"}</span>
+                  <span className="lineup-name">
+                    {personName(p)}
+                    <small>
+                      {p?.club} {p?.country ? "· " + paysAvecDrapeau(p.country) : ""}
+                    </small>
+                  </span>
+                  <span className="lineup-state">
+                    {state === "called" ? "Sur le plateau" : state === "next" ? "À suivre" : state === "done" ? "Passé" : ""}
+                  </span>
+                </li>
+              );
+            })}
+          </ol>
+        )}
+      </div>
+    );
+  }
   if (["official", "officials"].includes(scene.kind)) {
     const selected = officials.filter((o) =>
       scene.kind === "official"

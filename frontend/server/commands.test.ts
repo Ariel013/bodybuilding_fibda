@@ -162,3 +162,15 @@ test("late thresholds insert phases preserving ids, bibs and other categories", 
     assert.deepEqual(f.s.rounds.find((r: any) => r.id === other.id), otherSnapshot);
   }
 });
+
+test("scene.set lineup : ordre de passage en coulisses, manche requise, aucun résultat exposé", async () => {
+  const f = new Fixture();
+  f.s.public.backstage = { kind: "idle" };
+  await rejectsProblem(applyCommand(fakeStore(f), null as any, f.s, f.chief, "scene.set", { screen: "backstage", scene: { kind: "lineup", category_id: f.r.category_id } }));
+  await applyCommand(fakeStore(f), null as any, f.s, f.chief, "scene.set", { screen: "backstage", scene: { kind: "lineup", category_id: f.r.category_id, round_id: f.r.id, called_entry_id: "b" } });
+  assert.equal(f.s.public.backstage.kind, "lineup");
+  const pub = publicState(f.s, "backstage");
+  assert.equal(pub.scene.called_entry_id, "b");
+  assert.deepEqual(pub.rounds[0].participant_ids, f.r.participant_ids);
+  assert.equal(pub.rounds[0].result, undefined);
+});

@@ -2533,3 +2533,72 @@ dialog.athlete-card::backdrop {
 .action-menu-items > button:disabled {
   opacity: 0.5;
 }
+
+/* Ordre de passage en coulisses (PO, 26/09/2026) : lisible à plusieurs mètres. */
+.screen-lineup .lineup-list {
+  list-style: none;
+  margin: 0 auto;
+  padding: 0;
+  max-width: 1100px;
+}
+.lineup-list li {
+  display: grid;
+  grid-template-columns: 64px 120px 1fr auto;
+  align-items: center;
+  gap: 18px;
+  padding: 14px 20px;
+  margin: 8px 0;
+  border-radius: 12px;
+  background: #ffffffb8;
+  border: 1px solid #c9ddd3;
+  font-size: clamp(20px, 2.6vw, 34px);
+}
+.lineup-list li.done {
+  opacity: 0.45;
+}
+.lineup-list li.next {
+  border-color: #d98a2b;
+  background: #fff6ea;
+}
+.lineup-list li.called {
+  border-color: #1f7a4d;
+  background: #e6f4ec;
+  box-shadow: 0 0 0 3px #1f7a4d44;
+  transform: scale(1.02);
+}
+.lineup-pos {
+  font-weight: 800;
+  color: #1f7a4d;
+}
+.lineup-bib {
+  font-weight: 700;
+}
+.lineup-name {
+  display: flex;
+  flex-direction: column;
+  font-weight: 600;
+}
+.lineup-name small {
+  font-size: 0.5em;
+  font-weight: 400;
+  color: #4b6358;
+}
+.lineup-state {
+  font-size: 0.6em;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #1f7a4d;
+}
+.lineup-list li.next .lineup-state {
+  color: #b86a0f;
+}
+@media (max-width: 600px) {
+  .lineup-list li {
+    grid-template-columns: 44px 84px 1fr;
+    font-size: 18px;
+  }
+  .lineup-state {
+    grid-column: 2 / 4;
+  }
+}

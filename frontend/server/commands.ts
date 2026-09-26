@@ -127,12 +127,15 @@ export async function applyCommand(store: Store, conn: Conn, state: any, actor: 
     const screen = p.screen;
     let scene: any = p.scene ?? {};
     const kindscene = scene.kind;
-    if (!(screen in state.public) || !["idle", "category", "qualifiers", "reveal", "podium", "ranking", "official", "officials"].includes(kindscene)) throw new Problem("Scène inconnue.");
+    if (!(screen in state.public) || !["idle", "category", "lineup", "qualifiers", "reveal", "podium", "ranking", "official", "officials"].includes(kindscene)) throw new Problem("Scène inconnue.");
     const allowed = ["kind", "category_id", "round_id", "official_id", "official_ids", "called_entry_id", "revealed_count", "positions"];
     scene = Object.fromEntries(Object.entries(scene).filter(([k]) => allowed.includes(k)));
     if (scene.category_id) find(state.categories, scene.category_id, "Catégorie");
     const r = scene.round_id ? find(state.rounds, scene.round_id, "Tour") : null;
     if (r && scene.category_id && scene.category_id !== r.category_id) throw new Problem("La catégorie et le tour ne correspondent pas.");
+    // Ordre de passage en coulisses (PO, 26/09/2026) : une manche est requise ; l'écran public reçoit
+    // déjà participant_ids et passage_order, aucun résultat n'est exposé.
+    if (kindscene === "lineup" && !r) throw new Problem("Choisissez la manche dont afficher l’ordre de passage.");
     if (["qualifiers", "reveal", "podium", "ranking"].includes(kindscene)) {
       if (!r || !["validated", "published"].includes(r.status) || !r.result) throw new Problem("Résultat non validé : diffusion interdite.");
       if (kindscene === "qualifiers" && !["semi", "elimination"].includes(r.phase)) throw new Problem("Pas de qualification pour ce tour.");

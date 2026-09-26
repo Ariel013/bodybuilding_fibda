@@ -346,9 +346,9 @@ test("finales validées : cycle de fin de discipline, sous-étapes dans l'ordre 
     [
       ["Confirmer les remises des catégories", false, null],
       [
-        "Créer le toutes catégories Amateur",
+        "Toutes catégories Amateur (créé automatiquement après les finales)",
         false,
-        "remises des catégories à confirmer d’abord",
+        null,
       ],
       [
         "Confirmer les remises toutes catégories",

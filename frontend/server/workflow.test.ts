@@ -143,16 +143,19 @@ test("published correction stays pending and preserves original (partie workflow
   assert.equal(f.r.correction.published, true);
 });
 
-test("overall cycle requires rewards and explicit single confirmation", () => {
+test("overall cycle : overall créé automatiquement après les finales (PO 26/09), remises puis confirmation du champion unique", () => {
   const f = new Fixture();
   f.completed();
+  // Dès la validation de la finale, l'overall existe (un seul champion : en attente de confirmation).
+  const overall = f.s.rounds[f.s.rounds.length - 1];
+  assert.equal(overall.phase, "overall");
+  assert.equal(overall.auto_created, true);
+  assert.equal(overall.status, "pending");
+  assert.deepEqual(f.s.discipline_progress.bodybuilding.overall_sections, ["amateur"]);
   throwsProblem(() => applySport(f.s, f.chief, "overall.create", { discipline: "bodybuilding", section: "amateur" }, f.users, 210));
   applySport(f.s, f.chief, "rewards.complete", { discipline: "bodybuilding", kind: "category" }, f.users, 210);
-  const created = applySport(f.s, f.chief, "overall.create", { discipline: "bodybuilding", section: "amateur" }, f.users, 211);
-  const overall = f.s.rounds[f.s.rounds.length - 1];
-  assert.equal(overall.status, "pending");
   throwsProblem(() => applySport(f.s, f.chief, "discipline.advance", { discipline: "bodybuilding" }, f.users, 212));
-  applySport(f.s, f.chief, "overall.confirm", { round_id: created.round_id }, f.users, 213);
+  applySport(f.s, f.chief, "overall.confirm", { round_id: overall.id }, f.users, 213);
   applySport(f.s, f.chief, "rewards.complete", { discipline: "bodybuilding", kind: "overall" }, f.users, 214);
   applySport(f.s, f.chief, "discipline.advance", { discipline: "bodybuilding" }, f.users, 215);
   assert.equal(f.s.discipline_progress.bodybuilding.completed, true);
@@ -363,7 +366,7 @@ test("event.reset : retour en préparation, chef seulement, confirmation exigée
   throwsProblem(() => applySport(f.s, f.users[1], "event.reset", { confirm: "REINITIALISER" }, f.users, 300));
   throwsProblem(() => applySport(f.s, f.chief, "event.reset", { confirm: "oui" }, f.users, 300));
   const r = applySport(f.s, f.chief, "event.reset", { confirm: "REINITIALISER" }, f.users, 300);
-  assert.equal(r.rounds_effaces, 1);
+  assert.equal(r.rounds_effaces, 2); // la finale et l'overall créé automatiquement
   assert.equal(f.s.status, "preparation");
   assert.deepEqual(f.s.rounds, []);
   assert.equal(f.s.active_round_id, null);
@@ -410,4 +413,23 @@ test("plusieurs chefs (PO 26/09) : le chef d'une manche est celui de son panel ;
   // Le second chef peut valider une manche : le rôle suffit, l'appartenance au panel n'est pas exigée pour valider.
   applySport(f.s, f.users[f.users.length - 1], "round.configure", { round_id: "r2", panel: ["c2", "1", "2", "3", "4"], withdrawal_order: ["4", "3", "2", "1"] }, f.users, 300);
   assert.deepEqual(f.s.rounds.find((r: any) => r.id === "r2").panel, ["c2", "1", "2", "3", "4"]);
+});
+
+test("overall automatique : recalculé après correction de la finale source tant qu'il n'est pas ouvert ; bloqué ensuite", () => {
+  const f = new Fixture();
+  f.completed();
+  const overall = f.s.rounds.find((r: any) => r.phase === "overall");
+  assert.deepEqual(overall.participant_ids, ["a"]);
+  // Correction de la finale (non publiée : appliquée aussitôt) : le champion change, l'overall en attente suit.
+  for (const j of ["1", "2", "3"]) {
+    applySport(f.s, f.chief, "round.correct", { round_id: f.r.id, judge_id: j, ranking: ["c", "b", "a"], reason: "Erreur signée" }, f.users, 220);
+  }
+  assert.equal(f.r.result.official[0].entry_id, "c");
+  assert.deepEqual(overall.participant_ids, ["c"]);
+  // Overall ouvert (deux champions simulés) : plus de correction possible.
+  overall.participant_ids = ["c", "b"];
+  overall.status = "open";
+  overall.opened_at = 230;
+  f.r.correction = null;
+  throwsProblem(() => applySport(f.s, f.chief, "round.correct", { round_id: f.r.id, judge_id: "1", ranking: ["a", "b", "c"], reason: "Trop tard" }, f.users, 240));
 });

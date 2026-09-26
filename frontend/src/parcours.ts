@@ -567,16 +567,16 @@ function etapeFinDiscipline(ctx: Contexte): { etape: Brute; faite: boolean } {
   });
   for (const section of sections) {
     sous.push({
-      libelle: `Créer le toutes catégories ${labels[section] || section}`,
+      libelle: `Toutes catégories ${labels[section] || section} (créé automatiquement après les finales)`,
       fait: creees.includes(section),
       action: commande(
         "overall.create",
         `Créer le toutes catégories ${labels[section] || section}`,
         { discipline: courante, section, exam_user_ids: [] },
       ),
-      raison: progres.category_rewards_done
-        ? undefined
-        : "remises des catégories à confirmer d’abord",
+      raison: finalesOuvertes
+        ? "se crée seul dès que les finales sont validées"
+        : undefined,
     });
   }
   const overallAJuger = overallsOuverts.length

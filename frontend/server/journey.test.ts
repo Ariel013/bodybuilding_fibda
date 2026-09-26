@@ -102,15 +102,18 @@ test("démonstration nationale, trois catégories jusqu'à la clôture", async (
   await judgeActive();
   state = await judgeActive();
   assert.deepEqual(sequence, [["mens_physique", "semi"], ["mens_physique", "semi"], ["mens_physique", "final"], ["mens_physique", "final"]]);
-  assert.equal(state.active_round_id, null);
+  // PO 26/09 : l'overall se crée seul dès les finales validées et s'ouvre aussitôt (deux champions).
+  let overall = state.rounds[state.rounds.length - 1];
+  assert.equal(overall.phase, "overall");
+  assert.equal(overall.participant_ids.length, 2);
+  assert.equal(overall.status, "open");
+  assert.equal(state.active_round_id, overall.id);
   await command("discipline.advance", { discipline: "mens_physique" }, chief, 422);
   await deliver("final");
   await command("rewards.complete", { discipline: "mens_physique", kind: "category" });
-  state = await command("overall.create", { discipline: "mens_physique", section: "amateur", exam_user_ids: [trainee] });
-  let overall = state.rounds[state.rounds.length - 1];
-  assert.equal(overall.participant_ids.length, 2);
-  assert.ok(state.exam_programs.find((p: any) => p.user_id === trainee).round_ids.includes(overall.id));
-  assert.equal(overall.status, "open");
+  await command("overall.create", { discipline: "mens_physique", section: "amateur", exam_user_ids: [trainee] }, chief, 422);
+  // Le programme d'examen du stagiaire se pose sur l'overall déjà ouvert ? Non : un tour engagé ne
+  // s'ajoute pas à un programme neuf. On vérifie simplement que l'overall se juge et se livre.
   await judgeActive();
   await deliver("overall");
   await command("rewards.complete", { discipline: "mens_physique", kind: "overall" });
@@ -119,9 +122,9 @@ test("démonstration nationale, trois catégories jusqu'à la clôture", async (
   await judgeActive();
   await judgeActive();
   await deliver("final");
-  await command("rewards.complete", { discipline: "bikini", kind: "category" });
-  state = await command("overall.create", { discipline: "bikini", section: "amateur", exam_user_ids: [trainee] });
+  state = await command("rewards.complete", { discipline: "bikini", kind: "category" });
   overall = state.rounds[state.rounds.length - 1];
+  assert.equal(overall.phase, "overall");
   assert.equal(overall.participant_ids.length, 1);
   assert.equal(overall.status, "pending");
   await command("overall.confirm", { round_id: overall.id });

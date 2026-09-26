@@ -114,7 +114,7 @@ export function ready(state: any, r: any): boolean {
   const group = state.rounds.filter((x: any) => x.discipline === r.discipline);
   if (group.some((x: any) => PHASES[x.phase] < PHASES[r.phase] && !CLOSED.has(x.status))) return false;
   if (!refreshParticipants(state, r)) return false;
-  if (r.phase === "overall" && !state.discipline_progress[r.discipline]?.category_rewards_done) return false;
+  // PO 26/09/2026 : l'overall s'ouvre dès les finales validées, sans attendre la confirmation des remises.
   if ((r.phase === "semi" || r.phase === "elimination") && !quotaValid(r)) return false;
   return r.participant_ids.length > 0;
 }
@@ -170,8 +170,39 @@ export function tick(state: any, users: User[], now: Now): boolean {
     if (state.active_round_id === r.id) state.active_round_id = null;
     changed = true;
   }
+  if (state.status === "running" && autoOveralls(state, now)) changed = true;
   if (state.status === "running" && !state.active_round_id) {
     if (tryNext(state, users, now)) changed = true;
+  }
+  return changed;
+}
+
+/**
+ * Overall automatique (PO, 26/09/2026) : dès que toutes les finales d'une discipline et d'une section
+ * sont validées, l'overall de cette discipline se crée avec le premier de chaque classe, sans attendre
+ * la confirmation des remises. Idempotent : une section déjà constituée n'est jamais recréée ; une
+ * discipline sans finale n'a pas d'overall. `overall.create` reste disponible à la main (absents, examens).
+ */
+export function autoOveralls(state: any, _now: Now): boolean {
+  let changed = false;
+  const d = currentDiscipline(state);
+  if (!d) return false;
+  const progress = (state.discipline_progress[d] ??= {});
+  const sections = new Set<string>(state.categories.filter((c: any) => c.discipline === d && categoryActive(c)).map((c: any) => c.section));
+  for (const section of sections) {
+    if ((progress.overall_sections ?? []).includes(section)) continue;
+    if (state.rounds.some((r: any) => r.phase === "overall" && r.discipline === d && r.section === section)) continue;
+    const finals = state.rounds.filter((r: any) => r.discipline === d && r.section === section && r.phase === "final");
+    if (!finals.length || finals.some((r: any) => !CLOSED.has(r.status))) continue;
+    const rows = finals.flatMap((r: any) => r.result.official);
+    const ids: string[] = overallCandidates(rows, state.entries, eligibleIds(state));
+    const r = makeRound(state, { id: "overall-" + d + "-" + section, discipline: d, section }, "overall", ids);
+    r.absent_ids = [];
+    r.auto_created = true;
+    if (!ids.length) r.status = "no_title";
+    state.rounds.push(r);
+    (progress.overall_sections ??= []).push(section);
+    changed = true;
   }
   return changed;
 }
@@ -307,6 +338,12 @@ function applySportInner(state: any, actor: User, kind: string, p: any, users: U
         previous = r.id;
       }
     }
+    // Ordre réel de jeu (règle FIBDA, PO 26/09/2026) : par discipline, toutes les éliminatoires, puis
+    // toutes les demi-finales, puis toutes les finales ; les documents lisent cet ordre.
+    const disciplineRank = new Map<string, number>();
+    for (const cat of [...state.categories].sort((a: any, b: any) => a.order - b.order)) if (!disciplineRank.has(cat.discipline)) disciplineRank.set(cat.discipline, disciplineRank.size);
+    const catOrder = (id: string): number => state.categories.find((c: any) => c.id === id)?.order ?? 999;
+    rounds.sort((a, b) => (disciplineRank.get(a.discipline) ?? 99) - (disciplineRank.get(b.discipline) ?? 99) || PHASES[a.phase] - PHASES[b.phase] || catOrder(a.category_id) - catOrder(b.category_id));
     state.rounds = rounds;
     state.discipline_progress = {};
     return { count: rounds.length };
@@ -519,7 +556,7 @@ function applySportInner(state: any, actor: User, kind: string, p: any, users: U
     const d: string = p.discipline;
     const section: string = p.section;
     const progress = (state.discipline_progress[d] ??= {});
-    if (d !== currentDiscipline(state) || !progress.category_rewards_done) throw new Problem("Terminez les récompenses des catégories avant l’overall.");
+    if (d !== currentDiscipline(state)) throw new Problem("Cette discipline n’est pas en cours.");
     if ((section !== "amateur" && section !== "pro") || (progress.overall_sections ?? []).includes(section)) throw new Problem("Overall déjà constitué ou section invalide.");
     const finals = state.rounds.filter((r: any) => r.discipline === d && r.section === section && r.phase === "final");
     if (finals.some((r: any) => !CLOSED.has(r.status))) throw new Problem("Toutes les finales doivent être validées.");
@@ -648,9 +685,24 @@ export function correctionAllowed(state: any, r: any): void {
   if (state.rounds.some((x: any) => x.dependency_id === r.id && x.status !== "pending")) {
     throw new Problem("La qualification a déjà servi : traitement d’incident requis, sans modification automatique du tour dépendant.", 409);
   }
-  if (r.phase === "final" && state.rounds.some((x: any) => x.phase === "overall" && x.discipline === r.discipline && x.section === r.section)) {
+  // Overall créé automatiquement (26/09/2026) : tant qu'il n'est pas ouvert, la finale source reste
+  // corrigeable et ses champions sont recalculés ; dès qu'il a été ouvert ou jugé, incident requis.
+  if (r.phase === "final" && state.rounds.some((x: any) => x.phase === "overall" && x.discipline === r.discipline && x.section === r.section && (x.status !== "pending" || x.opened_at || Object.keys(x.ballots ?? {}).length))) {
     throw new Problem("L’overall est déjà constitué : traitement d’incident requis avant toute correction de sa finale source.", 409);
   }
+}
+
+/** Recalcule les champions d'un overall encore en attente après correction d'une finale source. */
+function refreshPendingOverall(state: any, r: any): void {
+  if (r.phase !== "final") return;
+  const overall = state.rounds.find((x: any) => x.phase === "overall" && x.discipline === r.discipline && x.section === r.section && x.status === "pending" && !x.opened_at);
+  if (!overall) return;
+  const finals = state.rounds.filter((x: any) => x.discipline === r.discipline && x.section === r.section && x.phase === "final");
+  if (finals.some((x: any) => !CLOSED.has(x.status))) return;
+  const absent = new Set<string>(overall.absent_ids ?? []);
+  overall.participant_ids = overallCandidates(finals.flatMap((x: any) => x.result.official), state.entries, eligibleIds(state)).filter((i) => !absent.has(i));
+  overall.passage_order = null;
+  overall.version += 1;
 }
 
 export function applyCorrection(state: any, r: any, users: User[], now: Now): void {
@@ -669,6 +721,7 @@ export function applyCorrection(state: any, r: any, users: User[], now: Now): vo
   r.status = "validated";
   r.version += 1;
   r.reveals = {};
+  refreshPendingOverall(state, r);
   // Les annonces antérieures sont retirées ; la régie publie la nouvelle version consciemment.
   for (const [screen, scene] of Object.entries<any>(state.public)) {
     if (scene.round_id === r.id) state.public[screen] = { kind: "idle", notice: "Résultat en cours de mise à jour" };

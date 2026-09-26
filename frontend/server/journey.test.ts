@@ -73,7 +73,7 @@ test("démonstration nationale, trois catégories jusqu'à la clôture", async (
     }
     const before = await read();
     const closed = before.rounds.find((x: any) => x.id === round.id);
-    assert.equal(closed.status, "awaiting_validation");
+    assert.equal(closed.status, "validated"); // validation automatique (PO 26/09)
     assert.equal((await body(app.request("/api/v1/public/main"))).scene.kind, "idle");
     const after = await command("round.validate", { round_id: round.id });
     const result = after.rounds.find((x: any) => x.id === round.id).result;

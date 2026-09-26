@@ -60,7 +60,8 @@ test("deadline starts only after last official and closes exactly 60", () => {
   tick(f.s, f.users, 1060.999);
   assert.equal(f.r.status, "open");
   tick(f.s, f.users, 1061);
-  assert.equal(f.r.status, "awaiting_validation");
+  assert.equal(f.r.status, "validated"); // validation automatique (PO 26/09) dès la transition
+  assert.equal(f.r.auto_validated, true);
   assert.deepEqual(f.r.expired_trainees, ["t"]);
   const version = f.r.version;
   const alerts = f.s.alerts.length;
@@ -74,7 +75,7 @@ test("all trainees advance early without reveal", () => {
   const f = new Fixture();
   f.submit("t", null, 10);
   f.officialBallots();
-  assert.equal(f.r.status, "awaiting_validation");
+  assert.equal(f.r.status, "validated"); // validation automatique (PO 26/09)
   assert.equal(f.r.transitioned, true);
   assert.deepEqual(f.s.public.main, { kind: "idle" });
 });
@@ -93,12 +94,13 @@ test("qualification waits validation", () => {
   const following = makeRound(f.s, f.cat, "final", [], null, f.r.id);
   f.s.rounds.push(following);
   f.officialBallots();
-  f.submit("t", null, 105);
   assert.equal(following.status, "pending");
   assert.deepEqual(following.participant_ids, []);
-  f.validate();
+  f.submit("t", null, 105); // dernier stagiaire : transition, validation automatique, finale ouverte
+  assert.equal(f.r.status, "validated");
   assert.equal(following.status, "open");
   assert.deepEqual(following.participant_ids, ["a", "b"]);
+  assert.equal(f.validate().already_validated, true); // validation manuelle sans effet
 });
 
 test("national filters nationality not country and renumbers", () => {

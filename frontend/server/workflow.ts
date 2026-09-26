@@ -183,6 +183,23 @@ export function tick(state: any, users: User[], now: Now): boolean {
     if (state.active_round_id === r.id) state.active_round_id = null;
     changed = true;
   }
+  // Validation automatique (PO, 26/09/2026, en cours de compétition) : dès que tous les bulletins
+  // officiels sont reçus et le délai des stagiaires écoulé, le résultat est calculé et validé sans
+  // attendre le chef, qui garde la correction contrôlée. Une éliminatoire dont les ex æquo exigent une
+  // décision reste en attente de validation manuelle.
+  for (const r of state.rounds) {
+    if (r.status !== "awaiting_validation" || !officialsComplete(r)) continue;
+    try {
+      calculate(state, r, users, null, "");
+    } catch (e) {
+      if (e instanceof Problem) continue;
+      throw e;
+    }
+    r.status = "validated";
+    r.auto_validated = true;
+    r.version += 1;
+    changed = true;
+  }
   if (state.status === "running" && autoOveralls(state, now)) changed = true;
   if (state.status === "running" && !state.active_round_id) {
     if (tryNext(state, users, now)) changed = true;
@@ -442,6 +459,7 @@ function applySportInner(state: any, actor: User, kind: string, p: any, users: U
   }
   if (kind === "round.validate") {
     const r = find(state.rounds, p.round_id, "Tour");
+    if (r.status === "validated" && r.auto_validated && !r.correction) return { result: r.result, already_validated: true };
     if (r.status !== "awaiting_validation" || !officialsComplete(r)) throw new Problem("Le tour attend encore ses bulletins ou une décision d’incident.");
     calculate(state, r, users, p.qualified_ids ?? null, motif(p.reason ?? ""));
     r.status = "validated";

@@ -131,9 +131,9 @@ test("la transition temporisée est écrite en base par GET /state et jamais ren
   // Dernier officiel reçu : le délai stagiaire s'arme ; passé 60 s, le tour attend la validation.
   t.advance(120);
   const seen = (await t.read()).rounds.find((x: any) => x.id === t.round.id);
-  assert.equal(seen.status, "awaiting_validation");
+  assert.equal(seen.status, "validated"); // transition puis validation automatique (PO 26/09)
   const stored = JSON.parse(String((await t.store.execute("SELECT data FROM events"))[0].data)).rounds.find((x: any) => x.id === t.round.id);
-  assert.equal(stored.status, "awaiting_validation");
+  assert.equal(stored.status, "validated");
   assert.equal(Number((await t.store.execute("SELECT COUNT(*) AS n FROM audit WHERE action = 'timer.transition'"))[0].n), 1);
 });
 

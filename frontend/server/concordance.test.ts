@@ -152,7 +152,7 @@ test("route /concordance : droits chef/responsable, calcul sur la démo, référ
 
   // Validation : la référence devient celle gelée dans le résultat, les scores ne changent pas.
   state = (await read());
-  assert.equal(state.rounds.find((x: any) => x.id === round.id).status, "awaiting_validation");
+  assert.equal(state.rounds.find((x: any) => x.id === round.id).status, "validated"); // automatique (PO 26/09)
   state = (await command("round.validate", { round_id: round.id })).state;
   const validated = state.rounds.find((x: any) => x.id === round.id);
   out = await body(concordance(chief));

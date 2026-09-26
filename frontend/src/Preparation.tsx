@@ -26,6 +26,7 @@ import {
 import {
   Field,
   Panel,
+  ActionMenu,
   Check,
   Multi,
   DataTable,
@@ -1136,7 +1137,7 @@ function Categories({ s, command }: Props) {
                 </span>,
                 s.entries.filter((e) => e.category_id === c.id).length,
                 <Status value={active ? "categorie_active" : "categorie_inactive"} />,
-                <div className="actions">
+                <ActionMenu label={"Actions sur " + c.name}>
                   <button className="ghost" type="button" onClick={() => setCat(c)}>
                     Modifier
                   </button>
@@ -1165,7 +1166,7 @@ function Categories({ s, command }: Props) {
                   >
                     Supprimer
                   </AsyncButton>
-                </div>,
+                </ActionMenu>,
               ];
             })}
         />
@@ -1405,6 +1406,10 @@ function Officials({ s, command, refresh }: Props) {
                   {o.photo_approved ? "Photo approuvée" : "Photo à contrôler"}
                 </small>
               </button>
+              <ActionMenu label={"Actions sur " + personName(o)}>
+              <button className="ghost" type="button" onClick={() => setF(o)}>
+                Modifier
+              </button>
               <AsyncButton
                 allowed={canCommand(s.me.roles, "official.delete")}
                 className="ghost danger"
@@ -1421,6 +1426,7 @@ function Officials({ s, command, refresh }: Props) {
               >
                 Supprimer
               </AsyncButton>
+              </ActionMenu>
             </div>
           ))}
         </div>
@@ -1589,7 +1595,7 @@ function Jury({ s, command }: Props) {
               u.id === s.me.id ? (
                 <small>Votre compte</small>
               ) : (
-                <div className="actions">
+                <ActionMenu label={"Actions sur le compte de " + u.name}>
                   {canCommand(s.me.roles, "user.update") && !u.roles.includes("chief") && (
                     <button type="button" className="ghost" onClick={() => ouvrirEdition(u)}>
                       Modifier
@@ -1626,7 +1632,7 @@ function Jury({ s, command }: Props) {
                   >
                     Supprimer le compte
                   </AsyncButton>
-                </div>
+                </ActionMenu>
               ),
             ])}
           />

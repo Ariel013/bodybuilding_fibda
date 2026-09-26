@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { type Entity, type State, personName, labels } from "./types";
 export function Field({
   label,
@@ -193,5 +193,50 @@ export function AsyncButton({
     >
       {busy ? "En cours…" : children}
     </button>
+  );
+}
+
+/**
+ * Menu d'actions replié sous un bouton « … » (PO, 26/09/2026 : les boutons Modifier, Désactiver,
+ * Supprimer prenaient trop de place). Les enfants sont les boutons habituels (AsyncButton compris,
+ * qui disparaissent d'eux-mêmes quand le rôle ne le permet pas) ; le menu se ferme au clic dehors,
+ * à la touche Échap, et dès qu'un bouton du menu est touché.
+ */
+export function ActionMenu({ label = "Actions", children }: { label?: string; children: ReactNode }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const dehors = (e: MouseEvent | TouchEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    const touche = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
+    document.addEventListener("mousedown", dehors);
+    document.addEventListener("touchstart", dehors);
+    document.addEventListener("keydown", touche);
+    return () => {
+      document.removeEventListener("mousedown", dehors);
+      document.removeEventListener("touchstart", dehors);
+      document.removeEventListener("keydown", touche);
+    };
+  }, [open]);
+  return (
+    <div className="action-menu" ref={ref}>
+      <button
+        type="button"
+        className="ghost action-menu-toggle"
+        aria-label={label}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        onClick={() => setOpen((o) => !o)}
+      >
+        …
+      </button>
+      {open && (
+        <div className="action-menu-items" role="menu" onClick={() => setOpen(false)}>
+          {children}
+        </div>
+      )}
+    </div>
   );
 }

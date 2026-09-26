@@ -2488,3 +2488,45 @@ dialog.athlete-card::backdrop {
     font-size: 14px;
   }
 }
+
+/* Menu « … » : actions repliées (PO, 26/09/2026). */
+.action-menu {
+  position: relative;
+  display: inline-block;
+}
+.action-menu-toggle {
+  min-width: 44px;
+  padding: 6px 12px;
+  font-size: 20px;
+  line-height: 1;
+  letter-spacing: 2px;
+}
+.action-menu-items {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 4px);
+  z-index: 20;
+  min-width: 210px;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  border: 1px solid #c9ddd3;
+  border-radius: 10px;
+  box-shadow: 0 8px 24px #1f3a2f22;
+  padding: 6px;
+}
+.action-menu-items > button {
+  width: 100%;
+  text-align: left;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  padding: 10px 12px;
+  margin: 0;
+}
+.action-menu-items > button:hover:not(:disabled) {
+  background: #eef5f1;
+}
+.action-menu-items > button:disabled {
+  opacity: 0.5;
+}

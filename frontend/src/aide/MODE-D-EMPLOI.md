@@ -252,7 +252,7 @@ Le chef de jury et le responsable disposent des onglets Parcours, Vue d'ensemble
 5. Athlète absent à l'appel : avant le premier bulletin, panneau « Présence à l'appel » du dossier, motif puis « Déclarer absent » ; l'athlète est retiré de la manche et des manches suivantes de la catégorie et ne rapporte aucun point à son club. « Rétablir » annule tant qu'aucun bulletin n'est reçu.
 6. Après un bulletin reçu, une absence ne se déclare plus ici : suspendez la manche par « Suspendre et consigner » et traitez-la comme un incident.
 
-- **Ordre de passage tiré au sort** : à l'ouverture de chaque manche, l'application tire au sort l'ordre de passage des athlètes encore en lice (après une éliminatoire ou une demi-finale, seuls les qualifiés sont tirés). Le dossier de la manche l'affiche ; « Tirer l'ordre de passage » le retire tant qu'aucun bulletin n'est reçu ; « Imprimer » l'édite pour la scène et le speaker. L'ordre de passage n'influence jamais le classement.
+- **Ordre de passage par dossard** (règle du 26/09) : à l'ouverture de chaque manche, les athlètes encore en lice passent par dossard croissant, du plus petit au plus grand (après une demi-finale, seuls les qualifiés). Le dossier de la manche l'affiche ; « Tirer l'ordre de passage » le remplace par un tirage au sort si le chef le veut, tant qu'aucun bulletin n'est reçu ; « Imprimer » l'édite pour la scène et le speaker. L'ordre de passage n'influence jamais le classement.
 
 ### Valider les résultats
 

@@ -247,14 +247,16 @@ test("last participant cannot be declared absent; a single participant stays jud
 
 const isPermutation = (order: string[], ids: string[]) => order.length === ids.length && new Set(order).size === order.length && ids.every((i) => order.includes(i));
 
-test("ouverture : l'ordre de passage est une permutation des participants, tracée comme tirage automatique", () => {
+test("ouverture : l'ordre de passage est par dossard croissant (PO 26/09), tracé comme ordre automatique", () => {
   const f = new Fixture();
   Object.assign(f.r, { status: "pending", opened_at: null });
   f.s.active_round_id = null;
+  for (const [id, bib] of [["a", 12], ["b", 3], ["c", 7]] as const) f.s.entries.find((x: any) => x.id === id)!.bib = bib;
   assert.equal(f.r.passage_order, undefined);
   applySport(f.s, f.chief, "round.open", { round_id: f.r.id }, f.users, 10);
   assert.equal(f.r.status, "open");
   assert.ok(isPermutation(f.r.passage_order, ["a", "b", "c"]), JSON.stringify(f.r.passage_order));
+  assert.deepEqual(f.r.passage_order, ["b", "c", "a"]);
   assert.deepEqual(f.r.draws, [{ at: 10, by: null, automatic: true }]);
 });
 

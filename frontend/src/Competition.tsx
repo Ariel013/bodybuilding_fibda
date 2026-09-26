@@ -268,8 +268,9 @@ function PassageOrder({
     >
       {order.length === 0 ? (
         <Notice>
-          Ordre de passage non encore tiré pour ce tour. Il est tiré au sort à
-          l’ouverture parmi les athlètes encore en lice.
+          Ordre de passage non encore établi pour ce tour. À l’ouverture, les
+          athlètes encore en lice passent par dossard croissant ; « Tirer
+          l’ordre de passage » remplace cet ordre par un tirage au sort.
         </Notice>
       ) : (
         <>

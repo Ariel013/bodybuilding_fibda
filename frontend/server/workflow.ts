@@ -90,8 +90,16 @@ export function passageOrderValid(r: any): boolean {
   return order.length > 0 && order.length === ids.length && new Set(order).size === order.length && order.every((i) => ids.includes(i));
 }
 
-function recordDraw(r: any, now: Now, by: string | null): void {
-  r.passage_order = drawPassageOrder(r.participant_ids);
+/** Ordre par dossard croissant (PO, 26/09/2026 : « du plus petit au plus grand », finales et tout le reste). */
+export function orderByBib(state: any, ids: string[]): string[] {
+  const bib = (id: string): number => Number(state.entries.find((e: any) => e.id === id)?.bib ?? Number.MAX_SAFE_INTEGER);
+  return [...ids].sort((a, b) => bib(a) - bib(b) || a.localeCompare(b));
+}
+
+// À l'ouverture (by === null) : ordre par dossard croissant. « Tirer l'ordre de passage » (by = acteur) :
+// tirage au sort, à la demande seulement (règle du 24/09 devenue optionnelle le 26/09).
+function recordDraw(state: any, r: any, now: Now, by: string | null): void {
+  r.passage_order = by === null ? orderByBib(state, r.participant_ids) : drawPassageOrder(r.participant_ids);
   (r.draws ??= []).push({ at: now, by, automatic: by === null });
 }
 
@@ -135,7 +143,7 @@ export function openRound(state: any, r: any, users: User[], now: Now, force = f
   r.opened_at = now;
   // Tirage automatique de l'ordre de passage sur les participants du moment ; un tirage manuel
   // (round.draw) fait avant l'ouverture sur le même effectif est conservé.
-  if (!passageOrderValid(r)) recordDraw(r, now, null);
+  if (!passageOrderValid(r)) recordDraw(state, r, now, null);
   r.version += 1;
   state.active_round_id = r.id;
 }
@@ -420,7 +428,7 @@ function applySportInner(state: any, actor: User, kind: string, p: any, users: U
     if (Object.keys(r.ballots).length) throw new Problem("Un bulletin a déjà été reçu : l’ordre de passage est figé.", 409);
     if (r.status === "pending") refreshParticipants(state, r);
     if (!r.participant_ids.length) throw new Problem("Les participants de ce tour ne sont pas encore connus.", 409);
-    recordDraw(r, now, actor.id);
+    recordDraw(state, r, now, actor.id);
     r.version += 1;
     return { passage_order: [...r.passage_order] };
   }

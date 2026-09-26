@@ -92,7 +92,8 @@ test("section, archivage et fusion sont respectés", () => {
 test("fiche complète et confirmation possible", () => {
   const p = { sex: "M", birth_date: "1990-01-01", height_cm: "170", weight_kg: "69.5" };
   assert.equal(ficheComplete(p), true);
-  assert.equal(ficheComplete({ ...p, weight_kg: "" }), false);
+  assert.equal(ficheComplete({ ...p, weight_kg: "" }), true); // poids facultatif (disciplines à la taille)
+  assert.equal(ficheComplete({ ...p, height_cm: "" }), false);
   assert.equal(ficheComplete({ ...p, sex: "" }), false);
   const flags = { status_approved: true, licence_ok: true, payment_ok: true, measurements_confirmed: true };
   assert.equal(confirmationPossible(flags, "national"), true);

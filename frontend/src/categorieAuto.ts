@@ -159,14 +159,14 @@ export function choisirCategorie(
 }
 
 /** Champs de la fiche nécessaires pour interroger le référentiel. */
+/**
+ * Fiche complète pour proposer une catégorie : sexe, date de naissance et taille. Le poids est
+ * facultatif (PO, 26/09/2026) : Men's Physique, Classic Physique, Bikini, Wellness ne classent qu'à la
+ * taille ; le référentiel ne propose une classe au poids que si le poids est saisi.
+ */
 export function ficheComplete(person: Record<string, unknown>): boolean {
   const present = (v: unknown) => v !== null && v !== undefined && String(v).trim() !== "";
-  return (
-    ["M", "F"].includes(String(person.sex)) &&
-    present(person.birth_date) &&
-    present(person.height_cm) &&
-    present(person.weight_kg)
-  );
+  return ["M", "F"].includes(String(person.sex)) && present(person.birth_date) && present(person.height_cm);
 }
 
 /**

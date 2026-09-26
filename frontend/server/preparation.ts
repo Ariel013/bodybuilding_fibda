@@ -475,7 +475,8 @@ function apply(state: Dict, actor: Actor, kind: string, payload: Dict): any {
     const candidate: Dict = {
       ...person,
       height_cm: measureText(req(payload, "height_cm")),
-      weight_kg: measureText(req(payload, "weight_kg")),
+      // Poids facultatif (PO, 26/09/2026) : les disciplines à la taille n'en ont pas besoin.
+      weight_kg: [null, undefined, ""].includes(get(payload, "weight_kg")) ? null : measureText(get(payload, "weight_kg")),
       measurements_confirmed: true,
     };
     for (const e of state.entries as Dict[]) {

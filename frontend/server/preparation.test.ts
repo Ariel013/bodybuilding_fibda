@@ -341,3 +341,13 @@ test("dossards : refus nominatif si une inscription active n'est pas confirmée 
   state.rounds = [{ id: "r", category_id: cat.id, status: "open", ballots: {} }];
   rejects(() => run("bibs.reset", {}));
 });
+
+test("mesures : le poids est facultatif (disciplines à la taille), la taille reste obligatoire", () => {
+  const cat = run("category.save", { category: { section: "amateur", custom: { discipline: "mens_physique", metric: "height_cm", upper_inclusive: "176", name: "MP -176" } } });
+  const p = run("person.save", { person: { id: "m", first_name: "A", last_name: "B", birth_date: "1995-01-01", sex: "M", section: "amateur", country: "CI", nationalities: ["CI"], height_cm: "170", status_approved: true, licence_ok: true, payment_ok: true, crossover_approved: true } });
+  run("measurement.save", { person_id: p.id, height_cm: "171", weight_kg: "" });
+  assert.deepEqual([state.people[0].height_cm, state.people[0].weight_kg, state.people[0].measurements_confirmed], ["171", null, true]);
+  run("entry.save", { entry: { person_id: p.id, category_id: cat.id, confirmed: true } });
+  assert.equal(state.entries[0].confirmed, true);
+  rejects(() => run("measurement.save", { person_id: p.id, height_cm: "", weight_kg: "70" }));
+});

@@ -447,7 +447,7 @@ function People({ s, command, refresh }: Props) {
     const saved: Entity = { ...person, ...((await command("person.save", { person })).result ?? {}) };
     // Le serveur remet « mesures confirmées » à faux quand la taille ou le poids d'une fiche
     // existante change : la confirmation cochée passe alors par measurement.save.
-    if (person.measurements_confirmed && person.height_cm && person.weight_kg && !saved.measurements_confirmed) {
+    if (person.measurements_confirmed && person.height_cm && !saved.measurements_confirmed) {
       const r = await command("measurement.save", { person_id: saved.id, height_cm: person.height_cm, weight_kg: person.weight_kg });
       Object.assign(saved, r.result ?? { measurements_confirmed: true });
     }

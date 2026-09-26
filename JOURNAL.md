@@ -162,11 +162,18 @@ Carte des documents :
 déploiement toujours servi). Règle : après chaque déploiement, lire le nom du fichier
 `assets/index-*.js` dans la page servie et le comparer à `.vercel/output/static/assets`, avec
 un délai de propagation de quelques dizaines de secondes.
+→ coffre : `brain/10-lecons/une-fonction-serverless-s-envoie-regroupee-et-se-verifie-au-curl.md` (2e occurrence).
 
 ### Avant de corriger un « ça ne marche pas », lire le journal serveur et l'écran exact (2026-09-26)
 Trois demandes du jour n'étaient pas des bugs du code visé : un panneau volontairement inactif,
 un espace invisible dans un champ masqué, une règle métier voulue. Le journal Vercel et la
 question « quel message exact ? » ont évité trois corrections à côté.
+→ coffre : `lire-la-donnee-avant-l-hypothese.md` (3e occurrence), `un-champ-masque-cache-l-espace-colle.md`.
+
+### En PWA installée, un nouvel onglet quitte l'application (2026-09-26)
+« Ça disparaît quand je clique sur Imprimer » : les documents s'ouvraient en `target="_blank"`,
+ce qui bascule vers le navigateur sans la session. Désormais tout document s'ouvre dans l'appli
+(`PrintLink`). → coffre : `un-nouvel-onglet-quitte-une-application-installee.md`.
 
 ### Une assertion fausse peut « échouer lentement » : la barrière se pose sur le code de retour (2026-09-25)
 La suite serveur est passée de 30 s à 25 minutes sans échec visible ; un déploiement est parti.

@@ -327,6 +327,17 @@ function RoundControl({
             Ouvrir cette manche
           </AsyncButton>
           <AsyncButton
+            allowed={canCommand(s.me.roles, "round.open") && ["chief", "responsable"].some((x) => s.me.roles.includes(x))}
+            className="ghost danger"
+            disabled={r.status !== "pending" || !!s.active_round_id}
+            action={async () => {
+              if (!window.confirm("Ouvrir cette manche hors de l’ordre préétabli (autre discipline ou autre phase) ? Refusé si une autre manche est ouverte ou si ses participants ne sont pas encore connus.")) return;
+              await command("round.open", { round_id: r.id, force: true });
+            }}
+          >
+            Ouvrir hors ordre
+          </AsyncButton>
+          <AsyncButton
             allowed={canCommand(s.me.roles, "round.validate")}
             action={() =>
               command("round.validate", {

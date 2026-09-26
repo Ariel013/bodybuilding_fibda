@@ -433,3 +433,25 @@ test("overall automatique : recalculé après correction de la finale source tan
   f.r.correction = null;
   throwsProblem(() => applySport(f.s, f.chief, "round.correct", { round_id: f.r.id, judge_id: "1", ranking: ["a", "b", "c"], reason: "Trop tard" }, f.users, 240));
 });
+
+test("round.open force : une manche d'une autre discipline s'ouvre hors ordre (chef/responsable), jamais si une manche est ouverte ou sans participants", () => {
+  const f = new Fixture();
+  // Une seconde discipline, en attente, hors ordre : refusée sans force, acceptée avec.
+  f.s.categories.push({ id: "cb", name: "Bikini", discipline: "bikini", sex: "F", section: "amateur", division: "senior", order: 9, entry_ids: [] });
+  const rb = { ...f.r, id: "rb", category_id: "cb", discipline: "bikini", status: "pending", ballots: {}, result: null, opened_at: null, participant_ids: ["a", "b", "c"], passage_order: null, version: 0 };
+  f.s.rounds.push(rb);
+  const active = f.s.active_round_id;
+  throwsProblem(() => applySport(f.s, f.chief, "round.open", { round_id: "rb", force: true }, f.users, 100)); // une manche est ouverte
+  f.completed();
+  throwsProblem(() => applySport(f.s, f.chief, "round.open", { round_id: "rb" }, f.users, 300)); // hors ordre sans force
+  throwsProblem(() => applySport(f.s, f.users[1], "round.open", { round_id: "rb", force: true }, f.users, 300)); // juge
+  const out = applySport(f.s, f.chief, "round.open", { round_id: "rb", force: true }, f.users, 300);
+  assert.deepEqual(out, { forced: true });
+  assert.equal(f.s.rounds.find((r: any) => r.id === "rb").status, "open");
+  assert.notEqual(f.s.active_round_id, active);
+  // Participants inconnus : refusé même forcé.
+  const dep = { ...rb, id: "rd", status: "pending", opened_at: null, participant_ids: [], dependency_id: "rb", ballots: {} };
+  f.s.rounds.push(dep);
+  f.s.active_round_id = null;
+  throwsProblem(() => applySport(f.s, f.chief, "round.open", { round_id: "rd", force: true }, f.users, 301));
+});

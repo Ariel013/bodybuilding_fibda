@@ -106,21 +106,26 @@ function refreshParticipants(state: any, r: any): boolean {
   return true;
 }
 
-export function ready(state: any, r: any): boolean {
+export function ready(state: any, r: any, force = false): boolean {
   if (state.status !== "running" || state.active_round_id || r.status !== "pending") return false;
   // Overall final (toutes disciplines) : prêt dès que toutes les disciplines sont terminées.
   if (r.grand_final) return currentDiscipline(state) === null;
-  if (r.discipline !== currentDiscipline(state)) return false;
-  const group = state.rounds.filter((x: any) => x.discipline === r.discipline);
-  if (group.some((x: any) => PHASES[x.phase] < PHASES[r.phase] && !CLOSED.has(x.status))) return false;
+  // Ouverture forcée (PO, 26/09/2026, en cours de compétition) : le chef ou le responsable ouvre une
+  // manche hors de l'ordre préétabli (autre discipline, autre phase). Ce qui ne se force jamais : une
+  // autre manche ouverte, des participants encore inconnus (demi-finale non validée), un quota invalide.
+  if (!force) {
+    if (r.discipline !== currentDiscipline(state)) return false;
+    const group = state.rounds.filter((x: any) => x.discipline === r.discipline);
+    if (group.some((x: any) => PHASES[x.phase] < PHASES[r.phase] && !CLOSED.has(x.status))) return false;
+  }
   if (!refreshParticipants(state, r)) return false;
   // PO 26/09/2026 : l'overall s'ouvre dès les finales validées, sans attendre la confirmation des remises.
   if ((r.phase === "semi" || r.phase === "elimination") && !quotaValid(r)) return false;
   return r.participant_ids.length > 0;
 }
 
-export function openRound(state: any, r: any, users: User[], now: Now): void {
-  if (!ready(state, r)) throw new Problem("Ce tour attend les bulletins, qualifications ou étapes précédentes.", 409);
+export function openRound(state: any, r: any, users: User[], now: Now, force = false): void {
+  if (!ready(state, r, force)) throw new Problem(force ? "Impossible d’ouvrir cette manche : une autre manche est ouverte, ou ses participants ne sont pas encore connus." : "Ce tour attend les bulletins, qualifications ou étapes précédentes.", 409);
   validatePanel(r.panel, users);
   if ((r.phase === "semi" || r.phase === "elimination") && !quotaValid(r)) {
     throw new Problem("Le quota doit être compris entre 1 et le nombre de participants qualifiés.");
@@ -185,8 +190,8 @@ export function tick(state: any, users: User[], now: Now): boolean {
  */
 export function autoOveralls(state: any, _now: Now): boolean {
   let changed = false;
-  const d = currentDiscipline(state);
-  if (!d) return false;
+  // Toutes les disciplines (une manche peut être ouverte hors ordre), pas seulement la courante.
+  for (const d of disciplines(state)) {
   const progress = (state.discipline_progress[d] ??= {});
   const sections = new Set<string>(state.categories.filter((c: any) => c.discipline === d && categoryActive(c)).map((c: any) => c.section));
   for (const section of sections) {
@@ -203,6 +208,7 @@ export function autoOveralls(state: any, _now: Now): boolean {
     state.rounds.push(r);
     (progress.overall_sections ??= []).push(section);
     changed = true;
+  }
   }
   return changed;
 }
@@ -399,8 +405,12 @@ function applySportInner(state: any, actor: User, kind: string, p: any, users: U
     return {};
   }
   if (kind === "round.open") {
-    openRound(state, find(state.rounds, p.round_id, "Tour"), users, now);
-    return {};
+    const r = find(state.rounds, p.round_id, "Tour");
+    const force = p.force === true;
+    if (force) requireRole(actor, ["chief", "responsable"]);
+    openRound(state, r, users, now, force);
+    if (force) r.forced_open = true;
+    return { forced: force };
   }
   if (kind === "round.draw") {
     // Tirage manuel de l'ordre de passage : tour en attente (participants connus) ou ouvert sans

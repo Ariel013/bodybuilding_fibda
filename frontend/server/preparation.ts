@@ -545,5 +545,24 @@ function apply(state: Dict, actor: Actor, kind: string, payload: Dict): any {
     if (truthy(get(official, "country")) && !country(official.country)) throw new Problem("Code pays invalide.");
     return upsert(state, "officials", official);
   }
+  if (kind === "person.delete") {
+    // Suppression d'athlètes (PO, 26/09/2026) : un ou plusieurs à la fois, direction seulement. Refusée dès
+    // qu'une catégorie de la personne a commencé (même garde que la modification d'une fiche). Les
+    // inscriptions disparaissent des catégories et des manches encore en attente ; les photos sont
+    // retirées de la base par le dispatch (commands.ts), qui a accès à la connexion.
+    requireRole(actor, ADMIN);
+    const ids: unknown = get(payload, "person_ids");
+    if (!Array.isArray(ids) || ids.length === 0 || !ids.every((x) => typeof x === "string")) throw new Problem("Liste d’athlètes requise.");
+    const people = dedupe(ids as string[]).map((id) => getItem(state, "people", id));
+    const personIds = new Set(people.map((p) => p.id as string));
+    const entries = (state.entries as Dict[]).filter((e) => personIds.has(req(e, "person_id")));
+    for (const e of entries) beforeRound(state, req(e, "category_id"));
+    const entryIds = new Set(entries.map((e) => e.id as string));
+    for (const c of state.categories as Dict[]) if (Array.isArray(c.entry_ids)) c.entry_ids = (c.entry_ids as string[]).filter((id) => !entryIds.has(id));
+    for (const r of state.rounds as Dict[]) if (Array.isArray(r.participant_ids)) r.participant_ids = (r.participant_ids as string[]).filter((id) => !entryIds.has(id));
+    state.entries = (state.entries as Dict[]).filter((e) => !entryIds.has(e.id));
+    state.people = (state.people as Dict[]).filter((p) => !personIds.has(p.id));
+    return { supprimes: people.length, person_ids: [...personIds], inscriptions_retirees: entries.length };
+  }
   throw new Problem("Commande de préparation inconnue.");
 }

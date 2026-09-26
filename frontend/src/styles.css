@@ -614,6 +614,24 @@ td small {
   padding: 16px 2px;
   font-weight: 500;
 }
+.person-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.person-line > input[type="checkbox"] {
+  width: 22px;
+  height: 22px;
+  flex: 0 0 auto;
+}
+.selection-bar {
+  align-items: center;
+  margin: 8px 0;
+}
+button.danger {
+  color: #a4232b;
+  border-color: #a4232b;
+}
 .person-row strong {
   font-size: 13px;
 }

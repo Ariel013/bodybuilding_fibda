@@ -15,6 +15,7 @@ export function canCommand(roles: string[], kind: string): boolean {
     "panel.reduce",
     "round.resolve",
     "paper.submit",
+    "event.purge",
   ];
   const rules: Record<string, string[]> = {
     "user.invite": admin,
@@ -26,6 +27,7 @@ export function canCommand(roles: string[], kind: string): boolean {
     "exam.decide": ["commission"],
     "collective.decide": admin,
     "person.save": [...admin, "secretariat"],
+    "person.delete": admin,
     "entry.save": [...admin, "secretariat"],
     "measurement.save": [...admin, "secretariat"],
     "official.save": [...admin, "secretariat"],

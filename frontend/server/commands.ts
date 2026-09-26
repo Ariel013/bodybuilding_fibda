@@ -2,18 +2,40 @@ import { ADMIN, REGIE, SPORT, require, intersects, union } from "./auth";
 import { Problem } from "./problem";
 import { find, uid } from "./util";
 import type { Store, Conn } from "./store";
-import type { User } from "./state";
+import { newState, type User } from "./state";
 import { applyPreparation } from "./preparation";
 import { applySport, applyCorrection, motif } from "./workflow";
 import { exams, collective } from "./projections";
 
 // Dispatch des commandes : copie de commands.py. Chaque commande vérifie ses droits côté serveur.
-const PREP = new Set(["event.update", "person.save", "entry.save", "measurement.save", "category.save", "category.fuse", "programme.reorder", "bibs.assign", "entry.late", "official.save"]);
+const PREP = new Set(["event.update", "person.save", "person.delete", "entry.save", "measurement.save", "category.save", "category.fuse", "programme.reorder", "bibs.assign", "entry.late", "official.save"]);
 const SPORTS = new Set(["jury.configure", "programme.generate", "event.start", "event.finish", "event.reset", "round.configure", "round.open", "round.next", "round.validate", "round.correct", "round.incident", "round.resolve", "round.absent", "round.present", "round.draw", "panel.reduce", "overall.create", "overall.final", "overall.confirm", "discipline.advance", "ballot.submit", "paper.submit", "rewards.complete"]);
 
 export async function applyCommand(store: Store, conn: Conn, state: any, actor: User, kind: string, p: any): Promise<any> {
   const users = await store.allUsers(conn);
   const now = store.clock();
+  if (kind === "person.delete") {
+    const result = applyPreparation(state, actor, kind, p);
+    const ids: string[] = result.person_ids;
+    await conn.execute({ sql: `DELETE FROM photos WHERE owner_type = 'person' AND owner_id IN (${ids.map(() => "?").join(", ")})`, args: ids });
+    return result;
+  }
+  if (kind === "event.purge") {
+    // Vidage (PO, 26/09/2026) : repartir d'une compétition vide sans toucher aux comptes. Chef seulement,
+    // confirmation saisie. Conservés : comptes, identité de l'événement (nom, date, lieu, mode, liste de
+    // contrôle). Effacés : athlètes, inscriptions, catégories, officiels, jury, manches, résultats,
+    // récompenses, examens, photos et logos. Les brouillons des téléphones deviennent caducs.
+    require(actor, ["chief"]);
+    if (p.confirm !== "VIDER") throw new Problem("Confirmation requise : saisir VIDER.");
+    const bilan = { athletes_effaces: state.people.length, categories_effacees: state.categories.length, manches_effacees: state.rounds.length };
+    const kept = new Set(["id", "version", "name", "date", "location", "mode", "settings", "demo"]);
+    const fresh = newState(Boolean(state.demo));
+    for (const key of Object.keys(state)) if (!kept.has(key) && !(key in fresh)) delete state[key];
+    for (const [key, value] of Object.entries(fresh)) if (!kept.has(key)) state[key] = value;
+    await conn.execute("DELETE FROM photos");
+    await conn.execute("DELETE FROM import_previews");
+    return bilan;
+  }
   if (PREP.has(kind)) return applyPreparation(state, actor, kind, p);
   if (SPORTS.has(kind)) return applySport(state, actor, kind, p, users, now);
   if (kind === "user.invite") {

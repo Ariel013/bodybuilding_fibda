@@ -320,3 +320,40 @@ test("logo de club : sauvegarde et restauration ; sans photos, les logos sont re
   const cb = cookieOf(await b.app.request("/api/v1/auth/login", json({ code: "efgh5678" })));
   assert.equal((await b.app.request("/api/v1/restore", { method: "POST", body: JSON.stringify(bad), headers: { cookie: cb, "x-setup-token": "jeton-test" } })).status, 422);
 });
+
+test("person.delete retire la photo de la base ; event.purge vide tout sauf les comptes et l'événement", async () => {
+  const { app, store, cookie, judge } = await setup();
+  const photo = await body(upload(app, cookie, JPEG));
+  assert.equal((await store.execute("SELECT id FROM photos")).length, 1);
+  let r = await app.request("/api/v1/command", json({ id: "d1", version: 6, type: "person.delete", payload: { person_ids: ["p1"] } }, { cookie: judge }));
+  assert.equal(r.status, 403);
+  r = await app.request("/api/v1/command", json({ id: "d2", version: 6, type: "person.delete", payload: { person_ids: ["p1"] } }, { cookie }));
+  assert.equal(r.status, 200, JSON.stringify(await body(r)));
+  assert.deepEqual(await store.execute("SELECT id FROM photos"), []);
+  assert.equal((await app.request("/api/v1/photos/" + photo.id, { headers: { cookie } })).status, 404);
+  let s = await body(app.request("/api/v1/state", { headers: { cookie } }));
+  assert.deepEqual([s.people, s.entries, s.categories[0].entry_ids], [[], [], []]);
+  // Vidage : chef seulement, confirmation exacte, comptes et identité de l'événement conservés.
+  r = await app.request("/api/v1/command", json({ id: "e0", version: 7, type: "event.update", payload: { name: "Coupe FIBDA", location: "Abidjan" } }, { cookie }));
+  assert.equal(r.status, 200);
+  assert.equal((await upload(app, cookie, JPEG, "logo.jpg", { owner_type: "club", owner_id: "Club Test", kind: "logo" })).status, 200);
+  assert.equal((await store.execute("SELECT id FROM photos")).length, 1);
+  const version = (await body(app.request("/api/v1/state", { headers: { cookie } }))).version;
+  r = await app.request("/api/v1/command", json({ id: "e1", version, type: "event.purge", payload: { confirm: "VIDER" } }, { cookie: judge }));
+  assert.equal(r.status, 403);
+  r = await app.request("/api/v1/command", json({ id: "e2", version, type: "event.purge", payload: { confirm: "vider" } }, { cookie }));
+  assert.equal(r.status, 422);
+  r = await app.request("/api/v1/command", json({ id: "e3", version, type: "event.purge", payload: { confirm: "VIDER" } }, { cookie }));
+  const out = await body(r);
+  assert.equal(r.status, 200, JSON.stringify(out));
+  assert.deepEqual(out.result, { athletes_effaces: 0, categories_effacees: 1, manches_effacees: 0 });
+  s = await body(app.request("/api/v1/state", { headers: { cookie } }));
+  assert.equal(s.version, version + 1);
+  assert.deepEqual(s.club_logos ?? {}, {});
+  assert.deepEqual([s.name, s.location, s.status], ["Coupe FIBDA", "Abidjan", "preparation"]);
+  assert.deepEqual([s.people, s.categories, s.rounds, s.officials], [[], [], [], []]);
+  assert.equal(s.users.length, 2);
+  assert.deepEqual(await store.execute("SELECT id FROM photos"), []);
+  // La session du juge survit : les comptes ne sont pas touchés.
+  assert.equal((await app.request("/api/v1/state", { headers: { cookie: judge } })).status, 200);
+});

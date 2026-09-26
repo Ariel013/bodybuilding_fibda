@@ -251,6 +251,19 @@ function EventForm({ s, command }: Props) {
             >
               Revenir en préparation
             </AsyncButton>
+            <AsyncButton
+              allowed={canCommand(s.me.roles, "event.purge")}
+              className="ghost danger"
+              action={async () => {
+                const saisie = window.prompt(
+                  `Vider la compétition efface définitivement ${s.people.length} athlètes, ${s.categories.length} catégories, les officiels, le jury, les manches, les résultats et les photos. Les comptes et l’identité de l’événement sont conservés. Faites une sauvegarde avant. Tapez VIDER pour confirmer.`,
+                );
+                if (saisie === null) return;
+                await command("event.purge", { confirm: saisie.trim().toUpperCase() });
+              }}
+            >
+              Vider la compétition
+            </AsyncButton>
           </div>
         </form>
       ) : (
@@ -303,7 +316,28 @@ function People({ s, command, refresh }: Props) {
   const [derogation, setDerogation] = useState("");
   const [reason, setReason] = useState("Inscription tardive");
   const [message, setMessage] = useState<MessageFiche>();
+  const [selection, setSelection] = useState<string[]>([]);
   const update = (k: string, v: any) => setPerson({ ...person, [k]: v });
+  const peutSupprimer = canCommand(s.me.roles, "person.delete");
+  const cocher = (id: string, on: boolean) =>
+    setSelection((cur) =>
+      on ? [...new Set([...cur, id])] : cur.filter((x) => x !== id),
+    );
+  /** Supprime des fiches après confirmation nominative ; la fiche ouverte est refermée si elle en fait partie. */
+  async function supprimer(ids: string[]) {
+    const noms = ids
+      .map((id) => personName(s.people.find((p) => p.id === id)))
+      .join(", ");
+    if (
+      !window.confirm(
+        `Supprimer définitivement ${ids.length} athlète${ids.length > 1 ? "s" : ""} (${noms}), avec inscriptions, dossards et photos ? Refusé si une de leurs catégories a commencé.`,
+      )
+    )
+      return;
+    await command("person.delete", { person_ids: ids });
+    setSelection((cur) => cur.filter((x) => !ids.includes(x)));
+    if (ids.includes(person.id)) ouvrir(personDefault());
+  }
   const existing = s.people.some((p) => p.id === person.id);
   const chief = s.me.roles.includes("chief");
   const tardif = inscriptionTardiveRequise(s);
@@ -601,6 +635,14 @@ function People({ s, command, refresh }: Props) {
                   Vérifier les catégories proposées
                 </button>
               )}
+              {existing && peutSupprimer && (
+                <AsyncButton
+                  className="ghost danger"
+                  action={() => supprimer([person.id])}
+                >
+                  Supprimer cette fiche
+                </AsyncButton>
+              )}
             </div>
           </form>
           {message && <Notice kind={message.kind}>{message.text}</Notice>}
@@ -708,6 +750,32 @@ function People({ s, command, refresh }: Props) {
               placeholder="Nom, club…"
             />
           </Field>
+          {peutSupprimer && (
+            <div className="actions selection-bar">
+              <label>
+                <input
+                  type="checkbox"
+                  aria-label="Tout sélectionner"
+                  checked={
+                    selection.length > 0 && selection.length === s.people.length
+                  }
+                  onChange={(e) =>
+                    setSelection(
+                      e.target.checked ? s.people.map((p) => p.id) : [],
+                    )
+                  }
+                />{" "}
+                {selection.length} sélectionné{selection.length > 1 ? "s" : ""}
+              </label>
+              <AsyncButton
+                className="ghost danger"
+                disabled={selection.length === 0}
+                action={() => supprimer(selection)}
+              >
+                Supprimer la sélection
+              </AsyncButton>
+            </div>
+          )}
           <div className="person-list">
             {s.people
               .filter((p) =>
@@ -716,11 +784,19 @@ function People({ s, command, refresh }: Props) {
                   .includes(search.toLowerCase()),
               )
               .map((p) => (
-                <button
-                  key={p.id}
-                  className="person-row ghost"
-                  onClick={() => ouvrir(p)}
-                >
+                <div className="person-line" key={p.id}>
+                  {peutSupprimer && (
+                    <input
+                      type="checkbox"
+                      aria-label={"Sélectionner " + personName(p)}
+                      checked={selection.includes(p.id)}
+                      onChange={(e) => cocher(p.id, e.target.checked)}
+                    />
+                  )}
+                  <button
+                    className="person-row ghost"
+                    onClick={() => ouvrir(p)}
+                  >
                   <span className="avatar">
                     {p.photo_portrait ? (
                       <img src={"/api/v1/photos/" + p.photo_portrait} alt="" />
@@ -747,7 +823,8 @@ function People({ s, command, refresh }: Props) {
                         .join(" / ") || "Sans inscription"}
                     </small>
                   </span>
-                </button>
+                  </button>
+                </div>
               ))}
           </div>
         </Panel>

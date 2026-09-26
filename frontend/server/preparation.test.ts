@@ -144,3 +144,25 @@ test("start_helper_honours_only_signed_existing_derogation_issues", () => {
   state.people[0].payment_ok = false;
   rejects(() => validateConfirmedEntries(state));
 });
+
+test("person.delete : plusieurs athlètes, inscriptions et dossards retirés, direction seulement, refusé après le début", () => {
+  const cat = category();
+  const a = person("a", "69"); const b = person("b", "68"); person("c", "67");
+  entry(a, cat); entry(b, cat);
+  state.rounds = [{ id: "r", category_id: cat.id, status: "pending", participant_ids: state.entries.map((e: any) => e.id) }];
+  rejects(() => run("person.delete", { person_ids: ["a"] }, sec));
+  rejects(() => run("person.delete", { person_ids: [] }));
+  rejects(() => run("person.delete", { person_ids: ["inconnu"] }));
+  const r = run("person.delete", { person_ids: ["a", "b", "a"] });
+  assert.deepEqual(r, { supprimes: 2, person_ids: ["a", "b"], inscriptions_retirees: 2 });
+  assert.deepEqual(state.people.map((p: any) => p.id), ["c"]);
+  assert.deepEqual(state.entries, []);
+  assert.deepEqual(state.categories[0].entry_ids, []);
+  assert.deepEqual(state.rounds[0].participant_ids, []);
+  // Une catégorie engagée protège ses athlètes ; une fiche sans inscription reste supprimable.
+  const d = person("d", "66"); entry(d, cat);
+  state.rounds = [{ id: "r2", category_id: cat.id, status: "open", ballots: {} }];
+  rejects(() => run("person.delete", { person_ids: ["d"] }));
+  run("person.delete", { person_ids: ["c"] });
+  assert.deepEqual(state.people.map((p: any) => p.id), ["d"]);
+});

@@ -160,7 +160,8 @@ export function createApp(opts: AppOptions) {
 
   app.post("/api/v1/auth/login", async (c) => {
     const p = await c.req.json();
-    const code = p.code ?? "";
+    // Espaces de bord retirés : un code collé depuis une messagerie en porte souvent un (PO, 26/09/2026).
+    const code = typeof p.code === "string" ? p.code.trim() : "";
     const addr = address(c);
     if (!(await store.loginAllowed(addr))) throw new Problem("Trop de tentatives. Réessayez dans quelques minutes.", 429);
     if (typeof code !== "string" || code.length > 128) throw new Problem("Code incorrect.", 401);

@@ -474,6 +474,7 @@ function Login({
 }) {
   const [name, setName] = useState(""),
     [code, setCode] = useState(""),
+    [showCode, setShowCode] = useState(false),
     [error, setError] = useState(""),
     [busy, setBusy] = useState(false),
     [codes, setCodes] = useState<Record<string, any>>();
@@ -518,7 +519,7 @@ function Login({
             try {
               await post(
                 setup ? "/auth/setup" : "/auth/login",
-                setup ? { name, code } : { code },
+                setup ? { name, code: code.trim() } : { code: code.trim() },
               );
               await onSuccess();
             } catch (e) {
@@ -542,12 +543,26 @@ function Login({
             <input
               required
               minLength={4}
-              type="password"
+              type={showCode ? "text" : "password"}
               autoComplete={setup ? "new-password" : "current-password"}
+              autoCapitalize="off"
+              autoCorrect="off"
+              spellCheck={false}
               value={code}
               onChange={(e) => setCode(e.target.value)}
               autoFocus
             />
+            {/* Un code collé depuis une messagerie arrive souvent avec un espace ou un retour à la
+                ligne en fin, invisible dans un champ masqué : on l'affiche à la demande et on
+                retire les espaces de bord à l'envoi (PO, 26/09/2026 : « Code incorrect » chez le chef). */}
+            <label className="muted">
+              <input
+                type="checkbox"
+                checked={showCode}
+                onChange={(e) => setShowCode(e.target.checked)}
+              />{" "}
+              Afficher le code
+            </label>
           </Field>
           <button className="wide" disabled={busy}>
             {busy

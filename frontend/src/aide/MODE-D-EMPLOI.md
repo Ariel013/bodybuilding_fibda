@@ -349,7 +349,7 @@ Un compte qui n'a que le rôle juge arrive directement dans **Mon jugement** apr
 
 ### Se connecter et vérifier son bulletin
 
-1. Ouvrez l'application, saisissez votre code personnel, touchez « Accéder à la compétition ».
+1. Ouvrez l'application, saisissez votre code personnel, touchez « Accéder à la compétition ». Le code respecte les majuscules et minuscules ; les espaces en début et en fin sont ignorés. « Afficher le code » montre ce que vous tapez : à utiliser si l'écran répond « Code incorrect » alors que le code est bon (un code collé depuis une messagerie porte souvent un espace ou un retour à la ligne, ou une majuscule ajoutée par le clavier).
 2. Vérifiez votre nom en haut de l'écran, puis la catégorie, la phase et l'état de la manche dans le sélecteur en haut de **Mon jugement**. Le bulletin de la manche ouverte s'affiche automatiquement quand vous êtes affecté.
 3. Si l'écran indique « Aucune manche affectée », le chef doit vous intégrer au jury et ouvrir une manche : attendez, l'écran se met à jour seul.
 4. Plusieurs juges sur un même ordinateur (entraînement, test) : la session est un cookie partagé par tous les onglets d'un même navigateur, donc se connecter dans un onglet connecte les autres. Ouvrez chaque juge dans une fenêtre de navigation privée distincte, ou dans un profil de navigateur différent (Chrome : « Ajouter un profil »), ou dans des navigateurs différents. Sur les téléphones de la compétition, un appareil = un juge : rien à faire.

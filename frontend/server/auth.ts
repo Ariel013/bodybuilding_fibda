@@ -62,6 +62,7 @@ export const SESSION_SECONDS = 16 * 3600;
 
 // Contrôles de création de compte, identiques à `auth.add_user` ; la persistance est faite par le magasin.
 export function validateNewUser(name: string, roles: string[], code: unknown): { name: string; roles: string[] } {
+  if (typeof code === "string") code = code.trim(); // symétrique de la connexion : jamais d'espace de bord dans un code
   if (typeof code !== "string" || code.length < 4 || code.length > 128) throw new Problem("Le code personnel doit contenir de 4 à 128 caractères.");
   if (!name.trim() || !roles.length || !roles.every((r) => ROLES.has(r))) throw new Problem("Nom et fonctions valides obligatoires.");
   // Décision PO du 23/09/2026 : 8 caractères minimum pour chef, responsable et directeur.

@@ -169,6 +169,7 @@ export class Store {
 
   // `auth.add_user` : contrôles puis insertion, hachage PBKDF2 identique au Python.
   async addUser(conn: Conn, name: string, roles: string[], code: unknown, approved = false): Promise<User> {
+    if (typeof code === "string") code = code.trim(); // même règle qu'à la connexion
     const valid = validateNewUser(name, roles, code);
     const rows = (await conn.execute("SELECT * FROM users")).rows as unknown as UserRow[];
     if (await findByCode(code as string, rows)) throw new Problem("Ce code personnel est déjà utilisé.", 409);
@@ -184,6 +185,7 @@ export class Store {
   // Modification d'un compte (chef) : nom, fonctions, et nouveau code si fourni. Mêmes contrôles qu'à la
   // création ; le rôle chef ne se donne ni ne se retire ici. Un nouveau code coupe les sessions du compte.
   async updateUser(conn: Conn, id: string, name: string, roles: string[], code: unknown): Promise<User> {
+    if (typeof code === "string") code = code.trim();
     const rows = (await conn.execute("SELECT * FROM users")).rows as unknown as UserRow[];
     const row = rows.find((r) => r.id === id);
     if (!row) throw new Problem("Utilisateur introuvable.", 404);

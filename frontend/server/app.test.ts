@@ -127,3 +127,12 @@ test("une erreur du moteur sportif ou de la préparation est rendue en 422 avec 
   assert.notEqual(r.status, 500);
   assert.ok(typeof (await body(r)).detail === "string");
 });
+
+test("connexion : espaces et retour à la ligne de bord ignorés (code collé depuis une messagerie)", async () => {
+  const { app } = make();
+  await app.request("/api/v1/auth/setup", json({ name: "Chef", code: " abcd1234 " }, { "x-setup-token": "jeton-test" }));
+  assert.equal((await app.request("/api/v1/auth/login", json({ code: "abcd1234\n" }))).status, 200);
+  assert.equal((await app.request("/api/v1/auth/login", json({ code: " abcd1234" }))).status, 200);
+  assert.equal((await app.request("/api/v1/auth/login", json({ code: "abcd123" }))).status, 401);
+  assert.equal((await app.request("/api/v1/auth/login", json({ code: "ABCD1234" }))).status, 401);
+});

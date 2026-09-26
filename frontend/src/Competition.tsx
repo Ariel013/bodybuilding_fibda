@@ -5,6 +5,7 @@ import { api } from "./api";
 import { type State, type Command, type Round, labels } from "./types";
 import {
   Panel,
+  PrintLink,
   DataTable,
   Status,
   AsyncButton,
@@ -261,14 +262,7 @@ function PassageOrder({
           >
             Tirer l’ordre de passage
           </AsyncButton>
-          <a
-            href={"/api/v1/print/programme?round_id=" + r.id}
-            target="_blank"
-            rel="noreferrer"
-            className="button ghost"
-          >
-            Imprimer
-          </a>
+          <PrintLink href={"/api/v1/print/programme?round_id=" + r.id}>Imprimer</PrintLink>
         </div>
       }
     >
@@ -909,14 +903,7 @@ export function Exams({ s, command }: { s: State; command: Command }) {
             label="Rapport détaillé, concordances et conditions"
             data={r}
           />
-          <a
-            href={"/api/v1/print/exams?judge_id=" + r.user_id}
-            target="_blank"
-            rel="noreferrer"
-            className="button ghost"
-          >
-            Imprimer le rapport
-          </a>
+          <PrintLink href={"/api/v1/print/exams?judge_id=" + r.user_id}>Imprimer le rapport</PrintLink>
         </Panel>
       ))}
     </>

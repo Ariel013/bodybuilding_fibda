@@ -25,6 +25,7 @@ import {
   entryLabel,
   DataTable,
   Empty,
+  PrintLink,
 } from "./ui";
 const screens: Record<string, string> = {
   main: "Écran principal",
@@ -687,14 +688,7 @@ export function Rewards({ s, command }: { s: State; command: Command }) {
           <p className="eyebrow">CÉRÉMONIE</p>
           <h1>Récompenses & remises</h1>
         </div>
-        <a
-          className="button ghost"
-          href="/api/v1/print/rewards"
-          target="_blank"
-          rel="noreferrer"
-        >
-          Imprimer la liste
-        </a>
+        <PrintLink href="/api/v1/print/rewards">Imprimer la liste</PrintLink>
       </div>
       <Notice>
         Préparation et remise sont deux étapes distinctes. Clôturez chaque cycle

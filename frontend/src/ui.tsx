@@ -240,3 +240,66 @@ export function ActionMenu({ label = "Actions", children }: { label?: string; ch
     </div>
   );
 }
+
+/**
+ * Document imprimable ouvert dans l'application (PO, 26/09/2026 : en PWA installée, un nouvel onglet
+ * quitte l'application et perd la session, « ça disparaît »). Le HTML est récupéré avec la session,
+ * affiché dans un cadre pleine page, imprimé depuis ce cadre ; « Fermer » revient à l'écran.
+ */
+export function PrintLink({ href, children, className = "button ghost" }: { href: string; children: ReactNode; className?: string }) {
+  const [html, setHtml] = useState<string | null>(null);
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
+  const frame = useRef<HTMLIFrameElement>(null);
+  const ouvrir = async () => {
+    setBusy(true);
+    setError("");
+    try {
+      const r = await fetch(href, { credentials: "same-origin" });
+      if (!r.ok) {
+        let detail = "Document indisponible (" + r.status + ").";
+        try {
+          detail = (await r.json()).detail ?? detail;
+        } catch {
+          /* corps non JSON */
+        }
+        throw new Error(detail);
+      }
+      const text = await r.text();
+      // Les liens relatifs du document (logo) se résolvent sur l'origine de l'application.
+      setHtml(text.replace(/<head>|<meta charset="utf-8">/i, (m) => m + '<base href="' + window.location.origin + '/">'));
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <>
+      <a
+        className={className}
+        href={href}
+        onClick={(e) => {
+          e.preventDefault();
+          void ouvrir();
+        }}
+      >
+        {busy ? "Chargement…" : children}
+      </a>
+      {error && <small className="danger">{error}</small>}
+      {html !== null && (
+        <div className="print-overlay" role="dialog" aria-label="Document imprimable">
+          <div className="print-bar">
+            <button type="button" onClick={() => frame.current?.contentWindow?.print()}>
+              Imprimer
+            </button>
+            <button type="button" className="ghost" onClick={() => setHtml(null)}>
+              Fermer
+            </button>
+          </div>
+          <iframe ref={frame} className="print-frame" title="Document" srcDoc={html} />
+        </div>
+      )}
+    </>
+  );
+}

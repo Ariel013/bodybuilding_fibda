@@ -28,6 +28,7 @@ import {
   Field,
   Panel,
   ActionMenu,
+  PrintLink,
   Check,
   Multi,
   DataTable,
@@ -2353,29 +2354,18 @@ export function Documents({ s, refresh }: Props) {
                 !personalOnly || ["blank", "ballot", "exams"].includes(kind),
             )
             .map(([k, label]) => (
-              <a
-                className="document-link"
-                key={k}
-                href={`/api/v1/print/${k}?${query}`}
-                target="_blank"
-                rel="noreferrer"
-              >
-                <span>↗</span>
+              <PrintLink className="document-link" key={k} href={`/api/v1/print/${k}?${query}`}>
+                <span>🖨</span>
                 {label}
                 <small>Ouvrir la version imprimable</small>
-              </a>
+              </PrintLink>
             ))}
           {!personalOnly && (
-            <a
-              className="document-link"
-              href="/api/v1/print/fiche?blank=10"
-              target="_blank"
-              rel="noreferrer"
-            >
-              <span>↗</span>
+            <PrintLink className="document-link" href="/api/v1/print/fiche?blank=10">
+              <span>🖨</span>
               Fiches d’inscription vierges
               <small>Dix fiches à remplir à la main, pour les inscriptions sur place</small>
-            </a>
+            </PrintLink>
           )}
         </div>
         <div className="actions">

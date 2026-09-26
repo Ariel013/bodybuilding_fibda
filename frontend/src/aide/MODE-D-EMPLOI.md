@@ -554,6 +554,7 @@ Rôles : tous
 ### En bref : ce que vous avez à faire
 
 1. Avant la compétition, vérifiez que les « Fiches de notation (bulletins vierges) » de chaque catégorie sont imprimés depuis **Documents** (voir « Plan papier de secours »).
+1 bis. Imprimer un document (Documents, « Imprimer » d'une manche, « Imprimer la liste » des récompenses) : le document s'ouvre dans l'application, avec « Imprimer » (boîte d'impression du téléphone ou de l'ordinateur, ou « Enregistrer en PDF ») et « Fermer » pour revenir à l'écran. Il ne s'ouvre plus dans un autre onglet : en application installée, cet onglet quittait l'application et perdait la session.
 2. Après chaque action, attendez « Modification enregistrée sur le serveur » ou « Bulletin reçu et verrouillé par le serveur » : sans ce message, rien n'est enregistré.
 3. Si la connexion se coupe, gardez la page ouverte, rétablissez le réseau et attendez « Connecté au serveur » (voir « Perte de connexion »).
 4. Si « L'état a changé sur un autre appareil » apparaît, relisez votre saisie puis relancez l'action ; si « Session expirée » apparaît, reconnectez-vous avec le même code.

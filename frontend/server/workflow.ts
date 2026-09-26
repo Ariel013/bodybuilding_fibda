@@ -34,9 +34,10 @@ const isSubset = (a: Set<string>, b: Set<string>): boolean => [...a].every((x) =
 const isDisjoint = (a: Set<string>, b: Set<string>): boolean => ![...a].some((x) => b.has(x));
 const strip = (v: unknown): string => (v == null ? "" : String(v)).trim();
 
-export function chiefId(users: User[]): string {
-  const chiefs = users.filter((u) => u.roles.includes("chief") && u.active).map((u) => u.id);
-  if (chiefs.length !== 1) throw new Problem("Un chef unique est requis.");
+/** Chef de jury d'un panel : l'unique membre du panel portant le rôle chef (plusieurs chefs peuvent exister, PO 26/09/2026). */
+export function chiefOfPanel(panel: string[], users: User[]): string {
+  const chiefs = panel.filter((id) => users.some((u) => u.id === id && u.roles.includes("chief") && u.active));
+  if (chiefs.length !== 1) throw new Problem("Un chef de jury est requis dans le panel.");
   return chiefs[0];
 }
 
@@ -208,7 +209,7 @@ export function syncRewards(state: any, r: any): void {
 }
 
 export function calculate(state: any, r: any, users: User[], qualifiedIds: string[] | null = null, reason = ""): void {
-  const chief = chiefId(users);
+  const chief = chiefOfPanel(r.panel, users);
   const ballots: Record<string, any> = Object.fromEntries(r.panel.map((j: string) => [j, r.ballots[j]]));
   const old = r.result;
   const version = (old?.version ?? 0) + 1;
@@ -283,7 +284,7 @@ function applySportInner(state: any, actor: User, kind: string, p: any, users: U
     const panel: string[] = [...(p.panel ?? [])];
     validatePanel(panel, users);
     const trainees = validateTrainees(p.trainees ?? [], users, panel);
-    const order = validateWithdrawal(p.withdrawal_order ?? [], panel, chiefId(users));
+    const order = validateWithdrawal(p.withdrawal_order ?? [], panel, chiefOfPanel(panel, users));
     state.jury = { panel, trainees, withdrawal_order: order };
     return {};
   }
@@ -356,7 +357,7 @@ function applySportInner(state: any, actor: User, kind: string, p: any, users: U
       if (!Number.isInteger(p.quota) || p.quota < 1) throw new Problem("Quota positif requis.");
       r.quota = p.quota;
     }
-    r.withdrawal_order = validateWithdrawal("withdrawal_order" in p ? p.withdrawal_order : r.withdrawal_order, panel, chiefId(users));
+    r.withdrawal_order = validateWithdrawal("withdrawal_order" in p ? p.withdrawal_order : r.withdrawal_order, panel, chiefOfPanel(panel, users));
     r.version += 1;
     return {};
   }

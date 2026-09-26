@@ -29,6 +29,8 @@ export type Snapshot = { user: User; state: any; users: User[]; prior: { user_id
 
 export type StoreOptions = { url: string; authToken?: string; demo?: boolean; clock?: Clock };
 
+export const MAX_CHIEFS = 3;
+
 export class Store {
   readonly demo: boolean;
   readonly clock: Clock;
@@ -173,7 +175,8 @@ export class Store {
     const valid = validateNewUser(name, roles, code);
     const rows = (await conn.execute("SELECT * FROM users")).rows as unknown as UserRow[];
     if (await findByCode(code as string, rows)) throw new Problem("Ce code personnel est déjà utilisé.", 409);
-    if (valid.roles.includes("chief") && rows.some((r) => (JSON.parse(r.roles) as string[]).includes("chief"))) throw new Problem("Un chef existe déjà pour cet événement.", 409);
+    // Jusqu'à trois chefs de jury (PO, 26/09/2026) : chaque manche garde un chef unique dans son panel.
+    if (valid.roles.includes("chief") && rows.filter((r) => (JSON.parse(r.roles) as string[]).includes("chief")).length >= MAX_CHIEFS) throw new Problem(`Au plus ${MAX_CHIEFS} chefs de jury pour cet événement.`, 409);
     const user: User = { id: uid(), name: valid.name, roles: valid.roles, approved, active: true };
     await conn.execute({
       sql: "INSERT INTO users (id, name, roles, approved, active, code_hash, created_at) VALUES (?, ?, ?, ?, 1, ?, ?)",

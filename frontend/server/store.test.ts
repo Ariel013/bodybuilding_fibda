@@ -56,7 +56,10 @@ test("comptes : hachage, doublon de code, chef unique, session et authentificati
   const chief = await store.transact((tx) => store.addUser(tx, "Chef", ["chief"], "abcd5678", true));
   assert.equal(chief.approved, true);
   await assert.rejects(store.transact((tx) => store.addUser(tx, "Autre", ["judge"], "abcd5678")), /déjà utilisé/);
-  await assert.rejects(store.transact((tx) => store.addUser(tx, "Chef 2", ["chief"], "efgh1234")), /Un chef existe déjà/);
+  // Jusqu'à trois chefs (PO 26/09) : le deuxième et le troisième passent, le quatrième est refusé.
+  await store.transact((tx) => store.addUser(tx, "Chef 2", ["chief"], "efgh1234"));
+  await store.transact((tx) => store.addUser(tx, "Chef 3", ["chief"], "ijkl1234"));
+  await assert.rejects(store.transact((tx) => store.addUser(tx, "Chef 4", ["chief"], "mnop1234")), /Au plus 3 chefs/);
   await assert.rejects(store.transact((tx) => store.addUser(tx, "Dir", ["director", "judge"], "ijkl1234")), /directeur/);
   const rows = await store.execute("SELECT code_hash FROM users");
   assert.match(String(rows[0].code_hash), /^[0-9a-f]{32}:[0-9a-f]{64}$/);

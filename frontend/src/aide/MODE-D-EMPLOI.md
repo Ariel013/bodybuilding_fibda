@@ -38,7 +38,7 @@ Cette section suit une compétition du début à la fin, dans l'ordre que le ser
 ### 1. Créer les accès de l'équipe
 
 - Où : onglet **Préparation**, rubrique **Jury**, panneau « Inviter un membre », bouton « Créer l'accès ». Puis panneau « Accès et approbations », bouton « Approuver » sur chaque compte (chef uniquement).
-- Ce que cela fait : chaque personne reçoit un code personnel et des rôles. Un code compte de 4 à 128 caractères ; pour un chef, un responsable ou un directeur, le serveur refuse moins de 8 caractères avec « Le code d'un accès de direction doit contenir au moins 8 caractères. ». Seul le chef peut créer un accès de direction.
+- Ce que cela fait : chaque personne reçoit un code personnel et des rôles. Un code compte de 4 à 128 caractères ; pour un chef, un responsable ou un directeur, le serveur refuse moins de 8 caractères avec « Le code d'un accès de direction doit contenir au moins 8 caractères. ». Seul le chef peut créer un accès de direction. Jusqu'à trois comptes « chef de jury » peuvent exister (un chef en crée un autre depuis « Inviter un membre ») ; chaque manche garde un seul chef dans son panel, et c'est son bulletin qui sert de référence pour cette manche.
 - Pourquoi : un compte non approuvé ne peut rien faire, et un juge ne peut être placé dans le jury (étape 7) que s'il est approuvé. Créez et approuvez tous les juges avant de composer le jury.
 - Si oublié : le juge voit « Aucune manche affectée » et le jury ne peut pas être enregistré avec lui.
 
@@ -233,6 +233,7 @@ Le chef de jury et le responsable disposent des onglets Parcours, Vue d'ensemble
 
 - Rubrique **Jury**, panneau « Composition du jury » : cochez les juges officiels, les stagiaires (hors calcul), définissez l'ordre de retrait des juges, puis « Enregistrer le jury ».
 - Un juge ne reçoit un bulletin que s'il est approuvé et affecté au jury de la manche.
+- Plusieurs chefs de jury (trois au plus) : un seul par panel. Composez le jury général avec l'un d'eux, puis, manche par manche, « Composition du jury de la manche » pour en placer un autre : le chef présent dans le panel est la référence de cette manche (départage, concordance).
 
 ### Démarrer la compétition
 

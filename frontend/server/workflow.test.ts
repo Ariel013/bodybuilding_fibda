@@ -394,3 +394,20 @@ test("programme.generate ignore les catégories désactivées comme les archivé
   assert.equal(planned.count, 2);
   assert.deepEqual(f.s.rounds.map((r: any) => r.category_id), ["cat", "legacy"]);
 });
+
+test("plusieurs chefs (PO 26/09) : le chef d'une manche est celui de son panel ; calcul et validation avec un second chef hors panel", () => {
+  const f = new Fixture();
+  // Un second chef existe mais ne siège pas dans cette manche : le panel garde son chef unique (« 0 »).
+  f.users.push({ id: "c2", name: "Chef 2", roles: ["chief"], approved: true, active: true });
+  f.completed();
+  assert.equal(f.r.status, "validated");
+  assert.ok(f.r.result);
+  // Un panel avec les deux chefs est refusé ; un panel sans chef aussi.
+  const r2 = { ...f.r, id: "r2", status: "pending", ballots: {}, result: null, panel: ["0", "c2", "2", "3", "4"], version: 0 };
+  f.s.rounds.push(r2);
+  assert.throws(() => applySport(f.s, f.chief, "round.configure", { round_id: "r2", panel: ["0", "c2", "2", "3", "4"] }, f.users, 300), /chef de jury/);
+  assert.throws(() => applySport(f.s, f.chief, "round.configure", { round_id: "r2", panel: ["1", "2", "3", "4", "c2x"] }, f.users, 300));
+  // Le second chef peut valider une manche : le rôle suffit, l'appartenance au panel n'est pas exigée pour valider.
+  applySport(f.s, f.users[f.users.length - 1], "round.configure", { round_id: "r2", panel: ["c2", "1", "2", "3", "4"], withdrawal_order: ["4", "3", "2", "1"] }, f.users, 300);
+  assert.deepEqual(f.s.rounds.find((r: any) => r.id === "r2").panel, ["c2", "1", "2", "3", "4"]);
+});

@@ -81,13 +81,16 @@ function compare(ranking: string[], ref: string[]): [Fraction, number] | null {
 }
 
 export function concordanceReport(state: any, users: User[]): ConcordanceReport {
+  // Plusieurs chefs possibles (PO, 26/09/2026) : la référence d'une manche est le chef présent dans son panel.
   const chiefs = users.filter((u) => u.roles.includes("chief") && u.active).map((u) => u.id);
-  if (chiefs.length !== 1) return { chief_id: null, rounds: [], judges: [] };
-  const chief = chiefs[0];
+  if (chiefs.length === 0) return { chief_id: null, rounds: [], judges: [] };
   const rounds: ConcordanceRound[] = [];
   const perJudge = new Map<string, { trainee: boolean; scores: Fraction[]; pairs: number }>();
   for (const r of state.rounds ?? []) {
     if (r.phase === "elimination") continue;
+    const inPanel = (r.panel ?? []).filter((id: string) => chiefs.includes(id));
+    if (inPanel.length !== 1) continue;
+    const chief: string = inPanel[0];
     const ref = reference(r, chief);
     if (!ref || ref.ranking.length < 2) continue;
     const judges: ConcordanceJudge[] = [];
@@ -114,5 +117,5 @@ export function concordanceReport(state: any, users: User[]): ConcordanceReport 
     const mean = acc.scores.length ? fractionDiv(acc.scores.reduce(fractionAdd, fraction(0n)), fraction(acc.scores.length)) : null;
     judges.push({ user_id: u.id, trainee: acc.trainee, mean: mean ? fractionJson(mean) : null, rounds: acc.scores.length, pairs: acc.pairs });
   }
-  return { chief_id: chief, rounds, judges };
+  return { chief_id: chiefs.length === 1 ? chiefs[0] : null, rounds, judges };
 }

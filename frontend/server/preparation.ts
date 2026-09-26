@@ -489,7 +489,8 @@ function apply(state: Dict, actor: Actor, kind: string, payload: Dict): any {
   if (kind === "entry.save") return saveEntry(state, actor, req(payload, "entry"));
   if (kind === "category.save") {
     requireRole(actor, SPORT);
-    if (truthy(get(state, "bibs_distributed"))) throw new Problem("Catégories figées après attribution des dossards.");
+    // Depuis le 26/09/2026 (PO) : une catégorie se crée ou se modifie même après les dossards, tant qu'elle
+    // n'a pas commencé (garde beforeRound plus bas). Seule la fusion reste figée après dossards.
     const incoming: Dict = req(payload, "category");
     const rules = new Map<string, Dict>();
     for (const r of loadCatalogue().rules as Dict[]) rules.set(r.id, r);

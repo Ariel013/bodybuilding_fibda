@@ -99,7 +99,8 @@ test("category.activate : rôle SPORT, autorisé après dossards, refusé si la 
   rejects(() => run("category.activate", { category_id: a.id, active: false }, sec));
   rejects(() => run("category.activate", { category_id: a.id, active: "non" }));
   run("bibs.assign", {});
-  rejects(() => run("category.save", { category: { ...a, active: false } })); // figé après dossards
+  run("category.save", { category: { ...a, active: false } }); // plus figé après dossards (PO 26/09) : désactivation possible par category.save
+  run("category.save", { category: { ...a, active: true } });
   const off = run("category.activate", { category_id: a.id, active: false }, responsable);
   assert.equal(off.active, false);
   assert.equal(state.entries.filter((e: any) => e.category_id === a.id).length, 1); // inscriptions conservées
@@ -309,4 +310,13 @@ test("règle personnalisée : catégorie hors référentiel, admission contrôl�
   rejects(() => run("category.save", { category: { section: "amateur", custom: { discipline: "bikini", name: "X", upper_inclusive: "160" } } })); // borne sans mesure
   rejects(() => run("category.save", { category: { section: "amateur", custom: { discipline: "bikini", name: "X", metric: "height_cm", lower_exclusive: "170", upper_inclusive: "160" } } }));
   rejects(() => run("category.save", { category: { section: "amateur", custom: { discipline: "bikini", name: "X", metric: "age" } } }));
+});
+
+test("catégorie créée ou modifiée après les dossards (assouplissement PO 26/09) ; fusion toujours figée", () => {
+  const a = category(); entry(person(), a); run("bibs.assign", {});
+  const b = category("75");
+  assert.equal(state.categories.length, 2);
+  run("category.save", { category: { id: b.id, rule_id: b.rule_id, section: "amateur", name: "Renommée" } });
+  assert.equal(state.categories[1].name, "Renommée");
+  rejects(() => run("category.fuse", { category_ids: [a.id, b.id] }));
 });

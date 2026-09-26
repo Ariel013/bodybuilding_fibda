@@ -350,7 +350,7 @@ function People({ s, command, refresh }: Props) {
   const chief = s.me.roles.includes("chief");
   const tardif = inscriptionTardiveRequise(s);
   const peutInscrireTardif = canCommand(s.me.roles, "entry.late");
-  const peutCreerCategorie = canCommand(s.me.roles, "category.save") && !s.bibs_distributed;
+  const peutCreerCategorie = canCommand(s.me.roles, "category.save");
   const inscriptions = s.entries.filter((e) => e.person_id === person.id);
   const nomCategorie = (id: string) =>
     s.categories.find((c) => c.id === id)?.name ?? "la catégorie choisie";
@@ -738,9 +738,6 @@ function People({ s, command, refresh }: Props) {
                   )}
                 </div>
               ))}
-              {s.bibs_distributed && choix.alternatives.some((a) => !a.category_id) && (
-                <small className="muted">Catégories figées après attribution des dossards : seules les catégories existantes peuvent recevoir une inscription.</small>
-              )}
             </section>
           )}
           {existing && (

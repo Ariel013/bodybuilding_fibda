@@ -21,7 +21,25 @@ Carte des documents :
 
 ## 📍 État actuel & prochaine action
 
-*(Mis à jour le 2026-09-26, jour de la compétition.)*
+*(Mis à jour le 2026-09-26, 15 h, jour de la compétition.)*
+
+- **Version en prod et démo** : commit `8a32ae8`, déployées toutes deux depuis la CLI (`--prebuilt`),
+  bundle vérifié au curl à chaque livraison. `npm run check` = 206 tests (48 interface, 17 moteur,
+  141 serveur), code de retour 0. Base vidée par le PO le matin ; état lu à 14 h : 44 athlètes,
+  59 inscriptions, 10 catégories personnalisées, dossards non attribués, aucune manche.
+- **Livré le 26/09 (chronologie)** : suppressions (athlète, inscription, compte, catégorie,
+  officiel ; chef seul) et vidage ; catégories activables, multi-inscription à la création ;
+  concordance juges/chef ; bulletin téléphone réparé ; écriture optimiste (ADR 0003) ; connexion
+  tolérante aux espaces ; menu « … » ; **règle personnalisée** de catégorie (classes FIBDA hors
+  IFBB) ; catégories modifiables après dossards ; import de photos en lot par nom de fichier ;
+  jusqu'à 3 chefs (un par panel) ; écran coulisses « Ordre de passage » avec photos ; documents
+  « Liste des athlètes » et « Catégories et athlètes » ; dossards stricts (refus nominatif) et
+  annulables ; poids facultatif pour les disciplines à la taille.
+- **Prochaine action** : le PO confirme la dernière inscription en brouillon (poids vide, désormais
+  accepté), attribue les dossards, compose le jury, génère les manches. Restent non vérifiés en
+  navigateur réel : formulaire de règle personnalisée, import en lot, écran coulisses, menu « … ».
+- **Points ouverts** : P12 (réactivation après dossards), P13 (concordance avant validation,
+  éliminatoires), P14 (cadence d'interrogation des juges). Gain de latence non mesuré en secondes.
 
 - **26/09 (matin)** : suppression d'athlètes (`person.delete`, direction), retrait d'une inscription
   (`entry.remove`, préparation), vidage de la compétition (`event.purge`, chef, saisie VIDER, comptes
@@ -104,6 +122,18 @@ Carte des documents :
 
 ## 📓 Journal des sessions
 
+### 2026-09-26 — Jour J : suppressions, catégories libres, coulisses, dossards, 15 déploiements
+- Matin : 6 agents en parallèle (serveur catégories, écran, téléphone, concordance, latence,
+  sécurité), rapports intégrés, deux lots commités. Le classifieur a d'abord refusé déploiement et
+  lecture de prod, puis laissé passer les déploiements ; les écritures en prod restent refusées.
+- Après-midi : demandes du PO traitées une à une, chacune avec test, `npm run check`, commit,
+  push, déploiement prod + démo et vérification du bundle servi. Trois fausses pistes évitées :
+  « import de photos ne marche pas » = panneau ZIP hors périmètre (journal serveur consulté) ;
+  « Code incorrect » chez le chef = espace collé (champ masqué) ; « Catégories figées » = règle
+  volontaire devenue gênante.
+- Leçon : un déploiement `vercel deploy` peut rendre 0 sans mettre en ligne (sortie tronquée) ;
+  la vérification est le nom du bundle servi comparé à `.vercel/output`.
+
 ### 2026-09-23 — Reprise, audit, PWA, sauvegarde, réécriture TypeScript
 - Réorganisation du dépôt (sources dézippées → arborescence cible), commit `21ae035`.
 - Audit : 79 tests Python + 14 frontend passent, serveur démarre. Écarts doc/code : PWA absente,
@@ -126,6 +156,17 @@ Carte des documents :
 - Ouvert : photos (P9), XLSX/PDF (P10), test téléphone réel par le PO, H1 (overall par sexe ?).
 
 ## 🎓 Leçons apprises
+
+### Un déploiement « code 0 » ne prouve rien : comparer le bundle servi (2026-09-26)
+`vercel deploy --prebuilt` a rendu 0 sans mettre le déploiement en ligne (sortie coupée, ancien
+déploiement toujours servi). Règle : après chaque déploiement, lire le nom du fichier
+`assets/index-*.js` dans la page servie et le comparer à `.vercel/output/static/assets`, avec
+un délai de propagation de quelques dizaines de secondes.
+
+### Avant de corriger un « ça ne marche pas », lire le journal serveur et l'écran exact (2026-09-26)
+Trois demandes du jour n'étaient pas des bugs du code visé : un panneau volontairement inactif,
+un espace invisible dans un champ masqué, une règle métier voulue. Le journal Vercel et la
+question « quel message exact ? » ont évité trois corrections à côté.
 
 ### Une assertion fausse peut « échouer lentement » : la barrière se pose sur le code de retour (2026-09-25)
 La suite serveur est passée de 30 s à 25 minutes sans échec visible ; un déploiement est parti.
